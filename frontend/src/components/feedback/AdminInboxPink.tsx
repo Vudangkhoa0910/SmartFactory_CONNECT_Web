@@ -80,29 +80,37 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
   };
 
   return (
-    <div className="fixed top-20 right-20 z-50 w-full max-w-md shadow-xl rounded-lg bg-white border">
-      <div className="p-4 border-b flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Chuyển tiếp Góp ý</h3>
+    <div
+      className="fixed top-20 right-20 z-50 w-full max-w-md shadow-xl rounded-lg 
+        bg-white dark:bg-gray-800 border dark:border-gray-700"
+    >
+      <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          Chuyển tiếp Góp ý
+        </h3>
         <button
           onClick={onClose}
-          className="p-1 rounded-full hover:bg-gray-100"
+          className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
         >
-          <X size={20} />
+          <X size={20} className="text-gray-700 dark:text-gray-300" />
         </button>
       </div>
 
       <div className="p-5">
-        <p className="text-sm mb-4">
+        <p className="text-sm mb-4 text-gray-700 dark:text-gray-300">
           Bạn đang chuyển tiếp góp ý:{" "}
-          <span className="font-semibold">"{message.title}"</span>
+          <span className="font-semibold text-gray-900 dark:text-white">
+            "{message.title}"
+          </span>
         </p>
 
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           Chuyển đến phòng ban
         </label>
         <select
           onChange={(e) => setDepartment(e.target.value)}
-          className="w-full p-2 border rounded-md text-sm"
+          className="w-full p-2 border dark:border-gray-700 rounded-md text-sm 
+          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
         >
           <option value="">-- Chọn phòng ban --</option>
           {DEPARTMENTS_TO_FORWARD.map((d) => (
@@ -110,20 +118,22 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
           ))}
         </select>
 
-        <label className="block text-sm font-medium mt-4 mb-1">
+        <label className="block text-sm font-medium mt-4 mb-1 text-gray-700 dark:text-gray-300">
           Ghi chú (không bắt buộc)
         </label>
         <textarea
           rows={4}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full p-2 border rounded-md text-sm"
+          className="w-full p-2 border dark:border-gray-700 rounded-md text-sm
+          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
         />
       </div>
 
-      <div className="px-5 py-3 flex justify-end gap-3 border-t">
+      <div className="px-5 py-3 flex justify-end gap-3 border-t dark:border-gray-700">
         <button
           onClick={onClose}
-          className="px-4 py-2 text-sm rounded-md border hover:bg-gray-50"
+          className="px-4 py-2 text-sm rounded-md border dark:border-gray-600 
+          hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
         >
           Hủy
         </button>
@@ -162,11 +172,11 @@ export default function SensitiveInboxPage() {
         />
       )}
 
-      <div className="h-screen w-full flex">
+      <div className="h-screen w-full flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
         {/* LEFT LIST */}
-        <aside className="w-[360px] border-r flex flex-col">
-          <header className="p-4 border-b">
-            <h1 className="text-xl font-bold flex items-center gap-2">
+        <aside className="w-[360px] border-r dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+          <header className="p-4 border-b dark:border-gray-700">
+            <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800 dark:text-white">
               <Shield size={20} className="text-rose-600" />
               Hòm thư Hồng
             </h1>
@@ -177,24 +187,31 @@ export default function SensitiveInboxPage() {
               <div
                 key={msg.id}
                 onClick={() => setSelectedMessageId(msg.id)}
-                className={`p-3.5 border-b cursor-pointer ${
+                className={`p-3.5 border-b dark:border-gray-700 cursor-pointer ${
                   selectedMessageId === msg.id
-                    ? "bg-gray-100"
-                    : "hover:bg-gray-50"
+                    ? "bg-gray-100 dark:bg-gray-700"
+                    : "hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
               >
                 <div className="flex gap-2 items-center font-semibold text-sm">
                   {msg.isAnonymous ? (
                     <VenetianMask size={14} className="text-rose-600" />
                   ) : (
-                    <User size={14} />
+                    <User
+                      size={14}
+                      className="text-gray-700 dark:text-gray-300"
+                    />
                   )}
-                  <span>{msg.isAnonymous ? "Ẩn danh" : msg.senderName}</span>
+                  <span className="text-gray-900 dark:text-gray-200">
+                    {msg.isAnonymous ? "Ẩn danh" : msg.senderName}
+                  </span>
                 </div>
 
-                <p className="text-sm mt-1 truncate">{msg.title}</p>
+                <p className="text-sm mt-1 truncate text-gray-700 dark:text-gray-300">
+                  {msg.title}
+                </p>
 
-                <p className="text-xs mt-1">
+                <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
                   {msg.timestamp.toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -206,23 +223,26 @@ export default function SensitiveInboxPage() {
         </aside>
 
         {/* RIGHT DETAIL */}
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col bg-white dark:bg-gray-900">
           {selectedMessage ? (
             <>
-              <header className="p-4 border-b flex justify-between items-center">
-                <div>
-                  <h2 className="text-lg font-bold">{selectedMessage.title}</h2>
-                </div>
+              <header className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {selectedMessage.title}
+                </h2>
 
                 <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5">
+                  <button
+                    className="px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 border dark:border-gray-600 
+                    hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                  >
                     <Archive size={14} />
                     Lưu trữ
                   </button>
 
                   <button
                     onClick={() => setIsForwarding(true)}
-                    className="px-3 py-1.5 text-sm text-white bg-rose-600 rounded-md flex items-center gap-1.5"
+                    className="px-3 py-1.5 text-sm text-white bg-rose-600 rounded-md hover:bg-rose-700 flex items-center gap-1.5"
                   >
                     <Send size={14} />
                     Chuyển tiếp
@@ -230,19 +250,19 @@ export default function SensitiveInboxPage() {
                 </div>
               </header>
 
-              <div className="p-6 overflow-y-auto flex-grow">
+              <div className="p-6 overflow-y-auto flex-grow text-gray-800 dark:text-gray-200">
                 <p>{selectedMessage.fullContent}</p>
 
                 {selectedMessage.imageUrl && (
                   <img
                     src={selectedMessage.imageUrl}
-                    className="max-w-lg rounded-lg mt-4 border"
+                    className="max-w-lg rounded-lg mt-4 border dark:border-gray-700"
                   />
                 )}
               </div>
             </>
           ) : (
-            <div className="flex-grow flex flex-col items-center justify-center">
+            <div className="flex-grow flex flex-col items-center justify-center text-gray-700 dark:text-gray-300">
               <Inbox size={64} />
               <p className="mt-4 text-lg">Chưa có góp ý nào được chọn</p>
             </div>
