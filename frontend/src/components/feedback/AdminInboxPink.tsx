@@ -4,8 +4,6 @@ import {
   Shield,
   User,
   VenetianMask,
-  Clock,
-  Paperclip,
   Send,
   Archive,
   X,

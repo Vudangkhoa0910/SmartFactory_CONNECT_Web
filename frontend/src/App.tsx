@@ -22,6 +22,8 @@ import IncidentReportPage from "./pages/Dashboard/IncidentReportPage";
 import IncidentQueue from "./pages/ErrorReport/IncidentQueue";
 import AllIncidentsPage from "./pages/ErrorReport/AllIncidentsPage";
 import AdminInboxPink from "./components/feedback/AdminInboxPink";
+import PublicIdeasPage from "./components/feedback/PublicIdeasPage";
+import KaizenBankPage from "./components/storage/KaizenBankPage";
 
 export default function App() {
   return (
@@ -47,10 +49,23 @@ export default function App() {
               element={<AllIncidentsPage />}
             />
 
+            {/* Feadback */}
             <Route
               index
               path="/admin-inbox-pink"
               element={<AdminInboxPink />}
+            />
+            <Route
+              index
+              path="/public-ideas-page"
+              element={<PublicIdeasPage />}
+            />
+
+            {/* Storage */}
+            <Route
+              index
+              path="/kaizen-bank-page"
+              element={<KaizenBankPage />}
             />
 
             {/* Others Page */}

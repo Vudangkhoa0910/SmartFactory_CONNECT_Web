@@ -230,7 +230,7 @@ const IncidentQueue: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 md:p-8 font-sans">
+    <div className="min-h-screen  p-4 sm:p-6 md:p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <header className="mb-8">

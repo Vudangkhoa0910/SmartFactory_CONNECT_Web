@@ -447,7 +447,7 @@ export default function AllIncidentsPage() {
   }, [incidents]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 md:p-8 font-sans">
+    <div className="min-h-screen  p-4 sm:p-6 md:p-8 font-sans">
       <div className="max-w-full mx-auto">
         {/* TOOLBAR */}
         <header className="mb-6">

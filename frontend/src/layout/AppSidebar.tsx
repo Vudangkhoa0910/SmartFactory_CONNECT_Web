@@ -64,10 +64,7 @@ const othersItems2: NavItem[] = [
   {
     icon: <PieChartIcon />,
     name: "Hòm trắng",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
+    path: "/public-ideas-page",
   },
   {
     icon: <BoxCubeIcon />,
@@ -77,10 +74,7 @@ const othersItems2: NavItem[] = [
   {
     icon: <PlugInIcon />,
     name: "Lưu trữ",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
+    path: "/kaizen-bank-page",
   },
   {
     icon: <PlugInIcon />,
