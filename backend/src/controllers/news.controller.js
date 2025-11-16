@@ -1,0 +1,533 @@
+const db = require('../config/database');
+const { AppError, asyncHandler } = require('../middlewares/error.middleware');
+
+/**
+ * Create new news article
+ * POST /api/news
+ */
+const createNews = asyncHandler(async (req, res) => {
+  const {
+    category,
+    title,
+    content,
+    excerpt,
+    target_audience,
+    target_departments,
+    is_priority,
+    publish_at
+  } = req.body;
+  
+  const author_id = req.user.id;
+  
+  // Handle file attachments
+  const attachments = req.files ? req.files.map(file => ({
+    filename: file.filename,
+    original_name: file.originalname,
+    mime_type: file.mimetype,
+    size: file.size,
+    path: file.path
+  })) : [];
+  
+  const query = `
+    INSERT INTO news (
+      category,
+      title,
+      content,
+      excerpt,
+      author_id,
+      target_audience,
+      target_departments,
+      is_priority,
+      publish_at,
+      attachments,
+      status
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft')
+    RETURNING *
+  `;
+  
+  const values = [
+    category,
+    title,
+    content,
+    excerpt || null,
+    author_id,
+    target_audience || 'all',
+    target_departments ? JSON.stringify(target_departments) : null,
+    is_priority || false,
+    publish_at || null,
+    JSON.stringify(attachments)
+  ];
+  
+  const result = await db.query(query, values);
+  const news = result.rows[0];
+  
+  // TODO: If published immediately, send notifications
+  
+  res.status(201).json({
+    success: true,
+    message: 'News created successfully',
+    data: news
+  });
+});
+
+/**
+ * Get all news with filters
+ * GET /api/news
+ */
+const getNews = asyncHandler(async (req, res) => {
+  const { pagination, sort, filters } = req;
+  const userId = req.user.id;
+  const userRole = req.user.role;
+  const userDepartmentId = req.user.department_id;
+  
+  const conditions = ['n.status = \'published\''];
+  const params = [];
+  let paramIndex = 1;
+  
+  // Filter by target audience
+  conditions.push(`(
+    n.target_audience = 'all' OR
+    n.target_audience = $${paramIndex} OR
+    (n.target_departments IS NOT NULL AND 
+     n.target_departments::jsonb @> $${paramIndex + 1}::jsonb)
+  )`);
+  params.push(userRole, JSON.stringify([userDepartmentId]));
+  paramIndex += 2;
+  
+  // Only show published news
+  conditions.push(`(n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)`);
+  
+  // Apply filters
+  if (filters.category) {
+    conditions.push(`n.category = $${paramIndex}`);
+    params.push(filters.category);
+    paramIndex++;
+  }
+  
+  if (filters.is_priority !== undefined) {
+    conditions.push(`n.is_priority = $${paramIndex}`);
+    params.push(filters.is_priority === 'true');
+    paramIndex++;
+  }
+  
+  if (filters.date_from) {
+    conditions.push(`n.created_at >= $${paramIndex}`);
+    params.push(filters.date_from);
+    paramIndex++;
+  }
+  
+  if (filters.date_to) {
+    conditions.push(`n.created_at <= $${paramIndex}`);
+    params.push(filters.date_to);
+    paramIndex++;
+  }
+  
+  if (filters.search) {
+    conditions.push(`(
+      n.title ILIKE $${paramIndex} OR 
+      n.content ILIKE $${paramIndex} OR
+      n.excerpt ILIKE $${paramIndex}
+    )`);
+    params.push(`%${filters.search}%`);
+    paramIndex++;
+  }
+  
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  // Get total count
+  const countQuery = `SELECT COUNT(*) FROM news n ${whereClause}`;
+  const countResult = await db.query(countQuery, params);
+  const totalItems = parseInt(countResult.rows[0].count);
+  
+  // Get news with pagination
+  const query = `
+    SELECT 
+      n.id,
+      n.category,
+      n.title,
+      n.excerpt,
+      n.is_priority,
+      n.created_at,
+      n.publish_at,
+      n.attachments,
+      u.full_name as author_name,
+      u.employee_code as author_code,
+      (SELECT COUNT(*) FROM news_views WHERE news_id = n.id) as view_count,
+      EXISTS(SELECT 1 FROM news_views WHERE news_id = n.id AND user_id = $${paramIndex}) as is_viewed,
+      EXISTS(SELECT 1 FROM news_read_receipts WHERE news_id = n.id AND user_id = $${paramIndex}) as is_read
+    FROM news n
+    LEFT JOIN users u ON n.author_id = u.id
+    ${whereClause}
+    ORDER BY n.is_priority DESC, ${sort.sortBy} ${sort.sortOrder}
+    LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
+  `;
+  
+  params.push(userId, pagination.limit, pagination.offset);
+  
+  const result = await db.query(query, params);
+  
+  res.json({
+    success: true,
+    data: result.rows,
+    pagination: {
+      page: pagination.page,
+      limit: pagination.limit,
+      totalItems,
+      totalPages: Math.ceil(totalItems / pagination.limit)
+    }
+  });
+});
+
+/**
+ * Get news by ID
+ * GET /api/news/:id
+ */
+const getNewsById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  const query = `
+    SELECT 
+      n.*,
+      u.full_name as author_name,
+      u.employee_code as author_code,
+      u.email as author_email,
+      (SELECT COUNT(*) FROM news_views WHERE news_id = n.id) as view_count,
+      (SELECT COUNT(*) FROM news_read_receipts WHERE news_id = n.id) as read_count
+    FROM news n
+    LEFT JOIN users u ON n.author_id = u.id
+    WHERE n.id = $1
+  `;
+  
+  const result = await db.query(query, [id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('News not found', 404);
+  }
+  
+  const news = result.rows[0];
+  
+  // Record view
+  await db.query(
+    `INSERT INTO news_views (news_id, user_id)
+     VALUES ($1, $2)
+     ON CONFLICT (news_id, user_id) DO UPDATE
+     SET viewed_at = CURRENT_TIMESTAMP`,
+    [id, userId]
+  );
+  
+  res.json({
+    success: true,
+    data: news
+  });
+});
+
+/**
+ * Update news
+ * PUT /api/news/:id
+ */
+const updateNews = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    category,
+    title,
+    content,
+    excerpt,
+    target_audience,
+    target_departments,
+    is_priority,
+    publish_at,
+    status
+  } = req.body;
+  
+  const userId = req.user.id;
+  
+  // Check if news exists
+  const news = await db.query('SELECT * FROM news WHERE id = $1', [id]);
+  
+  if (news.rows.length === 0) {
+    throw new AppError('News not found', 404);
+  }
+  
+  // Only author or admin can update
+  if (news.rows[0].author_id !== userId && req.user.level > 1) {
+    throw new AppError('You do not have permission to update this news', 403);
+  }
+  
+  // Handle new file attachments
+  let attachments = news.rows[0].attachments || [];
+  if (req.files && req.files.length > 0) {
+    const newAttachments = req.files.map(file => ({
+      filename: file.filename,
+      original_name: file.originalname,
+      mime_type: file.mimetype,
+      size: file.size,
+      path: file.path
+    }));
+    attachments = [...attachments, ...newAttachments];
+  }
+  
+  const query = `
+    UPDATE news
+    SET 
+      category = COALESCE($1, category),
+      title = COALESCE($2, title),
+      content = COALESCE($3, content),
+      excerpt = COALESCE($4, excerpt),
+      target_audience = COALESCE($5, target_audience),
+      target_departments = COALESCE($6, target_departments),
+      is_priority = COALESCE($7, is_priority),
+      publish_at = COALESCE($8, publish_at),
+      status = COALESCE($9, status),
+      attachments = $10,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $11
+    RETURNING *
+  `;
+  
+  const result = await db.query(query, [
+    category,
+    title,
+    content,
+    excerpt,
+    target_audience,
+    target_departments ? JSON.stringify(target_departments) : null,
+    is_priority,
+    publish_at,
+    status,
+    JSON.stringify(attachments),
+    id
+  ]);
+  
+  // TODO: If newly published, send notifications
+  
+  res.json({
+    success: true,
+    message: 'News updated successfully',
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Publish news
+ * POST /api/news/:id/publish
+ */
+const publishNews = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { publish_at } = req.body;
+  
+  // Check if news exists
+  const news = await db.query('SELECT * FROM news WHERE id = $1', [id]);
+  
+  if (news.rows.length === 0) {
+    throw new AppError('News not found', 404);
+  }
+  
+  const query = `
+    UPDATE news
+    SET 
+      status = 'published',
+      publish_at = COALESCE($1, CURRENT_TIMESTAMP),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $2
+    RETURNING *
+  `;
+  
+  const result = await db.query(query, [publish_at, id]);
+  
+  // TODO: Send real-time notifications to target audience
+  
+  res.json({
+    success: true,
+    message: 'News published successfully',
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Delete news
+ * DELETE /api/news/:id
+ */
+const deleteNews = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  // Check if news exists
+  const news = await db.query('SELECT * FROM news WHERE id = $1', [id]);
+  
+  if (news.rows.length === 0) {
+    throw new AppError('News not found', 404);
+  }
+  
+  // Only author or admin can delete
+  if (news.rows[0].author_id !== userId && req.user.level > 1) {
+    throw new AppError('You do not have permission to delete this news', 403);
+  }
+  
+  // Soft delete
+  await db.query(
+    'UPDATE news SET status = \'deleted\', updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+    [id]
+  );
+  
+  res.json({
+    success: true,
+    message: 'News deleted successfully'
+  });
+});
+
+/**
+ * Mark news as read
+ * POST /api/news/:id/read
+ */
+const markAsRead = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  // Check if news exists
+  const news = await db.query('SELECT * FROM news WHERE id = $1', [id]);
+  
+  if (news.rows.length === 0) {
+    throw new AppError('News not found', 404);
+  }
+  
+  // Mark as read
+  await db.query(
+    `INSERT INTO news_read_receipts (news_id, user_id)
+     VALUES ($1, $2)
+     ON CONFLICT (news_id, user_id) DO UPDATE
+     SET read_at = CURRENT_TIMESTAMP`,
+    [id, userId]
+  );
+  
+  res.json({
+    success: true,
+    message: 'News marked as read'
+  });
+});
+
+/**
+ * Get news statistics
+ * GET /api/news/stats
+ */
+const getNewsStats = asyncHandler(async (req, res) => {
+  const { date_from, date_to } = req.query;
+  
+  const conditions = ['status = \'published\''];
+  const params = [];
+  let paramIndex = 1;
+  
+  if (date_from) {
+    conditions.push(`created_at >= $${paramIndex}`);
+    params.push(date_from);
+    paramIndex++;
+  }
+  
+  if (date_to) {
+    conditions.push(`created_at <= $${paramIndex}`);
+    params.push(date_to);
+    paramIndex++;
+  }
+  
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  // Overall stats
+  const statsQuery = `
+    SELECT 
+      COUNT(*) as total_news,
+      COUNT(CASE WHEN is_priority = true THEN 1 END) as priority_news,
+      AVG((SELECT COUNT(*) FROM news_views WHERE news_id = news.id)) as avg_views,
+      AVG((SELECT COUNT(*) FROM news_read_receipts WHERE news_id = news.id)) as avg_reads
+    FROM news
+    ${whereClause}
+  `;
+  
+  const statsResult = await db.query(statsQuery, params);
+  
+  // By category
+  const byCategoryQuery = `
+    SELECT 
+      category,
+      COUNT(*) as count
+    FROM news
+    ${whereClause}
+    GROUP BY category
+  `;
+  
+  const byCategoryResult = await db.query(byCategoryQuery, params);
+  
+  // Top viewed
+  const topViewedQuery = `
+    SELECT 
+      n.id,
+      n.title,
+      n.category,
+      n.created_at,
+      COUNT(v.id) as view_count
+    FROM news n
+    LEFT JOIN news_views v ON n.id = v.news_id
+    ${whereClause}
+    GROUP BY n.id, n.title, n.category, n.created_at
+    ORDER BY view_count DESC
+    LIMIT 10
+  `;
+  
+  const topViewedResult = await db.query(topViewedQuery, params);
+  
+  res.json({
+    success: true,
+    data: {
+      overall: statsResult.rows[0],
+      by_category: byCategoryResult.rows,
+      top_viewed: topViewedResult.rows
+    }
+  });
+});
+
+/**
+ * Get unread news count
+ * GET /api/news/unread-count
+ */
+const getUnreadCount = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const userRole = req.user.role;
+  const userDepartmentId = req.user.department_id;
+  
+  const query = `
+    SELECT COUNT(*) as unread_count
+    FROM news n
+    WHERE n.status = 'published'
+      AND (n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)
+      AND (
+        n.target_audience = 'all' OR
+        n.target_audience = $1 OR
+        (n.target_departments IS NOT NULL AND 
+         n.target_departments::jsonb @> $2::jsonb)
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM news_read_receipts 
+        WHERE news_id = n.id AND user_id = $3
+      )
+  `;
+  
+  const result = await db.query(query, [userRole, JSON.stringify([userDepartmentId]), userId]);
+  
+  res.json({
+    success: true,
+    data: {
+      unread_count: parseInt(result.rows[0].unread_count)
+    }
+  });
+});
+
+module.exports = {
+  createNews,
+  getNews,
+  getNewsById,
+  updateNews,
+  publishNews,
+  deleteNews,
+  markAsRead,
+  getNewsStats,
+  getUnreadCount
+};
