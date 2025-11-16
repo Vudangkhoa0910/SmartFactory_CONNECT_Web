@@ -18,6 +18,10 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import IncidentReportPage from "./pages/Dashboard/IncidentReportPage";
+import IncidentQueue from "./pages/ErrorReport/IncidentQueue";
+import AllIncidentsPage from "./pages/ErrorReport/AllIncidentsPage";
+import AdminInboxPink from "./components/feedback/AdminInboxPink";
 
 export default function App() {
   return (
@@ -28,6 +32,26 @@ export default function App() {
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
+
+            <Route index path="/incident-queue" element={<IncidentQueue />} />
+
+            <Route
+              index
+              path="/incident-report-page"
+              element={<IncidentReportPage />}
+            />
+
+            <Route
+              index
+              path="/all-incidents-page"
+              element={<AllIncidentsPage />}
+            />
+
+            <Route
+              index
+              path="/admin-inbox-pink"
+              element={<AdminInboxPink />}
+            />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

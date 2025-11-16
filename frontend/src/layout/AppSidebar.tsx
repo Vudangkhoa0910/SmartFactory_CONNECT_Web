@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
+// ... (phần import icons không đổi)
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -9,7 +9,6 @@ import {
   GridIcon,
   HorizontaLDots,
   ListIcon,
-  PageIcon,
   PieChartIcon,
   PlugInIcon,
   TableIcon,
@@ -18,6 +17,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 
+// ... (phần type và các mảng navItems, othersItems1, othersItems2 không đổi)
 type NavItem = {
   name: string;
   icon: React.ReactNode;
@@ -29,7 +29,11 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [
+      { name: "Tổng quan", path: "/", pro: false },
+      { name: "Báo cáo sự cố", path: "/incident-report-page", pro: false },
+      { name: "Góp ý", path: "/ts3", pro: false },
+    ],
   },
   {
     icon: <CalenderIcon />,
@@ -41,30 +45,25 @@ const navItems: NavItem[] = [
     name: "User Profile",
     path: "/profile",
   },
+];
+
+const othersItems1: NavItem[] = [
   {
-    name: "Forms",
+    name: "Danh sách sự cố",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    path: "/all-incidents-page",
   },
   {
-    name: "Tables",
+    name: "Hàng đợi",
     icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
+    path: "/incident-queue",
   },
 ];
 
-const othersItems: NavItem[] = [
+const othersItems2: NavItem[] = [
   {
     icon: <PieChartIcon />,
-    name: "Charts",
+    name: "Hòm trắng",
     subItems: [
       { name: "Line Chart", path: "/line-chart", pro: false },
       { name: "Bar Chart", path: "/bar-chart", pro: false },
@@ -72,14 +71,15 @@ const othersItems: NavItem[] = [
   },
   {
     icon: <BoxCubeIcon />,
-    name: "UI Elements",
+    name: "Hòm hồng",
+    path: "/admin-inbox-pink",
+  },
+  {
+    icon: <PlugInIcon />,
+    name: "Lưu trữ",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
+      { name: "Sign In", path: "/signin", pro: false },
+      { name: "Sign Up", path: "/signup", pro: false },
     ],
   },
   {
@@ -96,31 +96,44 @@ const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
+  // <<< THAY ĐỔI 1: Cập nhật kiểu (type) của state để chấp nhận các loại menu mới
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
+    type: "main" | "others1" | "others2";
     index: number;
   } | null>(null);
+
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
   );
 
+  // <<< THAY ĐỔI 2: Cấu trúc lại useEffect để trở nên linh hoạt hơn
   useEffect(() => {
     let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+
+    // Tạo một đối tượng để ánh xạ tên loại menu với mảng dữ liệu tương ứng
+    const menuMapping = {
+      main: navItems,
+      others1: othersItems1,
+      others2: othersItems2,
+    };
+
+    // Lặp qua các key của đối tượng ánh xạ ('main', 'others1', 'others2')
+    for (const menuType in menuMapping) {
+      if (submenuMatched) break; // Thoát sớm nếu đã tìm thấy
+
+      const items = menuMapping[menuType as keyof typeof menuMapping];
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "others",
+                type: menuType as "main" | "others1" | "others2",
                 index,
               });
               submenuMatched = true;
@@ -128,7 +141,7 @@ const AppSidebar: React.FC = () => {
           });
         }
       });
-    });
+    }
 
     if (!submenuMatched) {
       setOpenSubmenu(null);
@@ -147,7 +160,11 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+  // <<< THAY ĐỔI 3: Cập nhật kiểu của tham số menuType
+  const handleSubmenuToggle = (
+    index: number,
+    menuType: "main" | "others1" | "others2"
+  ) => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -160,7 +177,11 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
+  // <<< THAY ĐỔI 4: Cập nhật kiểu của tham số menuType (bạn đã làm đúng ở đây)
+  const renderMenuItems = (
+    items: NavItem[],
+    menuType: "main" | "others1" | "others2"
+  ) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
         <li key={nav.name}>
@@ -285,6 +306,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
+      // ... (phần JSX của aside không đổi)
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${
           isExpanded || isMobileOpen
@@ -298,6 +320,7 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* ... (phần logo không đổi) ... */}
       <div
         className={`py-8 flex ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
@@ -322,6 +345,7 @@ const AppSidebar: React.FC = () => {
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
+            {/* --- Phần Menu --- */}
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
@@ -338,6 +362,24 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
+            {/* --- Phần Notifications (dùng othersItems1) --- */}
+            <div>
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
+                  "Báo cáo sự cố"
+                ) : (
+                  <HorizontaLDots className="size-6" />
+                )}
+              </h2>
+              {renderMenuItems(othersItems1, "others1")}
+            </div>
+            {/* --- Phần Others (dùng othersItems2) --- */}
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
@@ -347,12 +389,12 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
+                  "Hòm thư góp ý"
                 ) : (
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(othersItems2, "others2")}
             </div>
           </div>
         </nav>
