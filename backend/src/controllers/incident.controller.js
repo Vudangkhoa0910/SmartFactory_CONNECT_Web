@@ -711,6 +711,319 @@ const getIncidentStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Get incidents queue (for Command Room)
+ * GET /api/incidents/queue
+ * Returns only new/pending and critical incidents for quick action
+ */
+const getIncidentQueue = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      i.*,
+      u.full_name as reporter_name,
+      u.employee_code as reporter_code,
+      d.name as department_name
+    FROM incidents i
+    LEFT JOIN users u ON i.reporter_id = u.id
+    LEFT JOIN departments d ON i.department_id = d.id
+    WHERE i.status IN ('pending', 'assigned') 
+       OR i.priority IN ('critical', 'high')
+    ORDER BY 
+      CASE i.priority
+        WHEN 'critical' THEN 1
+        WHEN 'high' THEN 2
+        WHEN 'medium' THEN 3
+        WHEN 'low' THEN 4
+      END,
+      i.created_at DESC
+  `;
+  
+  const result = await db.query(query);
+  
+  res.json({
+    success: true,
+    data: result.rows,
+    count: result.rows.length
+  });
+});
+
+/**
+ * Quick acknowledge incident
+ * POST /api/incidents/:id/acknowledge
+ */
+const quickAcknowledge = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  // Update status to assigned
+  const updateQuery = `
+    UPDATE incidents
+    SET status = 'assigned',
+        assigned_to = $1,
+        updated_at = NOW()
+    WHERE id = $2
+    RETURNING *
+  `;
+  
+  const result = await db.query(updateQuery, [userId, id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('Incident not found', 404);
+  }
+  
+  const incident = result.rows[0];
+  
+  // Log history
+  await db.query(
+    `INSERT INTO incident_history (incident_id, action, performed_by, details)
+     VALUES ($1, 'acknowledged', $2, $3)`,
+    [id, userId, JSON.stringify({ status: 'assigned' })]
+  );
+  
+  // TODO: Send notification
+  
+  res.json({
+    success: true,
+    message: 'Incident acknowledged successfully',
+    data: incident
+  });
+});
+
+/**
+ * Quick assign incident to department
+ * POST /api/incidents/:id/quick-assign
+ */
+const quickAssignToDepartment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { department_id, assigned_to } = req.body;
+  const userId = req.user.id;
+  
+  // Update incident
+  const updateQuery = `
+    UPDATE incidents
+    SET department_id = $1,
+        assigned_to = $2,
+        status = 'assigned',
+        updated_at = NOW()
+    WHERE id = $3
+    RETURNING *
+  `;
+  
+  const result = await db.query(updateQuery, [department_id, assigned_to || null, id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('Incident not found', 404);
+  }
+  
+  const incident = result.rows[0];
+  
+  // Log history
+  await db.query(
+    `INSERT INTO incident_history (incident_id, action, performed_by, details)
+     VALUES ($1, 'quick_assigned', $2, $3)`,
+    [id, userId, JSON.stringify({ department_id, assigned_to, status: 'assigned' })]
+  );
+  
+  // TODO: Send notification to department/user
+  
+  res.json({
+    success: true,
+    message: 'Incident assigned successfully',
+    data: incident
+  });
+});
+
+/**
+ * Get Kanban board data
+ * GET /api/incidents/kanban
+ */
+const getKanbanData = asyncHandler(async (req, res) => {
+  const { department_id } = req.query;
+  const userId = req.user.id;
+  const userLevel = req.user.level;
+  
+  const statusColumns = [
+    'pending',
+    'assigned', 
+    'in_progress',
+    'on_hold',
+    'resolved',
+    'closed'
+  ];
+  
+  const kanbanData = {};
+  
+  for (const status of statusColumns) {
+    try {
+      let query = `
+        SELECT 
+          i.id,
+          i.incident_type,
+          i.title,
+          i.description,
+          i.location,
+          i.status,
+          i.priority,
+          i.department_id,
+          i.reporter_id,
+          i.assigned_to,
+          i.created_at,
+          i.updated_at,
+          (SELECT full_name FROM users WHERE id = i.reporter_id) as reporter_name,
+          (SELECT full_name FROM users WHERE id = i.assigned_to) as assigned_to_name,
+          (SELECT name FROM departments WHERE id = i.department_id) as department_name
+        FROM incidents i
+        WHERE i.status = $1
+      `;
+      
+      const params = [status];
+      let paramIndex = 2;
+      
+      if (department_id) {
+        query += ` AND i.department_id = $${paramIndex}`;
+        params.push(department_id);
+        paramIndex++;
+      } else if (userLevel > 3 && req.user.department_id) {
+        // Regular users see their department only (if they have one)
+        query += ` AND (i.department_id = $${paramIndex} OR i.assigned_to = $${paramIndex + 1})`;
+        params.push(req.user.department_id, userId);
+        paramIndex += 2;
+      }
+      
+      query += `
+        ORDER BY 
+          CASE i.priority
+            WHEN 'critical' THEN 1
+            WHEN 'high' THEN 2
+            WHEN 'medium' THEN 3
+            WHEN 'low' THEN 4
+          END,
+          i.created_at DESC
+        LIMIT 100
+      `;
+      
+      const result = await db.query(query, params);
+      kanbanData[status] = result.rows;
+    } catch (error) {
+      console.error(`Error fetching ${status} incidents:`, error);
+      kanbanData[status] = [];
+    }
+  }
+  
+  res.json({
+    success: true,
+    data: kanbanData
+  });
+});
+
+/**
+ * Update incident status (for Kanban drag-drop)
+ * PATCH /api/incidents/:id/move
+ */
+const moveIncidentStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { new_status, new_assigned_to } = req.body;
+  const userId = req.user.id;
+  
+  const updateQuery = `
+    UPDATE incidents
+    SET status = $1,
+        assigned_to = COALESCE($2, assigned_to),
+        updated_at = NOW()
+    WHERE id = $3
+    RETURNING *
+  `;
+  
+  const result = await db.query(updateQuery, [new_status, new_assigned_to, id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('Incident not found', 404);
+  }
+  
+  const incident = result.rows[0];
+  
+  // Log history
+  await db.query(
+    `INSERT INTO incident_history (incident_id, action, performed_by, details)
+     VALUES ($1, 'status_changed', $2, $3)`,
+    [id, userId, JSON.stringify({ old_status: 'unknown', new_status, new_assigned_to })]
+  );
+  
+  res.json({
+    success: true,
+    message: 'Incident status updated',
+    data: incident
+  });
+});
+
+/**
+ * Bulk update incidents
+ * POST /api/incidents/bulk-update
+ */
+const bulkUpdateIncidents = asyncHandler(async (req, res) => {
+  const { incident_ids, action, data } = req.body;
+  const userId = req.user.id;
+  
+  if (!incident_ids || incident_ids.length === 0) {
+    throw new AppError('No incidents selected', 400);
+  }
+  
+  let updateQuery = '';
+  let params = [];
+  
+  switch (action) {
+    case 'assign':
+      updateQuery = `
+        UPDATE incidents
+        SET assigned_to = $1, status = 'assigned', updated_at = NOW()
+        WHERE id = ANY($2::uuid[])
+        RETURNING id
+      `;
+      params = [data.assigned_to, incident_ids];
+      break;
+      
+    case 'change_status':
+      updateQuery = `
+        UPDATE incidents
+        SET status = $1, updated_at = NOW()
+        WHERE id = ANY($2::uuid[])
+        RETURNING id
+      `;
+      params = [data.status, incident_ids];
+      break;
+      
+    case 'change_priority':
+      updateQuery = `
+        UPDATE incidents
+        SET priority = $1, updated_at = NOW()
+        WHERE id = ANY($2::uuid[])
+        RETURNING id
+      `;
+      params = [data.priority, incident_ids];
+      break;
+      
+    default:
+      throw new AppError('Invalid bulk action', 400);
+  }
+  
+  const result = await db.query(updateQuery, params);
+  
+  // Log history for each incident
+  for (const incident_id of incident_ids) {
+    await db.query(
+      `INSERT INTO incident_history (incident_id, action, performed_by, details)
+       VALUES ($1, $2, $3, $4)`,
+      [incident_id, `bulk_${action}`, userId, JSON.stringify(data)]
+    );
+  }
+  
+  res.json({
+    success: true,
+    message: `Successfully updated ${result.rows.length} incidents`,
+    count: result.rows.length
+  });
+});
+
 module.exports = {
   createIncident,
   getIncidents,
@@ -721,5 +1034,12 @@ module.exports = {
   escalateIncident,
   resolveIncident,
   rateIncident,
-  getIncidentStats
+  getIncidentStats,
+  // New APIs
+  getIncidentQueue,
+  quickAcknowledge,
+  quickAssignToDepartment,
+  getKanbanData,
+  moveIncidentStatus,
+  bulkUpdateIncidents
 };

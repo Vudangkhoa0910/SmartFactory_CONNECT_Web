@@ -61,15 +61,23 @@ const registerValidation = [
 
 const loginValidation = [
   body('email')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Email is required')
     .isEmail()
     .withMessage('Invalid email format')
     .normalizeEmail(),
+  body('employee_code')
+    .optional()
+    .trim(),
   body('password')
     .notEmpty()
-    .withMessage('Password is required')
+    .withMessage('Password is required'),
+  body().custom((value, { req }) => {
+    if (!req.body.email && !req.body.employee_code) {
+      throw new Error('Either email or employee_code is required');
+    }
+    return true;
+  })
 ];
 
 const updateProfileValidation = [

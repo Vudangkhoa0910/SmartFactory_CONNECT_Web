@@ -19,6 +19,7 @@ const incidentRoutes = require('./src/routes/incident.routes');
 const ideaRoutes = require('./src/routes/idea.routes');
 const newsRoutes = require('./src/routes/news.routes');
 const notificationRoutes = require('./src/routes/notification.routes');
+const dashboardRoutes = require('./src/routes/dashboard.routes');
 
 // Import Socket.io and Notification Service
 const initializeSocket = require('./src/config/socket');
@@ -83,6 +84,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 handler
 app.use(notFound);

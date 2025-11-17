@@ -105,35 +105,36 @@ const register = asyncHandler(async (req, res) => {
  * POST /api/auth/login
  */
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, employee_code, password } = req.body;
   
-  // Check if user exists
+  // Check if either email or employee_code is provided
+  if (!email && !employee_code) {
+    throw new AppError('Email or employee code is required', 400);
+  }
+  
+  // Check if user exists by email or employee_code
   const result = await db.query(
     `SELECT 
       u.*,
-      d.name as department_name
+      d.name as department_name,
+      d.id as dept_id
     FROM users u
     LEFT JOIN departments d ON u.department_id = d.id
-    WHERE u.email = $1`,
-    [email]
+    WHERE (u.email = $1 OR u.employee_code = $2) AND u.is_active = true`,
+    [email || '', employee_code || '']
   );
   
   if (result.rows.length === 0) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Invalid credentials', 401);
   }
   
   const user = result.rows[0];
-  
-  // Check if user is active
-  if (!user.is_active) {
-    throw new AppError('Your account has been deactivated. Please contact administrator', 403);
-  }
   
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   
   if (!isPasswordValid) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Invalid credentials', 401);
   }
   
   // Update last login
@@ -142,8 +143,25 @@ const login = asyncHandler(async (req, res) => {
     [user.id]
   );
   
-  // Generate token
-  const token = generateToken(user.id);
+  // Generate token with user info
+  const token = jwt.sign(
+    { 
+      id: user.id,
+      role: user.role,
+      level: user.level,
+      department_id: user.department_id
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+  
+  // Determine permissions
+  const hasWebAccess = user.level <= 5; // Admin to Team Leader
+  const canViewDashboard = user.level <= 5;
+  const canManageUsers = user.level === 1; // Only Admin
+  const canViewPinkBox = user.level === 1; // Only Admin
+  const canReviewIdeas = user.level <= 4; // Admin, Factory Manager, Prod Manager, Supervisor
+  const canCreateNews = user.level <= 4;
   
   // Remove password from response
   delete user.password;
@@ -152,8 +170,31 @@ const login = asyncHandler(async (req, res) => {
     success: true,
     message: 'Login successful',
     data: {
-      user,
-      token
+      token,
+      user: {
+        id: user.id,
+        employee_code: user.employee_code,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone,
+        avatar_url: user.avatar_url,
+        role: user.role,
+        level: user.level,
+        department: user.department_id ? {
+          id: user.dept_id,
+          name: user.department_name
+        } : null,
+        permissions: {
+          has_web_access: hasWebAccess,
+          has_mobile_access: true,
+          can_view_dashboard: canViewDashboard,
+          can_manage_users: canManageUsers,
+          can_review_ideas: canReviewIdeas,
+          can_view_pink_box: canViewPinkBox,
+          can_create_news: canCreateNews
+        }
+      }
     }
   });
 });

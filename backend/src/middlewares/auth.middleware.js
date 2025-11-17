@@ -1,7 +1,68 @@
 const jwt = require('jsonwebtoken');
+const db = require('../config/database');
 
 /**
- * Middleware to verify JWT token
+ * Get data scope based on user role
+ */
+const getDataScope = (user) => {
+  const { role, level, department_id } = user;
+  
+  // Admin & Factory Manager: See everything
+  if (level <= 2) {
+    return { 
+      scope: 'all', 
+      departments: null, 
+      canViewAll: true,
+      canManageUsers: level === 1,
+      canViewPinkBox: level === 1
+    };
+  }
+  
+  // Supervisor: See multiple departments (configurable)
+  if (role === 'supervisor') {
+    return { 
+      scope: 'multi_department', 
+      departments: null, // Can be configured per supervisor
+      canViewAll: true,
+      canManageUsers: false,
+      canViewPinkBox: false
+    };
+  }
+  
+  // Department Managers: See own department only
+  if (level === 3 && department_id) {
+    return { 
+      scope: 'department', 
+      departments: [department_id],
+      canViewAll: false,
+      canManageUsers: false,
+      canViewPinkBox: false
+    };
+  }
+  
+  // Team Leaders: See own team only
+  if (role === 'team_leader' && department_id) {
+    return { 
+      scope: 'team', 
+      departments: [department_id],
+      canViewAll: false,
+      canManageUsers: false,
+      canViewPinkBox: false
+    };
+  }
+  
+  // Operators: See only their own data
+  return { 
+    scope: 'self',
+    departments: null,
+    canViewAll: false,
+    canManageUsers: false,
+    canViewPinkBox: false
+  };
+};
+
+/**
+ * Middleware to verify JWT token and load user data
  */
 const authenticate = async (req, res, next) => {
   try {
@@ -20,14 +81,31 @@ const authenticate = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Add user info to request object
-    req.user = {
-      id: decoded.id,
-      username: decoded.username,
-      role: decoded.role,
-      roleLevel: decoded.roleLevel,
-      departmentId: decoded.departmentId
-    };
+    // Load full user data from database
+    const userQuery = `
+      SELECT 
+        u.id, u.employee_code, u.username, u.email, u.full_name,
+        u.phone, u.avatar_url, u.role, u.level, u.department_id,
+        d.name as department_name
+      FROM users u
+      LEFT JOIN departments d ON u.department_id = d.id
+      WHERE u.id = $1 AND u.is_active = true
+    `;
+    
+    const result = await db.query(userQuery, [decoded.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found or inactive'
+      });
+    }
+    
+    const user = result.rows[0];
+    
+    // Add user info and data scope to request
+    req.user = user;
+    req.dataScope = getDataScope(user);
 
     next();
   } catch (error) {
@@ -92,12 +170,12 @@ const authorizeLevel = (minLevel) => {
       });
     }
 
-    if (req.user.roleLevel > minLevel) {
+    if (req.user.level > minLevel) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Insufficient role level.',
         requiredLevel: minLevel,
-        yourLevel: req.user.roleLevel
+        yourLevel: req.user.level
       });
     }
 
@@ -118,42 +196,15 @@ const authorizeSelfOrHigher = (req, res, next) => {
     });
   }
 
-  // Allow if requesting own data or if role level <= 4 (supervisor and above)
-  if (req.user.id === targetUserId || req.user.roleLevel <= 4) {
-    next();
-  } else {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied. Can only access own data.'
-    });
+  // Allow if user is accessing their own data or has admin/manager level
+  if (req.user.id === targetUserId || req.user.level <= 3) {
+    return next();
   }
-};
 
-/**
- * Optional authentication - doesn't fail if no token
- */
-const optionalAuth = (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      req.user = {
-        id: decoded.id,
-        username: decoded.username,
-        role: decoded.role,
-        roleLevel: decoded.roleLevel,
-        departmentId: decoded.departmentId
-      };
-    }
-    
-    next();
-  } catch (error) {
-    // Continue without user info
-    next();
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. You can only access your own data.'
+  });
 };
 
 module.exports = {
@@ -161,5 +212,5 @@ module.exports = {
   authorize,
   authorizeLevel,
   authorizeSelfOrHigher,
-  optionalAuth
+  getDataScope
 };

@@ -645,6 +645,297 @@ const getIdeaStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Escalate idea to higher level
+ * POST /api/ideas/:id/escalate
+ */
+const escalateIdea = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { escalated_to, reason } = req.body;
+  const userId = req.user.id;
+  
+  // Get current idea
+  const ideaResult = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
+  
+  if (ideaResult.rows.length === 0) {
+    throw new AppError('Idea not found', 404);
+  }
+  
+  const idea = ideaResult.rows[0];
+  
+  // Check permission (only assigned_to can escalate)
+  if (idea.assigned_to !== userId && req.user.level > 3) {
+    throw new AppError('Not authorized to escalate this idea', 403);
+  }
+  
+  // Update idea
+  const updateQuery = `
+    UPDATE ideas
+    SET assigned_to = $1,
+        status = 'under_review',
+        updated_at = NOW()
+    WHERE id = $2
+    RETURNING *
+  `;
+  
+  const result = await db.query(updateQuery, [escalated_to, id]);
+  
+  // Log history
+  await db.query(
+    `INSERT INTO idea_history (idea_id, action, performed_by, details)
+     VALUES ($1, 'escalated', $2, $3)`,
+    [id, userId, JSON.stringify({ escalated_to, reason, from: userId })]
+  );
+  
+  // Add response about escalation
+  await db.query(
+    `INSERT INTO idea_responses (idea_id, user_id, response)
+     VALUES ($1, $2, $3)`,
+    [id, userId, `Escalated to higher level. Reason: ${reason}`]
+  );
+  
+  // TODO: Send notification to escalated_to user
+  
+  res.json({
+    success: true,
+    message: 'Idea escalated successfully',
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Get Kaizen Bank (Archive of implemented ideas)
+ * GET /api/ideas/archive
+ */
+const getKaizenBank = asyncHandler(async (req, res) => {
+  const { pagination, filters } = req;
+  const { search, category } = req.query;
+  
+  const conditions = ["status = 'implemented'"];
+  const params = [];
+  let paramIndex = 1;
+  
+  if (search) {
+    conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+  
+  if (category) {
+    conditions.push(`category = $${paramIndex}`);
+    params.push(category);
+    paramIndex++;
+  }
+  
+  if (filters && filters.ideabox_type) {
+    conditions.push(`ideabox_type = $${paramIndex}`);
+    params.push(filters.ideabox_type);
+    paramIndex++;
+  }
+  
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  // Get total count
+  const countQuery = `SELECT COUNT(*) FROM ideas ${whereClause}`;
+  const countResult = await db.query(countQuery, params);
+  const totalItems = parseInt(countResult.rows[0].count);
+  
+  // Get archived ideas
+  const query = `
+    SELECT 
+      i.*,
+      CASE 
+        WHEN i.is_anonymous = false THEN u.full_name
+        ELSE 'Anonymous'
+      END as contributor_name,
+      u.employee_code as contributor_code,
+      d.name as department_name,
+      r.full_name as reviewed_by_name
+    FROM ideas i
+    LEFT JOIN users u ON i.submitter_id = u.id
+    LEFT JOIN departments d ON i.department_id = d.id
+    LEFT JOIN users r ON i.reviewed_by = r.id
+    ${whereClause}
+    ORDER BY COALESCE(i.implemented_at, i.updated_at) DESC
+    LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+  `;
+  
+  params.push(pagination && pagination.limit ? pagination.limit : 20, pagination && pagination.offset ? pagination.offset : 0);
+  
+  const result = await db.query(query, params);
+  
+  res.json({
+    success: true,
+    data: result.rows,
+    pagination: {
+      page: pagination.page,
+      limit: pagination.limit,
+      totalItems,
+      totalPages: Math.ceil(totalItems / pagination.limit)
+    }
+  });
+});
+
+/**
+ * Search Kaizen Bank
+ * GET /api/ideas/archive/search
+ */
+const searchKaizenBank = asyncHandler(async (req, res) => {
+  const { q, category, date_from, date_to } = req.query;
+  
+  if (!q || q.trim().length < 2) {
+    throw new AppError('Search query must be at least 2 characters', 400);
+  }
+  
+  const conditions = ["status = 'implemented'"];
+  const params = [`%${q}%`];
+  let paramIndex = 2;
+  
+  if (category) {
+    conditions.push(`category = $${paramIndex}`);
+    params.push(category);
+    paramIndex++;
+  }
+  
+  if (date_from) {
+    conditions.push(`implemented_at >= $${paramIndex}`);
+    params.push(date_from);
+    paramIndex++;
+  }
+  
+  if (date_to) {
+    conditions.push(`implemented_at <= $${paramIndex}`);
+    params.push(date_to);
+    paramIndex++;
+  }
+  
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  const query = `
+    SELECT 
+      i.*,
+      CASE 
+        WHEN i.is_anonymous = false THEN u.full_name
+        ELSE 'Anonymous'
+      END as contributor_name,
+      ts_rank(
+        to_tsvector('english', i.title || ' ' || i.description || ' ' || COALESCE(i.actual_benefit, '')),
+        plainto_tsquery('english', $1)
+      ) as relevance
+    FROM ideas i
+    LEFT JOIN users u ON i.submitter_id = u.id
+    ${whereClause}
+    AND (
+      i.title ILIKE $1 
+      OR i.description ILIKE $1 
+      OR i.actual_benefit ILIKE $1
+      OR i.expected_benefit ILIKE $1
+    )
+    ORDER BY relevance DESC, i.implemented_at DESC
+    LIMIT 50
+  `;
+  
+  const result = await db.query(query, params);
+  
+  res.json({
+    success: true,
+    data: result.rows,
+    count: result.rows.length
+  });
+});
+
+/**
+ * Get idea difficulty distribution
+ * GET /api/ideas/difficulty
+ */
+const getIdeaDifficulty = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      CASE 
+        WHEN feasibility_score >= 8 THEN 'easy'
+        WHEN feasibility_score >= 5 THEN 'medium'
+        WHEN feasibility_score >= 3 THEN 'hard'
+        ELSE 'very_hard'
+      END as difficulty_level,
+      COUNT(*) as count,
+      AVG(impact_score) as avg_impact
+    FROM ideas
+    WHERE feasibility_score IS NOT NULL
+    GROUP BY difficulty_level
+    ORDER BY 
+      CASE difficulty_level
+        WHEN 'easy' THEN 1
+        WHEN 'medium' THEN 2
+        WHEN 'hard' THEN 3
+        WHEN 'very_hard' THEN 4
+      END
+  `;
+  
+  const result = await db.query(query);
+  
+  res.json({
+    success: true,
+    data: result.rows
+  });
+});
+
+/**
+ * Get ideas by status for Kanban view
+ * GET /api/ideas/kanban
+ */
+const getIdeasKanban = asyncHandler(async (req, res) => {
+  const { ideabox_type } = req.query;
+  const userId = req.user.id;
+  const userLevel = req.user.level;
+  
+  let typeFilter = '';
+  const params = [];
+  
+  if (ideabox_type) {
+    typeFilter = 'AND ideabox_type = $1';
+    params.push(ideabox_type);
+  }
+  
+  const statusColumns = [
+    'pending',
+    'under_review',
+    'approved',
+    'rejected',
+    'implemented',
+    'on_hold'
+  ];
+  
+  const kanbanData = {};
+  
+  for (const status of statusColumns) {
+    const query = `
+      SELECT 
+        i.*,
+        CASE 
+          WHEN i.is_anonymous = true AND i.ideabox_type = 'pink' AND $${params.length + 1} > 1
+          THEN 'Anonymous'
+          ELSE u.full_name
+        END as submitter_name,
+        a.full_name as assigned_to_name,
+        d.name as department_name
+      FROM ideas i
+      LEFT JOIN users u ON i.submitter_id = u.id
+      LEFT JOIN users a ON i.assigned_to = a.id
+      LEFT JOIN departments d ON i.department_id = d.id
+      WHERE i.status = '${status}' ${typeFilter}
+      ORDER BY i.created_at DESC
+    `;
+    
+    const result = await db.query(query, [...params, userLevel]);
+    kanbanData[status] = result.rows;
+  }
+  
+  res.json({
+    success: true,
+    data: kanbanData
+  });
+});
+
 module.exports = {
   createIdea,
   getIdeas,
@@ -653,5 +944,11 @@ module.exports = {
   addResponse,
   reviewIdea,
   implementIdea,
-  getIdeaStats
+  getIdeaStats,
+  // New APIs
+  escalateIdea,
+  getKaizenBank,
+  searchKaizenBank,
+  getIdeaDifficulty,
+  getIdeasKanban
 };

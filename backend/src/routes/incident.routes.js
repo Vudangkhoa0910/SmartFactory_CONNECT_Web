@@ -170,6 +170,47 @@ router.get(
 );
 
 /**
+ * @route   GET /api/incidents/queue
+ * @desc    Get incident queue for Command Room (pending/critical only)
+ * @access  Private (Supervisor+)
+ */
+router.get(
+  '/queue',
+  authenticate,
+  authorizeLevel(4), // Supervisor and above
+  incidentController.getIncidentQueue
+);
+
+/**
+ * @route   GET /api/incidents/kanban
+ * @desc    Get incidents organized by status for Kanban board
+ * @access  Private
+ */
+router.get(
+  '/kanban',
+  authenticate,
+  incidentController.getKanbanData
+);
+
+/**
+ * @route   POST /api/incidents/bulk-update
+ * @desc    Bulk update multiple incidents
+ * @access  Private (Supervisor+)
+ */
+router.post(
+  '/bulk-update',
+  authenticate,
+  authorizeLevel(4),
+  [
+    body('incident_ids').isArray().notEmpty(),
+    body('action').isIn(['assign', 'change_status', 'change_priority']),
+    body('data').isObject()
+  ],
+  validate,
+  incidentController.bulkUpdateIncidents
+);
+
+/**
  * @route   GET /api/incidents/:id
  * @desc    Get incident by ID
  * @access  Private (Authenticated users - own incidents or authorized roles)
@@ -239,19 +280,73 @@ router.put(
 );
 
 /**
- * @route   PUT /api/incidents/:id/resolve
- * @desc    Mark incident as resolved
- * @access  Private (Assigned user or Supervisor and above)
+ * @route   PUT /api/incidents/:id/resolution
+ * @desc    Add resolution to incident
+ * @access  Private (Assigned user)
  */
 router.put(
-  '/:id/resolve',
+  '/:id/resolution',
   authenticate,
-  authorizeLevel(5), // Team Leader and above
+  uploadIncidentFiles,
   resolveIncidentValidation,
   validate,
   incidentController.resolveIncident
 );
 
+/**
+ * @route   POST /api/incidents/:id/acknowledge
+ * @desc    Quick acknowledge incident (Command Room)
+ * @access  Private (Supervisor+)
+ */
+router.post(
+  '/:id/acknowledge',
+  authenticate,
+  authorizeLevel(4),
+  param('id').isUUID(),
+  validate,
+  incidentController.quickAcknowledge
+);
+
+/**
+ * @route   POST /api/incidents/:id/quick-assign
+ * @desc    Quick assign incident to department/user
+ * @access  Private (Supervisor+)
+ */
+router.post(
+  '/:id/quick-assign',
+  authenticate,
+  authorizeLevel(4),
+  [
+    param('id').isUUID(),
+    body('department_id').optional().isUUID(),
+    body('assigned_to').optional().isUUID()
+  ],
+  validate,
+  incidentController.quickAssignToDepartment
+);
+
+/**
+ * @route   PATCH /api/incidents/:id/move
+ * @desc    Move incident to new status (Kanban drag-drop)
+ * @access  Private
+ */
+router.patch(
+  '/:id/move',
+  authenticate,
+  [
+    param('id').isUUID(),
+    body('new_status').isIn(['pending', 'assigned', 'in_progress', 'on_hold', 'resolved', 'closed']),
+    body('new_assigned_to').optional().isUUID()
+  ],
+  validate,
+  incidentController.moveIncidentStatus
+);
+
+/**
+ * @route   POST /api/incidents/:id/rate
+ * @desc    Rate a resolved incident
+ * @access  Private (Reporter only)
+ */
 /**
  * @route   POST /api/incidents/:id/rate
  * @desc    Rate incident resolution

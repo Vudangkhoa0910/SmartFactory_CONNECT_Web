@@ -165,6 +165,57 @@ router.get(
 );
 
 /**
+ * @route   GET /api/ideas/archive
+ * @desc    Get Kaizen Bank (archive of implemented ideas)
+ * @access  Private
+ */
+router.get(
+  '/archive/search',
+  authenticate,
+  [
+    query('q').trim().isLength({ min: 2 }).withMessage('Search query must be at least 2 characters')
+  ],
+  validate,
+  ideaController.searchKaizenBank
+);
+
+/**
+ * @route   GET /api/ideas/archive/search
+ * @desc    Search in Kaizen Bank
+ * @access  Private
+ */
+router.get(
+  '/archive',
+  authenticate,
+  pagination,
+  parseFilters,
+  ideaController.getKaizenBank
+);
+
+/**
+ * @route   GET /api/ideas/difficulty
+ * @desc    Get idea difficulty distribution
+ * @access  Private (Manager+)
+ */
+router.get(
+  '/difficulty',
+  authenticate,
+  authorizeLevel(4), // Manager and above
+  ideaController.getIdeaDifficulty
+);
+
+/**
+ * @route   GET /api/ideas/kanban
+ * @desc    Get ideas organized by status columns
+ * @access  Private
+ */
+router.get(
+  '/kanban',
+  authenticate,
+  ideaController.getIdeasKanban
+);
+
+/**
  * @route   GET /api/ideas/:id
  * @desc    Get idea by ID
  * @access  Private (Role-based access)
@@ -231,6 +282,23 @@ router.put(
   implementIdeaValidation,
   validate,
   ideaController.implementIdea
+);
+
+/**
+ * @route   POST /api/ideas/:id/escalate
+ * @desc    Escalate idea to higher management level
+ * @access  Private (Assigned user or Supervisor+)
+ */
+router.post(
+  '/:id/escalate',
+  authenticate,
+  [
+    param('id').isUUID().withMessage('Invalid idea ID'),
+    body('escalated_to').isUUID().withMessage('User ID is required'),
+    body('reason').trim().notEmpty().withMessage('Escalation reason is required')
+  ],
+  validate,
+  ideaController.escalateIdea
 );
 
 module.exports = router;
