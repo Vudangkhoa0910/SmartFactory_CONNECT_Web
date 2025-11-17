@@ -25,6 +25,7 @@ import AdminInboxPink from "./pages/feedback/AdminInboxPink";
 import PublicIdeasPage from "./pages/feedback/PublicIdeasPage";
 import KaizenBankPage from "./pages/storage/KaizenBankPage";
 import NewIndex from "./pages/news/NewIndex";
+import FeedbackDashboard from "./pages/Dashboard/FeedbackDashboard";
 
 export default function App() {
   return (
@@ -48,6 +49,12 @@ export default function App() {
               index
               path="/all-incidents-page"
               element={<AllIncidentsPage />}
+            />
+
+            <Route
+              index
+              path="/feadback-dashboard"
+              element={<FeedbackDashboard />}
             />
 
             {/* Feadback */}

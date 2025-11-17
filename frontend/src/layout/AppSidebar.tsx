@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Tổng quan", path: "/", pro: false },
       { name: "Báo cáo sự cố", path: "/incident-report-page", pro: false },
-      { name: "Góp ý", path: "/ts3", pro: false },
+      { name: "Góp ý", path: "/feadback-dashboard", pro: false },
     ],
   },
   {
