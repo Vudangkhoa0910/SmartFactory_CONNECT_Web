@@ -78,69 +78,70 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed top-20 right-20 z-50 w-full max-w-md shadow-xl rounded-lg 
-        bg-white dark:bg-gray-800 border dark:border-gray-700"
-    >
-      <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-          Chuyển tiếp Góp ý
-        </h3>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <X size={20} className="text-gray-700 dark:text-gray-300" />
-        </button>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/20">
+      <div className="w-full max-w-md shadow-xl rounded-lg bg-white dark:bg-gray-800 border dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            Chuyển tiếp Góp ý
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={20} className="text-gray-700 dark:text-gray-300" />
+          </button>
+        </div>
 
-      <div className="p-5">
-        <p className="text-sm mb-4 text-gray-700 dark:text-gray-300">
-          Bạn đang chuyển tiếp góp ý:{" "}
-          <span className="font-semibold text-gray-900 dark:text-white">
-            "{message.title}"
-          </span>
-        </p>
+        <div className="p-5">
+          <p className="text-sm mb-4 text-gray-700 dark:text-gray-300">
+            Bạn đang chuyển tiếp góp ý:{" "}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              "{message.title}"
+            </span>
+          </p>
 
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-          Chuyển đến phòng ban
-        </label>
-        <select
-          onChange={(e) => setDepartment(e.target.value)}
-          className="w-full p-2 border dark:border-gray-700 rounded-md text-sm 
-          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-        >
-          <option value="">-- Chọn phòng ban --</option>
-          {DEPARTMENTS_TO_FORWARD.map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
+          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            Chuyển đến phòng ban
+          </label>
+          <select
+            onChange={(e) => setDepartment(e.target.value)}
+            className="w-full p-2 border dark:border-gray-700 rounded-md text-sm 
+              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200
+              focus:outline-none focus:ring-2 focus:ring-rose-500"
+          >
+            <option value="">-- Chọn phòng ban --</option>
+            {DEPARTMENTS_TO_FORWARD.map((d) => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
 
-        <label className="block text-sm font-medium mt-4 mb-1 text-gray-700 dark:text-gray-300">
-          Ghi chú (không bắt buộc)
-        </label>
-        <textarea
-          rows={4}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full p-2 border dark:border-gray-700 rounded-md text-sm
-          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
-        />
-      </div>
+          <label className="block text-sm font-medium mt-4 mb-1 text-gray-700 dark:text-gray-300">
+            Ghi chú (không bắt buộc)
+          </label>
+          <textarea
+            rows={4}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full p-2 border dark:border-gray-700 rounded-md text-sm
+              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200
+              focus:outline-none focus:ring-2 focus:ring-rose-500"
+          />
+        </div>
 
-      <div className="px-5 py-3 flex justify-end gap-3 border-t dark:border-gray-700">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 text-sm rounded-md border dark:border-gray-600 
-          hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-        >
-          Hủy
-        </button>
-        <button
-          onClick={handleForward}
-          className="px-4 py-2 text-sm text-white bg-rose-600 rounded-md hover:bg-rose-700 flex items-center gap-2"
-        >
-          <Send size={16} /> Xác nhận
-        </button>
+        <div className="px-5 py-3 flex justify-end gap-3 border-t dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded-md border dark:border-gray-600 
+              hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleForward}
+            className="px-4 py-2 text-sm text-white bg-gradient-to-r from-rose-600 to-rose-500 rounded-md hover:from-rose-700 hover:to-rose-600 flex items-center gap-2 transition-colors"
+          >
+            <Send size={16} /> Xác nhận
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -148,7 +149,7 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
 
 export default function SensitiveInboxPage() {
   const [messages, setMessages] = useState(SENSITIVE_MESSAGES_DATA);
-  const [selectedMessageId, setSelectedMessageId] = useState(messages[0].id);
+  const [selectedMessageId, setSelectedMessageId] = useState(messages[0]?.id);
   const [isForwarding, setIsForwarding] = useState(false);
 
   const selectedMessage = messages.find((m) => m.id === selectedMessageId);
@@ -180,16 +181,17 @@ export default function SensitiveInboxPage() {
             </h1>
           </header>
 
-          <div className="overflow-y-auto flex-grow">
+          <div className="overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 onClick={() => setSelectedMessageId(msg.id)}
-                className={`p-3.5 border-b dark:border-gray-700 cursor-pointer ${
-                  selectedMessageId === msg.id
-                    ? "bg-gray-100 dark:bg-gray-700"
-                    : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
+                className={`p-3.5 border-b dark:border-gray-700 cursor-pointer flex flex-col transition-colors
+                  ${
+                    selectedMessageId === msg.id
+                      ? "bg-gray-100 dark:bg-gray-700 border-l-4 border-rose-600 pl-2"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800 pl-3.5"
+                  }`}
               >
                 <div className="flex gap-2 items-center font-semibold text-sm">
                   {msg.isAnonymous ? (
@@ -202,6 +204,18 @@ export default function SensitiveInboxPage() {
                   )}
                   <span className="text-gray-900 dark:text-gray-200">
                     {msg.isAnonymous ? "Ẩn danh" : msg.senderName}
+                  </span>
+                  <span
+                    className={`ml-auto px-2 py-0.5 text-xs rounded-full font-semibold
+                    ${
+                      msg.status === "Mới"
+                        ? "bg-rose-100 text-rose-700 dark:bg-rose-700 dark:text-rose-200"
+                        : msg.status === "Đang xem xét"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-200"
+                        : "bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-200"
+                    }`}
+                  >
+                    {msg.status}
                   </span>
                 </div>
 
@@ -224,7 +238,7 @@ export default function SensitiveInboxPage() {
         <main className="flex-1 flex flex-col bg-white dark:bg-gray-900">
           {selectedMessage ? (
             <>
-              <header className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+              <header className="p-4 border-b dark:border-gray-700 flex justify-between items-center shadow-sm">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                   {selectedMessage.title}
                 </h2>
@@ -232,7 +246,7 @@ export default function SensitiveInboxPage() {
                 <div className="flex items-center gap-2">
                   <button
                     className="px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 border dark:border-gray-600 
-                    hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                    hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
                   >
                     <Archive size={14} />
                     Lưu trữ
@@ -240,7 +254,7 @@ export default function SensitiveInboxPage() {
 
                   <button
                     onClick={() => setIsForwarding(true)}
-                    className="px-3 py-1.5 text-sm text-white bg-rose-600 rounded-md hover:bg-rose-700 flex items-center gap-1.5"
+                    className="px-3 py-1.5 text-sm text-white bg-rose-600 rounded-md hover:bg-rose-700 flex items-center gap-1.5 transition-colors"
                   >
                     <Send size={14} />
                     Chuyển tiếp
@@ -249,12 +263,14 @@ export default function SensitiveInboxPage() {
               </header>
 
               <div className="p-6 overflow-y-auto flex-grow text-gray-800 dark:text-gray-200">
-                <p>{selectedMessage.fullContent}</p>
+                <p className="text-base leading-relaxed">
+                  {selectedMessage.fullContent}
+                </p>
 
                 {selectedMessage.imageUrl && (
                   <img
                     src={selectedMessage.imageUrl}
-                    className="max-w-lg rounded-lg mt-4 border dark:border-gray-700"
+                    className="max-w-lg rounded-lg mt-4 border dark:border-gray-700 shadow hover:scale-105 transition-transform duration-200"
                   />
                 )}
               </div>

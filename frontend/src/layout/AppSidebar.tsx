@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// ... (phần import icons không đổi)
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -9,10 +8,13 @@ import {
   GridIcon,
   HorizontaLDots,
   ListIcon,
-  PieChartIcon,
+  // PieChartIcon,
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  TaskIcon,
+  BoxIcon,
+  FolderIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -34,6 +36,11 @@ const navItems: NavItem[] = [
       { name: "Báo cáo sự cố", path: "/incident-report-page", pro: false },
       { name: "Góp ý", path: "/ts3", pro: false },
     ],
+  },
+  {
+    icon: <TaskIcon />,
+    name: "Tin tức",
+    path: "/news",
   },
   {
     icon: <CalenderIcon />,
@@ -62,7 +69,7 @@ const othersItems1: NavItem[] = [
 
 const othersItems2: NavItem[] = [
   {
-    icon: <PieChartIcon />,
+    icon: <BoxIcon />,
     name: "Hòm trắng",
     path: "/public-ideas-page",
   },
@@ -72,7 +79,7 @@ const othersItems2: NavItem[] = [
     path: "/admin-inbox-pink",
   },
   {
-    icon: <PlugInIcon />,
+    icon: <FolderIcon />,
     name: "Lưu trữ",
     path: "/kaizen-bank-page",
   },

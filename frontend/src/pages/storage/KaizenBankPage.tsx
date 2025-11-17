@@ -1,9 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Search, Tag, BookOpen, Award, Lightbulb } from "lucide-react";
 
-// ============================================================
-// TYPES
-// ============================================================
 interface KaizenItem {
   id: string;
   title: string;
@@ -15,9 +12,6 @@ interface KaizenItem {
   createdAt: Date;
 }
 
-// ============================================================
-// DEMO DATA
-// ============================================================
 const KAIZEN_DATA: KaizenItem[] = [
   {
     id: "KZ-001",
@@ -60,9 +54,6 @@ const ALL_TAGS = [
   "Lean",
 ];
 
-// ============================================================
-// COMPONENT
-// ============================================================
 export default function KaizenBankPage() {
   const [search, setSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -89,15 +80,11 @@ export default function KaizenBankPage() {
   };
 
   return (
-    <div className="min-h-screen  p-6 font-sans transition-colors duration-300">
-      {/* ===== HEADER ===== */}
+    <div className="min-h-screen p-6 font-sans transition-colors duration-300 bg-white dark:bg-gray-900">
       <header className="max-w-5xl mx-auto mb-8">
         <div className="flex items-center gap-3">
-          <BookOpen
-            size={32}
-            className="text-indigo-600 dark:text-indigo-400"
-          />
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 transition-colors duration-300">
+          <BookOpen size={32} className="text-red-600" />
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
             Kaizen Bank – Kho Cải Tiến
           </h1>
         </div>
@@ -108,18 +95,16 @@ export default function KaizenBankPage() {
       </header>
 
       <div className="max-w-5xl mx-auto">
-        {/* ===== SEARCH ===== */}
         <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl shadow border dark:border-gray-700 transition-colors duration-300">
-          <Search size={20} className="text-gray-500 dark:text-gray-300" />
+          <Search size={20} className="text-red-600" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm theo từ khóa..."
-            className="w-full outline-none bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-300"
+            className="w-full outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-300"
           />
         </div>
 
-        {/* ===== TAG FILTERS ===== */}
         <div className="mt-4 flex gap-2 flex-wrap">
           {ALL_TAGS.map((tag) => (
             <button
@@ -128,29 +113,36 @@ export default function KaizenBankPage() {
               className={`px-3 py-1.5 rounded-full border text-sm flex items-center gap-1 transition-colors duration-200
                 ${
                   selectedTags.includes(tag)
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-red-600 text-white border-red-600"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
             >
-              <Tag size={14} />
+              <Tag
+                size={14}
+                className={
+                  selectedTags.includes(tag) ? "text-white" : "text-red-600"
+                }
+              />
               {tag}
             </button>
           ))}
         </div>
 
-        {/* ===== LIST ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
           {filteredData.map((item) => (
             <div
               key={item.id}
-              className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-md hover:shadow-xl border dark:border-gray-700 transition-all duration-300"
+              className="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 transition-all duration-300"
             >
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 transition-colors duration-300">
-                <Lightbulb size={18} className="text-yellow-500" />
+                <Lightbulb
+                  size={18}
+                  className="text-yellow-500 dark:text-yellow-400"
+                />
                 {item.title}
               </h3>
 
-              <p className="text-xs text-gray-400 dark:text-gray-400 mt-1 transition-colors duration-300">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 ID: {item.id} •{" "}
                 {item.createdAt.toLocaleDateString("vi-VN", {
                   day: "2-digit",
@@ -159,7 +151,7 @@ export default function KaizenBankPage() {
                 })}
               </p>
 
-              <div className="mt-3 text-sm text-gray-700 dark:text-gray-200 transition-colors duration-300">
+              <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">
                 <p>
                   <span className="font-semibold">• Vấn đề:</span>{" "}
                   {item.problem}
@@ -174,8 +166,11 @@ export default function KaizenBankPage() {
                 </p>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 transition-colors duration-300">
-                <Award size={16} className="text-green-600" />
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <Award
+                  size={16}
+                  className="text-green-500 dark:text-green-400"
+                />
                 <span>
                   Đóng góp bởi:{" "}
                   <span className="font-medium">{item.contributor}</span>
@@ -183,14 +178,27 @@ export default function KaizenBankPage() {
               </div>
 
               <div className="flex gap-2 mt-3 flex-wrap">
-                {item.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs rounded-full transition-colors duration-300"
-                  >
-                    {t}
-                  </span>
-                ))}
+                {item.tags.map((t, i) => {
+                  // Các màu pastel dịu, hài hòa với tông đỏ chính
+                  const colors = [
+                    "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-300",
+                    "bg-pink-100 text-pink-700 dark:bg-pink-800 dark:text-pink-300",
+                    "bg-rose-100 text-rose-700 dark:bg-rose-800 dark:text-rose-300",
+                    "bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300",
+                    "bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-300",
+                    "bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-300",
+                  ];
+                  const colorClass = colors[i % colors.length];
+
+                  return (
+                    <span
+                      key={t}
+                      className={`px-3 py-1 text-xs rounded-full font-medium transition-all duration-200 cursor-default ${colorClass} hover:scale-105`}
+                    >
+                      {t}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ))}

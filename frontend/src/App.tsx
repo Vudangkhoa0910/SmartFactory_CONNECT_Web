@@ -21,9 +21,10 @@ import Home from "./pages/Dashboard/Home";
 import IncidentReportPage from "./pages/Dashboard/IncidentReportPage";
 import IncidentQueue from "./pages/ErrorReport/IncidentQueue";
 import AllIncidentsPage from "./pages/ErrorReport/AllIncidentsPage";
-import AdminInboxPink from "./components/feedback/AdminInboxPink";
-import PublicIdeasPage from "./components/feedback/PublicIdeasPage";
-import KaizenBankPage from "./components/storage/KaizenBankPage";
+import AdminInboxPink from "./pages/feedback/AdminInboxPink";
+import PublicIdeasPage from "./pages/feedback/PublicIdeasPage";
+import KaizenBankPage from "./pages/storage/KaizenBankPage";
+import NewIndex from "./pages/news/NewIndex";
 
 export default function App() {
   return (
@@ -67,6 +68,9 @@ export default function App() {
               path="/kaizen-bank-page"
               element={<KaizenBankPage />}
             />
+
+            {/* News */}
+            <Route index path="/news" element={<NewIndex />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

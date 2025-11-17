@@ -1,0 +1,68 @@
+// src/data/mockData.ts
+import { Incident } from "../types/index";
+
+export const ALL_INCIDENTS_DATA: Incident[] = [
+  {
+    id: "INC-101",
+    title: "Hỏng cảm biến nhiệt lò hơi số 2",
+    priority: "Critical",
+    status: "Đang xử lý",
+    assignedTo: "Tổ MA",
+    location: "Xưởng A, Line 3",
+    createdAt: new Date(Date.now() - 1 * 3600000),
+  },
+  {
+    id: "INC-102",
+    title: "Cần thay thế vòng bi máy dập A",
+    priority: "High",
+    status: "Tạm dừng",
+    assignedTo: "Tổ MA",
+    location: "Xưởng B, Line 1",
+    createdAt: new Date(Date.now() - 5 * 3600000),
+  },
+  {
+    id: "INC-103",
+    title: "Lỗi phần mềm điều khiển PLC",
+    priority: "High",
+    status: "Đã tiếp nhận",
+    assignedTo: "",
+    location: "Xưởng A, Line 2",
+    createdAt: new Date(Date.now() - 10 * 3600000),
+  },
+  {
+    id: "INC-104",
+    title: "Yêu cầu bảo trì định kỳ máy cắt",
+    priority: "Normal",
+    status: "Mới",
+    assignedTo: "",
+    location: "Xưởng C",
+    createdAt: new Date(Date.now() - 24 * 3600000),
+  },
+  {
+    id: "INC-105",
+    title: "Sửa chữa hệ thống băng tải",
+    priority: "High",
+    status: "Hoàn thành",
+    assignedTo: "Tổ Cơ điện",
+    location: "Kho vận",
+    createdAt: new Date(Date.now() - 48 * 3600000),
+  },
+  {
+    id: "INC-106",
+    title: "Rò rỉ dầu thủy lực máy nén",
+    priority: "Critical",
+    status: "Đang xử lý",
+    assignedTo: "Tổ MA",
+    location: "Xưởng B, Line 2",
+    createdAt: new Date(Date.now() - 2 * 3600000),
+  },
+  {
+    id: "INC-107",
+    title: "Kiểm tra hệ thống PCCC",
+    priority: "Normal",
+    status: "Đã đóng",
+    assignedTo: "Đội An toàn",
+    location: "Toàn nhà máy",
+    createdAt: new Date(Date.now() - 120 * 3600000),
+  },
+];
