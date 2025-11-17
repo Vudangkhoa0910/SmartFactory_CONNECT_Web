@@ -11,13 +11,12 @@ import {
   // PieChartIcon,
   PlugInIcon,
   TableIcon,
-  UserCircleIcon,
   TaskIcon,
   BoxIcon,
   FolderIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import SidebarWidget from "./SidebarWidget";
+// import SidebarWidget from "./SidebarWidget";
 
 // ... (phần type và các mảng navItems, othersItems1, othersItems2 không đổi)
 type NavItem = {
@@ -44,13 +43,8 @@ const navItems: NavItem[] = [
   },
   {
     icon: <CalenderIcon />,
-    name: "Calendar",
+    name: "Lịch",
     path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
   },
 ];
 
@@ -399,7 +393,7 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+        {/* {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
       </div>
     </aside>
   );
