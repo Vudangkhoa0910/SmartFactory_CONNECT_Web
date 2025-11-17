@@ -23,6 +23,7 @@
     "@react-jvectormap/world": "^1.1.2",
     "@tanstack/react-table": "^8.21.3",
     "apexcharts": "^4.1.0",
+    "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "docx": "^9.5.1",
     "flatpickr": "^4.6.13",

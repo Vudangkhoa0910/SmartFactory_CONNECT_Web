@@ -26,6 +26,9 @@ import PublicIdeasPage from "./pages/feedback/PublicIdeasPage";
 import KaizenBankPage from "./pages/storage/KaizenBankPage";
 import NewIndex from "./pages/news/NewIndex";
 import FeedbackDashboard from "./pages/Dashboard/FeedbackDashboard";
+import UserList from "./pages/UserManagement/UserList";
+import DepartmentList from "./pages/UserManagement/DepartmentList";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -76,8 +79,36 @@ export default function App() {
               element={<KaizenBankPage />}
             />
 
+            {/* User Management - Admin Only */}
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <UserList />
+                </ProtectedRoute>
+              }
+            />
+
             {/* News */}
             <Route index path="/news" element={<NewIndex />} />
+
+            {/* User Management - Admin Only */}
+            <Route 
+              path="/users" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <UserList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/departments" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <DepartmentList />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

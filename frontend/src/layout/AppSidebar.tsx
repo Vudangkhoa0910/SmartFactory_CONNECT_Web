@@ -16,6 +16,7 @@ import {
   FolderIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../contexts/AuthContext";
 // import SidebarWidget from "./SidebarWidget";
 
 // ... (phần type và các mảng navItems, othersItems1, othersItems2 không đổi)
@@ -24,6 +25,7 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  requiredPermission?: string; // Admin only, Pink box access, etc.
 };
 
 const navItems: NavItem[] = [
@@ -71,6 +73,7 @@ const othersItems2: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "Hòm hồng",
     path: "/admin-inbox-pink",
+    requiredPermission: "pink_box", // Only Admin can see
   },
   {
     icon: <FolderIcon />,
@@ -79,16 +82,18 @@ const othersItems2: NavItem[] = [
   },
   {
     icon: <PlugInIcon />,
-    name: "Authentication",
+    name: "Quản lý",
+    requiredPermission: "manage_users", // Only Admin can see
     subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
+      { name: "Người dùng", path: "/users", pro: false },
+      { name: "Phòng ban", path: "/departments", pro: false },
     ],
   },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { canManageUsers, canViewPinkBox } = useAuth();
   const location = useLocation();
 
   // <<< THAY ĐỔI 1: Cập nhật kiểu (type) của state để chấp nhận các loại menu mới
@@ -172,13 +177,32 @@ const AppSidebar: React.FC = () => {
     });
   };
 
+  // Filter menu items based on permissions
+  const hasPermission = (item: NavItem): boolean => {
+    if (!item.requiredPermission) return true;
+    
+    if (item.requiredPermission === "manage_users") {
+      return canManageUsers();
+    }
+    
+    if (item.requiredPermission === "pink_box") {
+      return canViewPinkBox();
+    }
+    
+    return true;
+  };
+
   // <<< THAY ĐỔI 4: Cập nhật kiểu của tham số menuType (bạn đã làm đúng ở đây)
   const renderMenuItems = (
     items: NavItem[],
     menuType: "main" | "others1" | "others2"
-  ) => (
+  ) => {
+    // Filter items based on permissions
+    const filteredItems = items.filter(hasPermission);
+    
+    return (
     <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
+      {filteredItems.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
             <button
@@ -297,7 +321,8 @@ const AppSidebar: React.FC = () => {
         </li>
       ))}
     </ul>
-  );
+    );
+  };
 
   return (
     <aside
