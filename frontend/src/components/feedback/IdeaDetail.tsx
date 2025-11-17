@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+// src/components/feedback/IdeaDetail.tsx
+
+import React, { useState, useEffect, useRef } from "react";
 import { PublicIdea } from "./types";
-// import { StatusBadge } from "./StatusBadge";
 import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
 import { Check, X, ArrowUpRight, Send } from "lucide-react";
@@ -26,6 +27,16 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     status: string;
   } | null>(null);
 
+  // Tạo một ref để làm "mốc" ở trên cùng của vùng nội dung
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // Effect này sẽ chạy mỗi khi `idea.id` thay đổi
+  useEffect(() => {
+    // Sử dụng scrollIntoView() để cuộn đến "mốc" đã đặt.
+    // Cách này đáng tin cậy hơn trong việc giải quyết race condition.
+    topRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [idea.id]); // Dependency là idea.id, nên nó chỉ chạy khi chọn idea mới
+
   const handleSendSolution = () => {
     if (!solutionInput.trim()) return;
     const newSolution = {
@@ -47,7 +58,6 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
 
   const handleReject = () => {
     if (solution) {
-      // Khi từ chối, reset ô nhập lại
       setSolution(null);
       setSolutionInput("");
       onUpdateStatus("Đã từ chối", solution.note, "Từ chối");
@@ -55,16 +65,15 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* HEADER + ACTIONS */}
-      <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      {/* HEADER + ACTIONS (Không cuộn) */}
+      <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center shrink-0">
         <div>
           <h2 className="text-xl font-bold">{idea.title}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Người gửi: {idea.senderName} • {idea.senderId}
           </p>
         </div>
-
         <div className="flex items-center gap-2">
           <button
             onClick={handleApprove}
@@ -87,66 +96,73 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
         </div>
       </div>
 
-      {/* NỘI DUNG */}
-      <div className="p-6 overflow-y-auto flex-1 space-y-6">
-        <div>
-          <p className="leading-relaxed">{idea.content}</p>
-          {idea.imageUrl && (
-            <img
-              src={idea.imageUrl}
-              className="max-w-lg mt-4 rounded-lg shadow-md border dark:border-gray-700"
-            />
-          )}
-        </div>
+      {/* NỘI DUNG (Khu vực có thể cuộn) */}
+      <div className="overflow-y-auto flex-1">
+        {/* "Mốc" vô hình để cuộn đến */}
+        <div ref={topRef} />
 
-        {/* ĐỀ XUẤT HƯỚNG GIẢI QUYẾT */}
-        <div className="mt-4">
-          <label className="block mb-1 font-medium">
-            Đề xuất hướng giải quyết:
-          </label>
-          {!solution ? (
-            <div className="flex gap-2">
-              <textarea
-                value={solutionInput}
-                onChange={(e) => setSolutionInput(e.target.value)}
-                rows={3}
-                className="flex-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-700"
-                placeholder="Nhập phương án giải quyết..."
+        <div className="p-6 space-y-6">
+          {/* Nội dung chính */}
+          <div>
+            <p className="leading-relaxed">{idea.content}</p>
+            {idea.imageUrl && (
+              <img
+                src={idea.imageUrl}
+                alt="Hình ảnh đính kèm"
+                className="max-w-lg mt-4 rounded-lg shadow-md border dark:border-gray-700"
               />
-              <button
-                onClick={handleSendSolution}
-                className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 flex items-center gap-2"
-              >
-                <Send size={16} /> Send
-              </button>
-            </div>
-          ) : (
-            <div className="p-3 border-l-4 border-blue-600 dark:border-blue-500 flex justify-between items-start bg-transparent">
-              <p className="text-gray-700 dark:text-gray-300">
-                {solution.note}
-              </p>
-              <span
-                className={`ml-4 font-semibold ${
-                  solution.status === "Đang chờ xử lý"
-                    ? "text-yellow-600 dark:text-yellow-400"
-                    : solution.status === "Đã duyệt"
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {solution.status}
-              </span>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Lịch sử hành động */}
-        <IdeaHistory history={idea.history} />
+          {/* ĐỀ XUẤT HƯỚNG GIẢI QUYẾT */}
+          <div className="mt-4">
+            <label className="block mb-1 font-medium">
+              Đề xuất hướng giải quyết:
+            </label>
+            {!solution ? (
+              <div className="flex gap-2">
+                <textarea
+                  value={solutionInput}
+                  onChange={(e) => setSolutionInput(e.target.value)}
+                  rows={3}
+                  className="flex-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="Nhập phương án giải quyết..."
+                />
+                <button
+                  onClick={handleSendSolution}
+                  className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 flex items-center gap-2"
+                >
+                  <Send size={16} /> Gửi
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 border-l-4 border-blue-600 dark:border-blue-500 flex justify-between items-start bg-transparent">
+                <p className="text-gray-700 dark:text-gray-300">
+                  {solution.note}
+                </p>
+                <span
+                  className={`ml-4 font-semibold ${
+                    solution.status === "Đang chờ xử lý"
+                      ? "text-yellow-600 dark:text-yellow-400"
+                      : solution.status === "Đã duyệt"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {solution.status}
+                </span>
+              </div>
+            )}
+          </div>
 
-        {/* Chat trao đổi */}
-        <div>
-          <h3 className="font-semibold mb-2">Trao đổi</h3>
-          <IdeaChat chat={idea.chat} onSend={onSendChat} />
+          {/* Lịch sử hành động */}
+          <IdeaHistory history={idea.history} />
+
+          {/* Chat trao đổi */}
+          <div>
+            <h3 className="font-semibold mb-2">Trao đổi</h3>
+            <IdeaChat chat={idea.chat} onSend={onSendChat} />
+          </div>
         </div>
       </div>
     </div>

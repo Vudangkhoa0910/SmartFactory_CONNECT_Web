@@ -1,0 +1,88 @@
+// src/pages/SensitiveInbox/ActionPanel.tsx
+import React, { useState } from "react";
+import { X, Send } from "lucide-react";
+import { SensitiveMessage, DEPARTMENTS_TO_FORWARD } from "./data";
+
+interface ActionPanelProps {
+  message: SensitiveMessage;
+  onClose: () => void;
+  onForward: (messageId: string, department: string, note: string) => void;
+}
+
+export const ActionPanel: React.FC<ActionPanelProps> = ({
+  message,
+  onClose,
+  onForward,
+}) => {
+  const [department, setDepartment] = useState("");
+  const [note, setNote] = useState("");
+
+  const handleForward = () => {
+    if (!department) {
+      alert("Vui lòng chọn phòng ban để chuyển tiếp.");
+      return;
+    }
+    onForward(message.id, department, note);
+  };
+
+  return (
+    <div
+      className="absolute top-0 right-0 h-full w-[350px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out"
+      style={{ transform: "translateX(0%)" }}
+    >
+      <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          Chuyển tiếp Góp ý
+        </h3>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      <div className="p-5 overflow-y-auto flex-1">
+        <p className="text-sm mb-4 text-gray-700 dark:text-gray-300">
+          Góp ý:{" "}
+          <span className="font-semibold text-gray-900 dark:text-white">
+            "{message.title}"
+          </span>
+        </p>
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          Chuyển đến phòng ban
+        </label>
+        <select
+          onChange={(e) => setDepartment(e.target.value)}
+          className="w-full p-2 border dark:border-gray-600 rounded-md text-sm bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+        >
+          <option value="">-- Chọn phòng ban --</option>
+          {DEPARTMENTS_TO_FORWARD.map((d) => (
+            <option key={d}>{d}</option>
+          ))}
+        </select>
+        <label className="block text-sm font-medium mt-4 mb-1 text-gray-700 dark:text-gray-300">
+          Ghi chú (không bắt buộc)
+        </label>
+        <textarea
+          rows={4}
+          onChange={(e) => setNote(e.target.value)}
+          className="w-full p-2 border dark:border-gray-600 rounded-md text-sm bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+        />
+      </div>
+      <div className="px-5 py-3 flex justify-end gap-3 border-t dark:border-gray-700 flex-shrink-0">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm rounded-md border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          onClick={handleForward}
+          className="px-4 py-2 text-sm text-white bg-gradient-to-r from-rose-600 to-rose-500 rounded-md hover:from-rose-700 hover:to-rose-600 flex items-center gap-2 transition-colors"
+        >
+          <Send size={16} /> Xác nhận
+        </button>
+      </div>
+    </div>
+  );
+};

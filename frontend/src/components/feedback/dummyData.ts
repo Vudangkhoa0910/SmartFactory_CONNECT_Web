@@ -1,8 +1,3 @@
-/* =======================================================
-   dummyData.ts
-   - Dữ liệu mẫu cho Hòm thư Hồng / Public Ideas
-======================================================= */
-
 import { PublicIdea } from "./types";
 
 export const IDEAS_DATA: PublicIdea[] = [
