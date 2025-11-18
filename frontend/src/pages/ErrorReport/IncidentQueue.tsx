@@ -1,82 +1,128 @@
-// src/features/incident-workspace/IncidentWorkspace.tsx
-
 import React, { useState, useMemo } from "react";
 import { BellRing } from "lucide-react";
 
+// GIẢ ĐỊNH: Bạn cần cập nhật định nghĩa type của Incident
+// Thêm `status` và `history` vào file types.ts của bạn
+/*
+export type IncidentStatus = "Chờ tiếp nhận" | "Đang xử lý" | "Đã xử lý";
+
+export interface HistoryEntry {
+  timestamp: Date;
+  action: string;
+  details: string;
+}
+
+export interface Incident {
+  // ... các trường cũ
+  status: IncidentStatus;
+  history: HistoryEntry[];
+}
+*/
 import { Incident, Priority } from "../../components/ErrorReport/index";
 import {
-  INITIAL_INCIDENTS,
+  INITIAL_INCIDENTS, // <-- Cần cập nhật data mẫu để có status và history
   DEPARTMENTS,
 } from "../../components/ErrorReport/data";
 import IncidentListItem from "../../components/ErrorReport/IncidentListItem";
 import IncidentDetailView from "../../components/ErrorReport/IncidentDetailView";
 
 const IncidentWorkspace: React.FC = () => {
-  const [incidents, setIncidents] = useState<Incident[]>(INITIAL_INCIDENTS);
+  // Thêm status và history cho dữ liệu ban đầu
+  const [incidents, setIncidents] = useState<Incident[]>(
+    INITIAL_INCIDENTS.map((inc) => ({
+      ...inc,
+      status: "Chờ tiếp nhận",
+      history: [
+        {
+          timestamp: inc.timestamp,
+          action: "Tạo mới",
+          details: "Sự cố đã được ghi nhận vào hệ thống.",
+        },
+      ],
+    }))
+  );
 
-  // Sắp xếp danh sách sự cố theo độ ưu tiên và thời gian
-  const sortedIncidents = useMemo(() => {
+  // Lọc ra các sự cố chưa được giải quyết và sắp xếp
+  const activeIncidents = useMemo(() => {
     const priorityWeight: Record<Priority, number> = {
       Critical: 4,
       High: 3,
       Normal: 2,
       Low: 1,
     };
-    return [...incidents].sort((a, b) => {
-      const priorityDiff =
-        priorityWeight[b.priority] - priorityWeight[a.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      return b.timestamp.getTime() - a.timestamp.getTime(); // Mới nhất lên đầu
-    });
+    return incidents
+      .filter((inc) => inc.status !== "Đã xử lý")
+      .sort((a, b) => {
+        const priorityDiff =
+          priorityWeight[b.priority] - priorityWeight[a.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+        return b.timestamp.getTime() - a.timestamp.getTime(); // Mới nhất lên đầu
+      });
   }, [incidents]);
 
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(
-    sortedIncidents.length > 0 ? sortedIncidents[0] : null
+    activeIncidents.length > 0 ? activeIncidents[0] : null
   );
 
-  // Hàm xử lý chung sau khi một sự cố được "xử lý" (tiếp nhận hoặc phân công)
-  const handleAction = (id: string) => {
-    // Tìm vị trí của sự cố hiện tại trong danh sách đã sắp xếp
-    const currentIndex = sortedIncidents.findIndex((inc) => inc.id === id);
-    // Lọc bỏ sự cố đã xử lý khỏi danh sách gốc
-    const remainingIncidents = incidents.filter((inc) => inc.id !== id);
-    setIncidents(remainingIncidents);
-
-    // Tự động chọn sự cố tiếp theo một cách thông minh
-    if (remainingIncidents.length === 0) {
-      setSelectedIncident(null);
-    } else {
-      // Ưu tiên chọn mục ngay sau mục vừa xóa, nếu không thì chọn mục cuối cùng
-      const nextIndex =
-        currentIndex >= remainingIncidents.length
-          ? remainingIncidents.length - 1
-          : currentIndex;
-      // Cần tìm lại sự cố trong danh sách đã sắp xếp MỚI
-      const newSorted = remainingIncidents.sort((a, b) => {
-        const priorityWeight: Record<Priority, number> = {
-          Critical: 4,
-          High: 3,
-          Normal: 2,
-          Low: 1,
-        };
-        const priorityDiff =
-          priorityWeight[b.priority] - priorityWeight[a.priority];
-        return priorityDiff !== 0
-          ? priorityDiff
-          : b.timestamp.getTime() - a.timestamp.getTime();
-      });
-      setSelectedIncident(newSorted[nextIndex]);
-    }
+  // Hàm cập nhật sự cố
+  const updateIncident = (
+    id: string,
+    updates: Partial<Incident>,
+    historyEntry: { action: string; details: string }
+  ) => {
+    setIncidents((prevIncidents) =>
+      prevIncidents.map((inc) => {
+        if (inc.id === id) {
+          const newHistory = [
+            ...inc.history,
+            { ...historyEntry, timestamp: new Date() },
+          ];
+          return { ...inc, ...updates, history: newHistory };
+        }
+        return inc;
+      })
+    );
+    // Cập nhật lại selectedIncident để view được re-render với data mới
+    setSelectedIncident((prev) =>
+      prev && prev.id === id ? incidents.find((i) => i.id === id)! : prev
+    );
   };
 
   const handleAssign = (id: string, department: string) => {
     console.log(`[PHÂN CÔNG] Sự cố ${id} đã được gán cho ${department}`);
-    handleAction(id);
+    updateIncident(
+      id,
+      { status: "Đang xử lý" },
+      { action: "Phân công", details: `Giao cho phòng ban: ${department}` }
+    );
   };
 
-  const handleAcknowledge = (id: string) => {
+  const handleAcknowledge = (id: string, feedback: string) => {
     console.log(`[TIẾP NHẬN] Sự cố ${id} đã được tiếp nhận.`);
-    handleAction(id);
+    updateIncident(
+      id,
+      { status: "Đang xử lý" },
+      { action: "Tiếp nhận", details: `Phản hồi: ${feedback}` }
+    );
+  };
+
+  const handleResolve = (id: string) => {
+    console.log(`[XỬ LÝ XONG] Sự cố ${id} đã được đóng.`);
+    updateIncident(
+      id,
+      { status: "Đã xử lý" },
+      { action: "Hoàn thành", details: "Sự cố đã được xác nhận xử lý và đóng." }
+    );
+    // Sau khi xử lý xong, chọn sự cố tiếp theo trong danh sách
+    const currentIndex = activeIncidents.findIndex((inc) => inc.id === id);
+    const nextIncidents = activeIncidents.filter((inc) => inc.id !== id);
+    if (nextIncidents.length > 0) {
+      setSelectedIncident(
+        nextIncidents[Math.min(currentIndex, nextIncidents.length - 1)]
+      );
+    } else {
+      setSelectedIncident(null);
+    }
   };
 
   return (
@@ -90,7 +136,7 @@ const IncidentWorkspace: React.FC = () => {
             </h1>
             <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 px-3 py-1 rounded-full">
               <BellRing size={16} />
-              <span>{incidents.length} sự cố đang chờ</span>
+              <span>{activeIncidents.length} sự cố đang chờ</span>
             </div>
           </div>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -106,13 +152,17 @@ const IncidentWorkspace: React.FC = () => {
               Danh sách sự cố
             </h2>
             <div className="space-y-2">
-              {sortedIncidents.length > 0 ? (
-                sortedIncidents.map((incident) => (
+              {activeIncidents.length > 0 ? (
+                activeIncidents.map((incident) => (
                   <IncidentListItem
                     key={incident.id}
                     incident={incident}
                     isSelected={selectedIncident?.id === incident.id}
-                    onClick={() => setSelectedIncident(incident)}
+                    onClick={() =>
+                      setSelectedIncident(
+                        incidents.find((i) => i.id === incident.id)!
+                      )
+                    }
                   />
                 ))
               ) : (
@@ -126,10 +176,11 @@ const IncidentWorkspace: React.FC = () => {
           {/* RIGHT PANE: DETAIL */}
           <div className="lg:col-span-2">
             <IncidentDetailView
-              incident={selectedIncident}
+              incident={incidents.find((i) => i.id === selectedIncident?.id)}
               departments={DEPARTMENTS}
               onAcknowledge={handleAcknowledge}
               onAssign={handleAssign}
+              onResolve={handleResolve}
             />
           </div>
         </main>
