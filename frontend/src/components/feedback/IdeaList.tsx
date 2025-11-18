@@ -3,7 +3,7 @@
 import React from "react";
 // CẢI TIẾN: Thêm icon từ thư viện lucide-react (hoặc thư viện icon bạn dùng)
 import { Inbox, Mail } from "lucide-react";
-import { PublicIdea } from "../types/index";
+import { PublicIdea } from "./types";
 
 interface IdeaListProps {
   ideas: PublicIdea[];
@@ -38,9 +38,9 @@ export const IdeaList: React.FC<IdeaListProps> = ({
   }
 
   return (
-    <aside className="w-[360px] bg-white dark:bg-slate-900 border-r dark:border-slate-800 flex flex-col">
+    <aside className="w-[360px] bg-white dark:bg-slate-900 border-r dark:border-slate-800 flex flex-col h-full">
       {/* CẢI TIẾN: Header được làm nổi bật hơn */}
-      <header className="p-4 border-b dark:border-slate-800 flex items-center gap-3 shrink-0">
+      <header className="p-4 border-b dark:border-slate-800 flex items-center gap-3 flex-shrink-0">
         <Mail size={20} className="text-red-500" />
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
           Hòm thư Trắng
@@ -48,7 +48,7 @@ export const IdeaList: React.FC<IdeaListProps> = ({
       </header>
 
       {/* CẢI TIẾN: Thêm overflow-y-auto để cuộn danh sách */}
-      <div className="overflow-y-auto">
+      <div className="overflow-y-auto flex-1">
         {ideas.map((idea) => (
           <div
             key={idea.id}

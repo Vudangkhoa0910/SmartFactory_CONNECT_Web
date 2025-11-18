@@ -27,6 +27,7 @@
     "clsx": "^2.1.1",
     "docx": "^9.5.1",
     "flatpickr": "^4.6.13",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.553.0",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",

@@ -72,6 +72,8 @@ export const SENSITIVE_MESSAGES_DATA: SensitiveMessage[] = [
     title: "Góp ý về chính sách nghỉ phép năm",
     fullContent:
       "Tôi đề xuất công ty có thể cho phép nhân viên gối một phần ngày nghỉ phép chưa sử dụng của năm nay sang quý 1 của năm sau. Điều này sẽ giúp nhân viên linh hoạt hơn trong việc sắp xếp kế hoạch cá nhân và giảm tải công việc cuối năm.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop",
     timestamp: new Date(Date.now() - 8 * 3600000), // 8 giờ trước
     status: "Đang xem xét",
     history: [
@@ -98,6 +100,8 @@ export const SENSITIVE_MESSAGES_DATA: SensitiveMessage[] = [
     title: "Đề xuất tổ chức hoạt động team building",
     fullContent:
       "Chào phòng Nhân sự, em nghĩ công ty mình nên có một buổi team building ngoài trời trong quý tới để tăng cường sự gắn kết giữa các phòng ban sau thời gian dài làm việc căng thẳng.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&h=400&fit=crop",
     timestamp: new Date(Date.now() - 48 * 3600000), // 2 ngày trước
     status: "Đã xử lý",
     history: [

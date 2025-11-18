@@ -43,4 +43,5 @@ export interface PublicIdea {
   status: StatusType; // Trạng thái hiện tại
   history: ActionHistory[];
   chat: ChatMessage[];
+  isRead: boolean; // Đã đọc hay chưa
 }

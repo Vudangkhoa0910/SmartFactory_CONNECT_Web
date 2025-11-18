@@ -1,6 +1,6 @@
 // src/components/feedback/IdeaDetail.tsx
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { PublicIdea } from "./types";
 import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
@@ -26,16 +26,6 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     note: string;
     status: string;
   } | null>(null);
-
-  // Tạo một ref để làm "mốc" ở trên cùng của vùng nội dung
-  const topRef = useRef<HTMLDivElement>(null);
-
-  // Effect này sẽ chạy mỗi khi `idea.id` thay đổi
-  useEffect(() => {
-    // Sử dụng scrollIntoView() để cuộn đến "mốc" đã đặt.
-    // Cách này đáng tin cậy hơn trong việc giải quyết race condition.
-    topRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [idea.id]); // Dependency là idea.id, nên nó chỉ chạy khi chọn idea mới
 
   const handleSendSolution = () => {
     if (!solutionInput.trim()) return;
@@ -65,9 +55,9 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* HEADER + ACTIONS (Không cuộn) */}
-      <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center shrink-0">
+      <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center flex-shrink-0 bg-white dark:bg-gray-800">
         <div>
           <h2 className="text-xl font-bold">{idea.title}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -97,11 +87,8 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
       </div>
 
       {/* NỘI DUNG (Khu vực có thể cuộn) */}
-      <div className="overflow-y-auto flex-1">
-        {/* "Mốc" vô hình để cuộn đến */}
-        <div ref={topRef} />
-
-        <div className="p-6 space-y-6">
+      <div key={idea.id} className="overflow-y-auto flex-1">
+        <div className="p-6 space-y-6 max-w-4xl mx-auto">
           {/* Nội dung chính */}
           <div>
             <p className="leading-relaxed">{idea.content}</p>

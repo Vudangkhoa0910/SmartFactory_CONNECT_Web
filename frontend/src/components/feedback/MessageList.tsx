@@ -35,15 +35,15 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <aside className="w-[360px] bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col">
-      <header className="p-4 border-b dark:border-gray-700 flex items-center gap-3 shrink-0">
+    <aside className="w-[360px] bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col h-full">
+      <header className="p-4 border-b dark:border-gray-700 flex items-center gap-3 flex-shrink-0">
         <Shield size={20} className="text-rose-600" />
         <h2 className="text-lg font-bold text-gray-800 dark:text-white">
           Hòm thư Hồng
         </h2>
       </header>
 
-      <div className="overflow-y-auto flex-grow">
+      <div className="overflow-y-auto flex-1">
         {messages.map((msg) => (
           <div
             key={msg.id}

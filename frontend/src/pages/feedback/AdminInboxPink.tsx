@@ -1,5 +1,5 @@
 // src/pages/SensitiveInbox/index.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   SENSITIVE_MESSAGES_DATA,
   CURRENT_USER,
@@ -70,7 +70,7 @@ export default function SensitiveInboxPage() {
   };
 
   return (
-    <div className="h-screen w-full flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
       <MessageList
         messages={messages}
         selectedMessageId={selectedMessageId}

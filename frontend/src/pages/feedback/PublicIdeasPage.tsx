@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { PublicIdea } from "../../components/feedback/types";
+import { useState } from "react";
+import { PublicIdea, StatusType } from "../../components/feedback/types";
 import { IDEAS_DATA } from "../../components/feedback/dummyData";
 import { IdeaList } from "../../components/feedback/IdeaList";
 import { IdeaDetail } from "../../components/feedback/IdeaDetail";
@@ -13,14 +13,14 @@ export default function PublicIdeasPage() {
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) || null;
 
   // Cập nhật trạng thái và ghi chú (note)
-  const handleUpdateStatus = (status: PublicIdea["status"], note?: string) => {
+  const handleUpdateStatus = (status: string, note?: string) => {
     if (!selectedIdea) return;
     setIdeas((prev) =>
       prev.map((idea) =>
         idea.id === selectedIdea.id
           ? {
               ...idea,
-              status,
+              status: status as StatusType,
               history: [
                 ...idea.history,
                 {
@@ -55,7 +55,7 @@ export default function PublicIdeasPage() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* Danh sách ý tưởng */}
       <IdeaList
         ideas={ideas}

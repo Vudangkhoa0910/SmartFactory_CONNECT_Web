@@ -52,7 +52,7 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
   };
 
   return (
-    <main className="flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 relative overflow-hidden">
+    <main className="flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 relative">
       <header className="p-4 border-b dark:border-gray-700 flex justify-between items-center shadow-sm bg-white dark:bg-gray-800 flex-shrink-0">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
           {message.title}
@@ -70,7 +70,8 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <p className="text-base leading-relaxed">{message.fullContent}</p>
           {message.imageUrl && (
@@ -135,6 +136,7 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
               </li>
             ))}
           </ul>
+        </div>
         </div>
       </div>
 
