@@ -196,15 +196,18 @@ export default function AllIncidentsPage() {
   const activeIncident = activeId ? incidents.find((i) => i.id === activeId) : null;
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col font-sans overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-      <div className="p-4 pb-0 shrink-0">
+    <div className="h-[calc(100vh-8rem)] flex flex-col font-sans overflow-hidden gap-4">
+      {/* Header Section */}
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
         <PageHeader
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onSearchChange={setSearchTerm}
         />
       </div>
-      <main className="flex-1 overflow-hidden p-4 pt-4">
+
+      {/* Content Section */}
+      <main className="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
         {loading ? (
           <div className="text-center py-10">Đang tải dữ liệu...</div>
         ) : viewMode === "kanban" ? (

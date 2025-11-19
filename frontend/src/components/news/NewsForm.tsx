@@ -4,14 +4,20 @@ import api from "../../services/api";
 
 interface NewsItem {
   title: string;
+  excerpt: string;
   content: string;
+  category: string;
+  is_priority: boolean;
   attachments: File[];
 }
 
 export default function NewsForm() {
   const [news, setNews] = useState<NewsItem>({
     title: "",
+    excerpt: "",
     content: "",
+    category: "company_announcement",
+    is_priority: false,
     attachments: [],
   });
   const [loading, setLoading] = useState(false);
@@ -20,6 +26,17 @@ export default function NewsForm() {
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "image/jpeg",
+    "image/png",
+    "image/jpg"
+  ];
+
+  const categories = [
+    { value: "company_announcement", label: "Thông báo công ty" },
+    { value: "safety_alert", label: "Cảnh báo an toàn" },
+    { value: "event", label: "Sự kiện" },
+    { value: "production_update", label: "Cập nhật sản xuất" },
+    { value: "maintenance", label: "Bảo trì" },
   ];
 
   const handleFiles = (files: FileList | null) => {
@@ -56,8 +73,10 @@ export default function NewsForm() {
       setLoading(true);
       const formData = new FormData();
       formData.append("title", news.title);
+      formData.append("excerpt", news.excerpt);
       formData.append("content", news.content);
-      formData.append("category", "company_announcement"); // Default category
+      formData.append("category", news.category);
+      formData.append("is_priority", String(news.is_priority));
       formData.append("target_audience", "all"); // Default audience
       formData.append("publish_at", new Date().toISOString()); // Publish immediately
       formData.append("status", "published"); // Explicitly set status
@@ -74,7 +93,14 @@ export default function NewsForm() {
 
       alert("Đăng tin thành công!");
       // Reset form
-      setNews({ title: "", content: "", attachments: [] });
+      setNews({ 
+        title: "", 
+        excerpt: "",
+        content: "", 
+        category: "company_announcement",
+        is_priority: false,
+        attachments: [] 
+      });
       // Reload page or trigger list update (optional, for now user can refresh)
       window.location.reload(); 
     } catch (error: any) {
@@ -89,6 +115,38 @@ export default function NewsForm() {
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
       <h2 className="text-xl font-semibold mb-5">Tạo Tin Tức</h2>
 
+      {/* Category & Priority */}
+      <div className="flex gap-4 mb-3">
+        <div className="flex-1">
+          <select
+            className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600"
+            value={news.category}
+            onChange={(e) => setNews({ ...news, category: e.target.value })}
+            disabled={loading}
+          >
+            {categories.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-300"
+              checked={news.is_priority}
+              onChange={(e) => setNews({ ...news, is_priority: e.target.checked })}
+              disabled={loading}
+            />
+            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tin quan trọng
+            </span>
+          </label>
+        </div>
+      </div>
+
       {/* Title */}
       <input
         type="text"
@@ -96,6 +154,16 @@ export default function NewsForm() {
         className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 mb-3"
         value={news.title}
         onChange={(e) => setNews({ ...news, title: e.target.value })}
+        disabled={loading}
+      />
+
+      {/* Excerpt */}
+      <input
+        type="text"
+        placeholder="Mô tả ngắn (hiển thị trên danh sách)"
+        className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 mb-3"
+        value={news.excerpt}
+        onChange={(e) => setNews({ ...news, excerpt: e.target.value })}
         disabled={loading}
       />
 
@@ -119,12 +187,12 @@ export default function NewsForm() {
         <p className="text-gray-600 dark:text-gray-300 font-medium mb-1">
           Kéo thả file vào đây
         </p>
-        <p className="text-xs opacity-70">Chỉ nhận PDF / DOC / DOCX</p>
+        <p className="text-xs opacity-70">PDF / DOC / DOCX / JPG / PNG</p>
 
         <input
           type="file"
           id="fileInput"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}

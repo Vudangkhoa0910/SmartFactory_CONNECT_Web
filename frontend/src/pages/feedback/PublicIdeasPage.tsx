@@ -83,9 +83,18 @@ export default function PublicIdeasPage() {
           line: item.category || 'General',
           title: item.title,
           content: item.description,
-          imageUrl: item.attachments && JSON.parse(item.attachments)[0]?.path 
-            ? `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${JSON.parse(item.attachments)[0].path}`
-            : undefined,
+          imageUrl: (() => {
+            if (!item.attachments) return undefined;
+            try {
+              const att = typeof item.attachments === 'string' ? JSON.parse(item.attachments) : item.attachments;
+              if (Array.isArray(att) && att.length > 0 && att[0].path) {
+                return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
+              }
+            } catch (e) {
+              console.error("Error parsing attachments", e);
+            }
+            return undefined;
+          })(),
           timestamp: new Date(item.created_at),
           status: mapStatus(item.status),
           history: (item.history || []).map((h: BackendHistory) => ({

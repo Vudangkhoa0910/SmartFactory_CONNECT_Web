@@ -139,9 +139,10 @@ const login = asyncHandler(async (req, res) => {
   }
 
   // Check web access permission (Level <= 3: Admin, GM, Manager, Supervisor)
-  if (user.level > 3) {
-    throw new AppError('Access denied. This account type cannot access the Web portal.', 403);
-  }
+  // MODIFIED: Allow all users to login for Mobile App support
+  // if (user.level > 3) {
+  //   throw new AppError('Access denied. This account type cannot access the Web portal.', 403);
+  // }
   
   // Update last login
   await db.query(

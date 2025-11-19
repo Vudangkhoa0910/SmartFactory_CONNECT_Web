@@ -89,6 +89,8 @@ const getIncidents = asyncHandler(async (req, res) => {
   let paramIndex = 1;
   
   // Filter by role permissions
+  // User requested that everyone can view all incidents
+  /*
   if (userLevel < 5) {
     // Admin, Factory Manager, Production Manager, Supervisor, Team Leader can see all
     // No restriction
@@ -103,6 +105,7 @@ const getIncidents = asyncHandler(async (req, res) => {
     params.push(userId);
     paramIndex++;
   }
+  */
   
   // Apply filters
   if (filters.status) {
@@ -223,9 +226,12 @@ const getIncidentById = asyncHandler(async (req, res) => {
   const incident = result.rows[0];
   
   // Check access permissions
+  // User requested that everyone can view all incidents
+  /*
   if (userLevel >= 6 && incident.reporter_id !== userId) {
     throw new AppError('You do not have permission to view this incident', 403);
   }
+  */
   
   // Get comments
   const commentsQuery = `

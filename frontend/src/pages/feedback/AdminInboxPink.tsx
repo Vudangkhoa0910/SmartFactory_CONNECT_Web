@@ -34,7 +34,18 @@ const mapIdeaToMessage = (idea: any): SensitiveMessage => {
     senderId: idea.submitter_code,
     title: idea.title,
     fullContent: idea.description,
-    imageUrl: idea.attachments && idea.attachments.length > 0 ? idea.attachments[0].path : undefined,
+    imageUrl: (() => {
+      if (!idea.attachments) return undefined;
+      try {
+        const att = typeof idea.attachments === 'string' ? JSON.parse(idea.attachments) : idea.attachments;
+        if (Array.isArray(att) && att.length > 0 && att[0].path) {
+           return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
+        }
+      } catch (e) {
+        console.error("Error parsing attachments", e);
+      }
+      return undefined;
+    })(),
     timestamp: new Date(idea.created_at),
     status: mapStatus(idea.status),
     history: (idea.history || []).map((h: any) => ({

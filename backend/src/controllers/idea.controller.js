@@ -133,11 +133,13 @@ const getIdeas = asyncHandler(async (req, res) => {
     paramIndex++;
 
     if (userLevel === 1) { // Admin
-      visibilityClause += ` OR handler_level = 'general_manager'`;
+      visibilityClause += ` OR handler_level = 'general_manager'`; // Admin sees escalated ideas
     } else if (userLevel === 2) { // Manager
       visibilityClause += ` OR handler_level = 'manager'`;
     } else if (userLevel <= 4) { // Supervisor (Level 3/4)
-      visibilityClause += ` OR handler_level = 'supervisor' OR handler_level IS NULL`; // Default to supervisor visibility for legacy/null
+      // Supervisor sees ideas assigned to 'supervisor' role
+      // Note: Submitter always sees their own ideas regardless of handler_level
+      visibilityClause += ` OR handler_level = 'supervisor'`; 
     }
     
     visibilityClause += `)`;
@@ -145,6 +147,12 @@ const getIdeas = asyncHandler(async (req, res) => {
   }
   
   // Apply other filters
+  if (filters.ideabox_type) {
+    conditions.push(`ideabox_type = $${paramIndex}`);
+    params.push(filters.ideabox_type);
+    paramIndex++;
+  }
+
   if (filters.status) {
     conditions.push(`status = $${paramIndex}`);
     params.push(filters.status);

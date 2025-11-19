@@ -146,7 +146,7 @@ const uploadIncidentFiles = [
 
 const uploadIdeaFiles = [
   setUploadDir('ideas'),
-  upload.array('files', 5),
+  upload.array('attachments', 5),
   handleUploadError
 ];
 
