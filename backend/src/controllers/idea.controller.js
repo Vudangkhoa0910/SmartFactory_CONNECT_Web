@@ -117,7 +117,7 @@ const getIdeas = asyncHandler(async (req, res) => {
       params.push(userId);
       paramIndex++;
     }
-  } else {
+  } else if (filters.ideabox_type === 'white') {
     // White Box / General Logic
     // 1. Approved/Implemented ideas are visible to EVERYONE
     // 2. Submitter can always see their own ideas
@@ -133,12 +133,10 @@ const getIdeas = asyncHandler(async (req, res) => {
     paramIndex++;
 
     if (userLevel === 1) { // Admin
-      visibilityClause += ` OR handler_level = 'general_manager'`; // Admin sees escalated ideas
+      visibilityClause += ` OR handler_level = 'general_manager'`;
     } else if (userLevel === 2) { // Manager
       visibilityClause += ` OR handler_level = 'manager'`;
     } else if (userLevel <= 4) { // Supervisor (Level 3/4)
-      // Supervisor sees ideas assigned to 'supervisor' role
-      // Note: Submitter always sees their own ideas regardless of handler_level
       visibilityClause += ` OR handler_level = 'supervisor'`; 
     }
     
