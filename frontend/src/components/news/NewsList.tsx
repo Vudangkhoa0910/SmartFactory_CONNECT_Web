@@ -1,83 +1,121 @@
 // components/news/NewsList.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import NewsCard from "./NewsCard";
 import NewsDetailModal from "./NewsDetailModal";
+import api from "../../services/api";
 
 interface NewsItem {
   id: string;
   title: string;
-  content: string; // Thêm content để xem chi tiết
+  content: string;
   excerpt?: string;
   publish_at?: string;
-  attachments?: string[];
+  attachments?: any[];
+  created_at?: string;
 }
 
-// Dữ liệu mẫu
-const todayNews: NewsItem[] = [
-  {
-    id: "1",
-    title: "Thông báo bảo trì hệ thống định kỳ",
-    content:
-      "Chi tiết nội dung bảo trì hệ thống sẽ diễn ra từ 22:00 đến 23:00 ngày 20/11/2025. Mong các bạn lưu ý.",
-    excerpt: "Hệ thống sẽ bảo trì lúc 22:00...",
-    publish_at: "2025-11-20",
-    attachments: ["BaoTri.pdf"],
-  },
-  {
-    id: "2",
-    title: "Cải tiến quy trình lắp ráp sản phẩm mới",
-    content:
-      "Để nâng cao hiệu suất, công đoạn XYZ trong quy trình lắp ráp sẽ được tối ưu hóa bằng công nghệ tự động hóa mới.",
-    excerpt: "Công đoạn XYZ sẽ được tối ưu...",
-    publish_at: "2025-11-19",
-  },
-];
-
-const historyNews: NewsItem[] = [
-  {
-    id: "3",
-    title: "Thông báo nghỉ lễ 20/11",
-    content: "Toàn thể nhân viên được nghỉ lễ ngày 20/11/2025.",
-    excerpt: "Toàn thể nhân viên được nghỉ...",
-    publish_at: "2025-11-15",
-  },
-  {
-    id: "4",
-    title: "Tối ưu hệ thống Quản lý Chất lượng (QC)",
-    content:
-      "Hệ thống QC đã được nâng cấp để theo dõi lỗi sản phẩm theo thời gian thực.",
-    excerpt: "Nâng cấp hệ thống QC...",
-    publish_at: "2025-11-05",
-  },
-];
+interface BackendNews {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  publish_at: string;
+  attachments: string | any[];
+  created_at: string;
+}
 
 export default function NewsList() {
   const [activeTab, setActiveTab] = useState<"today" | "history">("today");
-  const [news, setNews] = useState({ today: todayNews, history: historyNews });
+  const [news, setNews] = useState<{ today: NewsItem[]; history: NewsItem[] }>({ today: [], history: [] });
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleDelete = (id: string) => {
-    // Logic xoá tin tức (cần cập nhật state cho đúng tab)
-    if (activeTab === "today") {
-      setNews((prev) => ({
-        ...prev,
-        today: prev.today.filter((item) => item.id !== id),
-      }));
-    } else {
-      setNews((prev) => ({
-        ...prev,
-        history: prev.history.filter((item) => item.id !== id),
-      }));
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/news');
+      const allNews = res.data.data || [];
+      
+      const today = new Date().toISOString().split('T')[0];
+      const todayList: NewsItem[] = [];
+      const historyList: NewsItem[] = [];
+
+      allNews.forEach((item: BackendNews) => {
+        const mappedItem: NewsItem = {
+          id: item.id,
+          title: item.title,
+          content: item.content || '', // List might not have content, will fetch detail later
+          excerpt: item.excerpt,
+          publish_at: item.publish_at ? new Date(item.publish_at).toLocaleDateString('vi-VN') : '',
+          created_at: item.created_at,
+          attachments: typeof item.attachments === 'string' ? JSON.parse(item.attachments) : item.attachments
+        };
+
+        const itemDate = item.publish_at ? new Date(item.publish_at).toISOString().split('T')[0] : '';
+        if (itemDate === today) {
+          todayList.push(mappedItem);
+        } else {
+          historyList.push(mappedItem);
+        }
+      });
+
+      setNews({ today: todayList, history: historyList });
+    } catch (error) {
+      console.error("Failed to fetch news:", error);
+    } finally {
+      setLoading(false);
     }
-    console.log(`Đã xoá tin tức với ID: ${id}`);
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xoá tin tức này?")) return;
+    
+    try {
+      await api.delete(`/news/${id}`);
+      
+      // Update local state
+      if (activeTab === "today") {
+        setNews((prev) => ({
+          ...prev,
+          today: prev.today.filter((item) => item.id !== id),
+        }));
+      } else {
+        setNews((prev) => ({
+          ...prev,
+          history: prev.history.filter((item) => item.id !== id),
+        }));
+      }
+      console.log(`Đã xoá tin tức với ID: ${id}`);
+    } catch (error) {
+      console.error("Failed to delete news:", error);
+      alert("Xoá tin tức thất bại");
+    }
   };
 
   const handleEdit = (id: string) => {
     alert(`Chức năng SỬA tin (ID: ${id}) đang chờ kết nối API.`);
   };
 
-  const handleViewDetails = (item: NewsItem) => {
-    setSelectedNews(item);
+  const handleViewDetails = async (item: NewsItem) => {
+    try {
+      // Fetch full details to get content and increment view count
+      const res = await api.get(`/news/${item.id}`);
+      const detail = res.data.data;
+      
+      setSelectedNews({
+        ...item,
+        content: detail.content,
+        attachments: typeof detail.attachments === 'string' ? JSON.parse(detail.attachments) : detail.attachments
+      });
+    } catch (error) {
+      console.error("Failed to fetch news details:", error);
+      // Fallback to existing item if fetch fails
+      setSelectedNews(item);
+    }
   };
 
   const listToDisplay = activeTab === "today" ? news.today : news.history;
@@ -110,14 +148,16 @@ export default function NewsList() {
 
       {/* News List */}
       <div className="space-y-4">
-        {listToDisplay.length > 0 ? (
+        {loading ? (
+          <p className="text-center text-gray-500 py-8">Đang tải tin tức...</p>
+        ) : listToDisplay.length > 0 ? (
           listToDisplay.map((item) => (
             <NewsCard
               key={item.id}
               item={item}
               onDelete={handleDelete}
               onEdit={handleEdit}
-              onView={null}
+              onView={handleViewDetails}
             />
           ))
         ) : (

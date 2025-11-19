@@ -294,8 +294,7 @@ router.post(
   authenticate,
   [
     param('id').isUUID().withMessage('Invalid idea ID'),
-    body('escalated_to').isUUID().withMessage('User ID is required'),
-    body('reason').trim().notEmpty().withMessage('Escalation reason is required')
+    body('reason').optional().trim()
   ],
   validate,
   ideaController.escalateIdea

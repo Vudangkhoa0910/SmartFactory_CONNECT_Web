@@ -14,12 +14,14 @@ interface IdeaDetailProps {
     solutionStatus?: string
   ) => void;
   onSendChat: (text: string) => void;
+  showForwardButton?: boolean;
 }
 
 export const IdeaDetail: React.FC<IdeaDetailProps> = ({
   idea,
   onUpdateStatus,
   onSendChat,
+  showForwardButton = true,
 }) => {
   const [solutionInput, setSolutionInput] = useState("");
   const [solution, setSolution] = useState<{
@@ -39,19 +41,17 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
   };
 
   const handleApprove = () => {
-    if (solution) {
-      const updatedSolution = { ...solution, status: "Đã duyệt" };
-      setSolution(updatedSolution);
-      onUpdateStatus("Đã duyệt", updatedSolution.note, updatedSolution.status);
-    }
+    const note = solution?.note || solutionInput || "Đã duyệt";
+    const updatedSolution = { note, status: "Đã duyệt" };
+    setSolution(updatedSolution);
+    onUpdateStatus("Đã duyệt", note, "Đã duyệt");
   };
 
   const handleReject = () => {
-    if (solution) {
-      setSolution(null);
-      setSolutionInput("");
-      onUpdateStatus("Đã từ chối", solution.note, "Từ chối");
-    }
+    const note = solution?.note || solutionInput || "Đã từ chối";
+    setSolution(null);
+    setSolutionInput("");
+    onUpdateStatus("Đã từ chối", note, "Từ chối");
   };
 
   return (
@@ -77,12 +77,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
           >
             <X size={16} /> Từ chối
           </button>
-          <button
-            onClick={() => onUpdateStatus("Đã chuyển Manager")}
-            className="px-4 py-2 text-sm border dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-          >
-            <ArrowUpRight size={16} /> Chuyển tiếp
-          </button>
+          {showForwardButton && (
+            <button
+              onClick={() => onUpdateStatus("Escalate")}
+              className="px-4 py-2 text-sm border dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            >
+              <ArrowUpRight size={16} /> Chuyển tiếp
+            </button>
+          )}
         </div>
       </div>
 

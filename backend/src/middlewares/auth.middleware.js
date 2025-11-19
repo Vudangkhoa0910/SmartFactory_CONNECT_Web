@@ -7,51 +7,51 @@ const db = require('../config/database');
 const getDataScope = (user) => {
   const { role, level, department_id } = user;
   
-  // Admin & Factory Manager: See everything
-  if (level <= 2) {
+  // Level 1 (Admin/GM): Full Access
+  if (level === 1) {
     return { 
       scope: 'all', 
       departments: null, 
       canViewAll: true,
-      canManageUsers: level === 1,
-      canViewPinkBox: level === 1
+      canManageUsers: true,
+      canViewPinkBox: true
     };
   }
   
-  // Supervisor: See multiple departments (configurable)
-  if (role === 'supervisor') {
+  // Level 2 (Manager): View All, No Admin Actions
+  if (level === 2) {
     return { 
-      scope: 'multi_department', 
-      departments: null, // Can be configured per supervisor
+      scope: 'all', 
+      departments: null, 
       canViewAll: true,
       canManageUsers: false,
       canViewPinkBox: false
     };
   }
   
-  // Department Managers: See own department only
-  if (level === 3 && department_id) {
+  // Level 3 (Supervisor): Department Scope
+  if (level === 3) {
     return { 
       scope: 'department', 
-      departments: [department_id],
+      departments: department_id ? [department_id] : [],
       canViewAll: false,
       canManageUsers: false,
       canViewPinkBox: false
     };
   }
   
-  // Team Leaders: See own team only
-  if (role === 'team_leader' && department_id) {
+  // Level 5 (Team Leader): Team Scope
+  if (level === 5) {
     return { 
       scope: 'team', 
-      departments: [department_id],
+      departments: department_id ? [department_id] : [],
       canViewAll: false,
       canManageUsers: false,
       canViewPinkBox: false
     };
   }
   
-  // Operators: See only their own data
+  // Others (Operator, etc.): Self Scope
   return { 
     scope: 'self',
     departments: null,
@@ -84,8 +84,8 @@ const authenticate = async (req, res, next) => {
     // Load full user data from database
     const userQuery = `
       SELECT 
-        u.id, u.employee_code, u.username, u.email, u.full_name,
-        u.phone, u.avatar_url, u.role, u.level, u.department_id,
+        u.id, u.employee_code, u.email, u.full_name,
+        u.phone, u.role, u.level, u.department_id,
         d.name as department_name
       FROM users u
       LEFT JOIN departments d ON u.department_id = d.id

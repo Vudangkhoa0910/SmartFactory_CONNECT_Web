@@ -54,7 +54,11 @@ const ClockIcon: React.FC = () => (
   </svg>
 );
 
-export default function FeedbackMetrics() {
+export default function FeedbackMetrics({ data }: { data?: any }) {
+  // Use real data if available, otherwise fallback to defaults or 0
+  const acceptanceRate = data ? Math.round((data.approved / data.total_ideas) * 100) || 0 : 85;
+  const rejectionRate = data ? Math.round((data.rejected / data.total_ideas) * 100) || 0 : 15;
+  
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
       {/* Thống kê tỷ lệ chấp nhận */}
@@ -68,7 +72,7 @@ export default function FeedbackMetrics() {
               Tỷ lệ chấp nhận
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              85%
+              {acceptanceRate}%
             </h4>
           </div>
           <Badge color="success">+5.2%</Badge>
@@ -86,7 +90,7 @@ export default function FeedbackMetrics() {
               Tỷ lệ từ chối
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              15%
+              {rejectionRate}%
             </h4>
           </div>
           <Badge color="error">-1.5%</Badge>

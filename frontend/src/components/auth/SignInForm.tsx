@@ -159,10 +159,12 @@ export default function SignInForm() {
               Demo Accounts:
             </p>
             <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-              <li>• Admin: <code className="px-1 bg-white dark:bg-gray-900 rounded">admin@smartfactory.com</code> / Manager123!</li>
-              <li>• Supervisor: <code className="px-1 bg-white dark:bg-gray-900 rounded">SUP001</code> / Manager123!</li>
-              <li>• Production Mgr: <code className="px-1 bg-white dark:bg-gray-900 rounded">PROD001</code> / Manager123!</li>
-              <li>• Maintenance Mgr: <code className="px-1 bg-white dark:bg-gray-900 rounded">MA001</code> / Manager123!</li>
+              <li>• Admin (Level 1): <code className="px-1 bg-white dark:bg-gray-900 rounded">admin@smartfactory.com</code> / admin123</li>
+              <li>• Manager (Level 2): <code className="px-1 bg-white dark:bg-gray-900 rounded">PROD001</code> / Manager123!</li>
+              <li>• Supervisor (Level 3): <code className="px-1 bg-white dark:bg-gray-900 rounded">SUP001</code> / Manager123!</li>
+              <li className="pt-2 text-gray-500 italic">Mobile Only (No Web Access):</li>
+              <li>• Team Leader (Level 5): <code className="px-1 bg-white dark:bg-gray-900 rounded">TL001</code></li>
+              <li>• Operator (Level 6): <code className="px-1 bg-white dark:bg-gray-900 rounded">OP001</code></li>
             </ul>
           </div>
         </div>

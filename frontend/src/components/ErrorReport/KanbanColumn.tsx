@@ -1,5 +1,6 @@
 // src/components/KanbanColumn.tsx
 import React from "react";
+import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -31,9 +32,16 @@ export function KanbanColumn({
   title: Status;
   incidents: Incident[];
 }) {
+  const { setNodeRef } = useDroppable({
+    id: title,
+  });
+
   return (
-    <div className="flex-shrink-0 w-72 bg-slate-100 dark:bg-slate-900 rounded-lg">
-      <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+    <div 
+      ref={setNodeRef}
+      className="flex-shrink-0 w-72 bg-slate-100 dark:bg-slate-900 rounded-lg flex flex-col h-full"
+    >
+      <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-2">
           {columnIcons[title]}
           <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-200">
@@ -48,7 +56,7 @@ export function KanbanColumn({
         items={incidents.map((i) => i.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="p-2 space-y-2 h-[calc(100vh-250px)] overflow-y-auto">
+        <div className="p-2 space-y-2 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
           {incidents.map((incident) => (
             <KanbanCard key={incident.id} incident={incident} />
           ))}

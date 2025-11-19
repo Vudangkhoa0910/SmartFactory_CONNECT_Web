@@ -28,6 +28,23 @@ const createNews = asyncHandler(async (req, res) => {
     path: file.path
   })) : [];
   
+  // Determine status based on publish_at or request body
+  let status = req.body.status || 'draft';
+  let finalPublishAt = publish_at;
+
+  if (publish_at) {
+    const publishDate = new Date(publish_at);
+    // If publish date is now or in the past, set as published
+    if (publishDate <= new Date(Date.now() + 60000)) { // Add 1 min buffer
+      status = 'published';
+    } else {
+      status = 'draft'; // Future date must be draft
+    }
+  } else if (status === 'published') {
+    // If explicitly set to published but no date, set publish_at to now
+    finalPublishAt = new Date().toISOString();
+  }
+  
   const query = `
     INSERT INTO news (
       category,
@@ -41,7 +58,7 @@ const createNews = asyncHandler(async (req, res) => {
       publish_at,
       attachments,
       status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft')
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *
   `;
   
@@ -54,8 +71,9 @@ const createNews = asyncHandler(async (req, res) => {
     target_audience || 'all',
     target_departments ? JSON.stringify(target_departments) : null,
     is_priority || false,
-    publish_at || null,
-    JSON.stringify(attachments)
+    finalPublishAt || null,
+    JSON.stringify(attachments),
+    status
   ];
   
   const result = await db.query(query, values);
@@ -78,24 +96,49 @@ const getNews = asyncHandler(async (req, res) => {
   const { pagination, sort, filters } = req;
   const userId = req.user.id;
   const userRole = req.user.role;
+  const userLevel = req.user.level;
   const userDepartmentId = req.user.department_id;
   
-  const conditions = ['n.status = \'published\''];
+  const conditions = [];
   const params = [];
   let paramIndex = 1;
   
-  // Filter by target audience
-  conditions.push(`(
-    n.target_audience = 'all' OR
-    n.target_audience = $${paramIndex} OR
-    (n.target_departments IS NOT NULL AND 
-     n.target_departments::jsonb @> $${paramIndex + 1}::jsonb)
-  )`);
-  params.push(userRole, JSON.stringify([userDepartmentId]));
-  paramIndex += 2;
-  
-  // Only show published news
-  conditions.push(`(n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)`);
+  // 1. Status Filter
+  if (filters.status) {
+    if (filters.status !== 'published') {
+       // Only Admin/Manager/Supervisor (level <= 3) can see non-published
+       if (userLevel > 3) {
+          conditions.push(`n.status = 'published'`);
+       } else {
+          conditions.push(`n.status = $${paramIndex}`);
+          params.push(filters.status);
+          paramIndex++;
+       }
+    } else {
+       conditions.push(`n.status = 'published'`);
+    }
+  } else {
+    // Default to published
+    conditions.push(`n.status = 'published'`);
+  }
+
+  // 2. Targeting Filter
+  // Admin (1) and Factory Manager (2) see ALL
+  if (userLevel > 2) {
+     conditions.push(`(
+        n.target_audience = 'all' OR
+        n.target_audience = $${paramIndex} OR
+        (n.target_departments IS NOT NULL AND 
+         n.target_departments::jsonb @> $${paramIndex + 1}::jsonb)
+      )`);
+      // If user has no department, pass a dummy value to avoid matching empty array
+      params.push(userRole, JSON.stringify(userDepartmentId ? [userDepartmentId] : ["__no_dept__"]));
+      paramIndex += 2;
+  }
+
+  // 3. Publish Date Check
+  // If status is 'published', check date.
+  conditions.push(`(n.status != 'published' OR n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)`);
   
   // Apply filters
   if (filters.category) {
@@ -132,10 +175,12 @@ const getNews = asyncHandler(async (req, res) => {
     paramIndex++;
   }
   
-  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   
   // Get total count
   const countQuery = `SELECT COUNT(*) FROM news n ${whereClause}`;
+  console.log('News Query Conditions:', conditions);
+  console.log('News Query Params:', params);
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
   
@@ -146,6 +191,7 @@ const getNews = asyncHandler(async (req, res) => {
       n.category,
       n.title,
       n.excerpt,
+      n.status,
       n.is_priority,
       n.created_at,
       n.publish_at,

@@ -29,6 +29,11 @@ const createIdea = asyncHandler(async (req, res) => {
   // For Pink Box (anonymous), we still store submitter_id but mark as anonymous
   const is_anonymous = ideabox_type === 'pink';
   
+  // Set initial handler level
+  // White Box: Starts at Supervisor
+  // Pink Box: Starts at Admin (General Manager)
+  const handler_level = ideabox_type === 'pink' ? 'general_manager' : 'supervisor';
+
   const query = `
     INSERT INTO ideas (
       ideabox_type,
@@ -40,8 +45,9 @@ const createIdea = asyncHandler(async (req, res) => {
       department_id,
       is_anonymous,
       attachments,
-      status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+      status,
+      handler_level
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
     RETURNING *
   `;
   
@@ -54,7 +60,8 @@ const createIdea = asyncHandler(async (req, res) => {
     submitter_id,
     department_id || null,
     is_anonymous,
-    JSON.stringify(attachments)
+    JSON.stringify(attachments),
+    handler_level
   ];
   
   const result = await db.query(query, values);
@@ -101,7 +108,7 @@ const getIdeas = asyncHandler(async (req, res) => {
   
   // Access control based on ideabox_type
   // Pink Box: Only Admin can see all, others see only their own
-  // White Box: Supervisor and above can see all, others see their own
+  // White Box: Visibility based on handler_level and status
   
   if (filters.ideabox_type === 'pink') {
     if (userLevel > 1) {
@@ -110,28 +117,31 @@ const getIdeas = asyncHandler(async (req, res) => {
       params.push(userId);
       paramIndex++;
     }
-  } else if (filters.ideabox_type === 'white') {
-    if (userLevel > 4) {
-      // Below supervisor can only see their own white box ideas
-      conditions.push(`submitter_id = $${paramIndex}`);
-      params.push(userId);
-      paramIndex++;
-    }
   } else {
-    // No ideabox_type filter: apply combined logic
-    if (userLevel === 1) {
-      // Admin sees all
-    } else if (userLevel <= 4) {
-      // Supervisor and above: see all white box + own pink box
-      conditions.push(`(ideabox_type = 'white' OR (ideabox_type = 'pink' AND submitter_id = $${paramIndex}))`);
-      params.push(userId);
-      paramIndex++;
-    } else {
-      // Regular users: only their own ideas
-      conditions.push(`submitter_id = $${paramIndex}`);
-      params.push(userId);
-      paramIndex++;
+    // White Box / General Logic
+    // 1. Approved/Implemented ideas are visible to EVERYONE
+    // 2. Submitter can always see their own ideas
+    // 3. Supervisors (Level 3) see 'supervisor' level ideas
+    // 4. Managers (Level 2) see 'manager' level ideas
+    // 5. Admins (Level 1) see 'general_manager' level ideas
+    
+    let visibilityClause = `(
+      status IN ('approved', 'implemented') 
+      OR submitter_id = $${paramIndex}
+    `;
+    params.push(userId);
+    paramIndex++;
+
+    if (userLevel === 1) { // Admin
+      visibilityClause += ` OR handler_level = 'general_manager'`;
+    } else if (userLevel === 2) { // Manager
+      visibilityClause += ` OR handler_level = 'manager'`;
+    } else if (userLevel <= 4) { // Supervisor (Level 3/4)
+      visibilityClause += ` OR handler_level = 'supervisor' OR handler_level IS NULL`; // Default to supervisor visibility for legacy/null
     }
+    
+    visibilityClause += `)`;
+    conditions.push(visibilityClause);
   }
   
   // Apply other filters
@@ -475,6 +485,17 @@ const reviewIdea = asyncHandler(async (req, res) => {
   
   const oldStatus = idea.rows[0].status;
   
+  // If status is rejected, delete the idea (as per requirement for White Box)
+  if (status === 'rejected') {
+    await db.query('DELETE FROM ideas WHERE id = $1', [id]);
+    
+    return res.json({
+      success: true,
+      message: 'Idea rejected and deleted successfully',
+      data: { id, status: 'rejected' }
+    });
+  }
+
   // Update idea
   const query = `
     UPDATE ideas
@@ -651,8 +672,9 @@ const getIdeaStats = asyncHandler(async (req, res) => {
  */
 const escalateIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { escalated_to, reason } = req.body;
+  const { reason } = req.body;
   const userId = req.user.id;
+  const userLevel = req.user.level;
   
   // Get current idea
   const ideaResult = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
@@ -663,42 +685,47 @@ const escalateIdea = asyncHandler(async (req, res) => {
   
   const idea = ideaResult.rows[0];
   
-  // Check permission (only assigned_to can escalate)
-  if (idea.assigned_to !== userId && req.user.level > 3) {
-    throw new AppError('Not authorized to escalate this idea', 403);
+  // Determine next level
+  let nextLevel = '';
+  if (userLevel >= 3) { // Supervisor (3, 4, 5?) - Assuming 3/4 is SV
+    nextLevel = 'manager';
+  } else if (userLevel === 2) { // Manager
+    nextLevel = 'general_manager';
+  } else {
+    throw new AppError('You do not have permission to escalate this idea', 403);
   }
   
   // Update idea
   const updateQuery = `
     UPDATE ideas
-    SET assigned_to = $1,
+    SET handler_level = $1,
         status = 'under_review',
         updated_at = NOW()
     WHERE id = $2
     RETURNING *
   `;
   
-  const result = await db.query(updateQuery, [escalated_to, id]);
+  const result = await db.query(updateQuery, [nextLevel, id]);
   
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'escalated', $2, $3)`,
-    [id, userId, JSON.stringify({ escalated_to, reason, from: userId })]
+    [id, userId, JSON.stringify({ from_level: idea.handler_level, to_level: nextLevel, reason })]
   );
   
   // Add response about escalation
   await db.query(
     `INSERT INTO idea_responses (idea_id, user_id, response)
      VALUES ($1, $2, $3)`,
-    [id, userId, `Escalated to higher level. Reason: ${reason}`]
+    [id, userId, `Escalated to ${nextLevel}. Reason: ${reason || 'No reason provided'}`]
   );
   
   // TODO: Send notification to escalated_to user
   
   res.json({
     success: true,
-    message: 'Idea escalated successfully',
+    message: `Idea escalated to ${nextLevel} successfully`,
     data: result.rows[0]
   });
 });

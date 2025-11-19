@@ -29,16 +29,24 @@ export default function NewsDetailModal({ item, onClose }: Props) {
             <div className="mt-6">
               <h4 className="font-semibold mb-2">Tệp đính kèm:</h4>
               <div className="flex flex-col gap-2">
-                {item.attachments.map((file: string, index: number) => (
-                  <a
-                    key={index}
-                    href="#" // Thay bằng đường dẫn tải file thực tế
-                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <FileText size={18} />
-                    <span>{file}</span>
-                  </a>
-                ))}
+                {item.attachments.map((file: any, index: number) => {
+                  const filePath = file.path || file;
+                  const fileName = file.original_name || file.filename || file;
+                  const downloadUrl = `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${filePath}`;
+                  
+                  return (
+                    <a
+                      key={index}
+                      href={downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <FileText size={18} />
+                      <span>{fileName}</span>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}

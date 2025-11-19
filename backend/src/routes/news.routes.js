@@ -142,7 +142,7 @@ const statsQueryValidation = [
 router.post(
   '/',
   authenticate,
-  authorizeLevel(4), // Supervisor and above
+  authorizeLevel(3), // Supervisor and above
   uploadNewsFiles,
   createNewsValidation,
   validate,
@@ -159,7 +159,7 @@ router.get(
   authenticate,
   pagination,
   parseSort,
-  parseFilters(['category', 'is_priority', 'date_from', 'date_to', 'search']),
+  parseFilters(['category', 'is_priority', 'date_from', 'date_to', 'search', 'status']),
   newsController.getNews
 );
 
@@ -171,7 +171,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  authorizeLevel(4), // Supervisor and above
+  authorizeLevel(3), // Supervisor and above
   statsQueryValidation,
   validate,
   newsController.getNewsStats
@@ -209,7 +209,7 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  authorizeLevel(4), // Supervisor and above
+  authorizeLevel(3), // Supervisor and above
   uploadNewsFiles,
   updateNewsValidation,
   validate,
@@ -224,7 +224,7 @@ router.put(
 router.post(
   '/:id/publish',
   authenticate,
-  authorizeLevel(4), // Supervisor and above
+  authorizeLevel(3), // Supervisor and above
   publishNewsValidation,
   validate,
   newsController.publishNews
@@ -251,7 +251,7 @@ router.post(
 router.delete(
   '/:id',
   authenticate,
-  authorizeLevel(4), // Supervisor and above
+  authorizeLevel(3), // Supervisor and above
   newsIdValidation,
   validate,
   newsController.deleteNews

@@ -1,16 +1,56 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import api from "../../services/api";
 
 export default function UserInfoCard() {
+  const { user } = useAuth();
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      });
+    }
+  }, [user, isOpen]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.put("/auth/profile", formData);
+      // Ideally we should update the user context here, but a page reload or re-fetch would work too.
+      // For now, let's just close the modal and maybe reload.
+      window.location.reload(); 
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      alert("Failed to update profile");
+    } finally {
+      setLoading(false);
+      closeModal();
+    }
+  };
+
+  if (!user) return null;
+
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -22,19 +62,19 @@ export default function UserInfoCard() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                First Name
+                Full Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Musharof
+                {user.full_name}
               </p>
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Last Name
+                Employee Code
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Chowdhury
+                {user.employee_code}
               </p>
             </div>
 
@@ -43,7 +83,7 @@ export default function UserInfoCard() {
                 Email address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
+                {user.email}
               </p>
             </div>
 
@@ -52,16 +92,16 @@ export default function UserInfoCard() {
                 Phone
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                +09 363 398 46
+                {user.phone || "N/A"}
               </p>
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Bio
+                Role
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Team Manager
+                {user.role.replace(/_/g, " ").toUpperCase()}
               </p>
             </div>
           </div>
@@ -100,80 +140,52 @@ export default function UserInfoCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
-            <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
-              <div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Social Links
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div>
-                    <Label>Facebook</Label>
-                    <Input
-                      type="text"
-                      value="https://www.facebook.com/PimjoHQ"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>X.com</Label>
-                    <Input type="text" value="https://x.com/PimjoHQ" />
-                  </div>
-
-                  <div>
-                    <Label>Linkedin</Label>
-                    <Input
-                      type="text"
-                      value="https://www.linkedin.com/company/pimjo"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Instagram</Label>
-                    <Input type="text" value="https://instagram.com/PimjoHQ" />
-                  </div>
-                </div>
-              </div>
+          <form onSubmit={handleSave} className="flex flex-col">
+            <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
               <div className="mt-7">
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Personal Information
                 </h5>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                  <div className="col-span-2">
+                    <Label>Full Name</Label>
+                    <Input 
+                      type="text" 
+                      name="full_name"
+                      value={formData.full_name} 
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input 
+                      type="email" 
+                      name="email"
+                      value={formData.email} 
+                      onChange={handleChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
-                  </div>
-
-                  <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
+                    <Input 
+                      type="text" 
+                      name="phone"
+                      value={formData.phone} 
+                      onChange={handleChange}
+                    />
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
+              <Button size="sm" variant="outline" onClick={closeModal} type="button">
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
+              <Button size="sm" type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

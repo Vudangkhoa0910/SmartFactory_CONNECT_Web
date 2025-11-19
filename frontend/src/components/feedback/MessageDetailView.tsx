@@ -11,14 +11,23 @@ import {
 import { SensitiveMessage, HistoryAction } from "./data";
 import { ActionPanel } from "./ActionPanel";
 
+interface Department {
+  id: string;
+  name: string;
+}
+
 interface MessageDetailViewProps {
   message: SensitiveMessage | undefined;
-  onForward: (messageId: string, department: string, note: string) => void;
+  departments?: Department[];
+  loading?: boolean;
+  onForward: (messageId: string, departmentId: string, note: string) => Promise<void> | void;
   onReply: (messageId: string, content: string) => void;
 }
 
 export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
   message,
+  departments = [],
+  loading = false,
   onForward,
   onReply,
 }) => {
@@ -33,6 +42,11 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
       </main>
     );
   }
+
+  const handleForwardWrapper = async (messageId: string, departmentId: string, note: string) => {
+    await onForward(messageId, departmentId, note);
+    setActivePanel("none");
+  };
 
   const handleReply = () => {
     if (!replyContent.trim()) return;
@@ -143,8 +157,10 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
       {activePanel === "forward" && (
         <ActionPanel
           message={message}
+          departments={departments}
+          loading={loading}
           onClose={() => setActivePanel("none")}
-          onForward={onForward}
+          onForward={handleForwardWrapper}
         />
       )}
     </main>

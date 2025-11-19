@@ -60,14 +60,15 @@ const register = asyncHandler(async (req, res) => {
   // Map role to level
   const roleToLevel = {
     'admin': 1,
-    'factory_manager': 2,
-    'production_manager': 3,
-    'supervisor': 4,
+    'general_manager': 1, // GM
+    'manager': 2,         // Mgr
+    'supervisor': 3,      // SV
+    
+    // Below roles are restricted from Web access
     'team_leader': 5,
     'operator': 6,
     'technician': 7,
     'qc_inspector': 8,
-    'maintenance_manager': 9,
     'maintenance_staff': 9,
     'viewer': 10
   };
@@ -136,6 +137,11 @@ const login = asyncHandler(async (req, res) => {
   if (!isPasswordValid) {
     throw new AppError('Invalid credentials', 401);
   }
+
+  // Check web access permission (Level <= 3: Admin, GM, Manager, Supervisor)
+  if (user.level > 3) {
+    throw new AppError('Access denied. This account type cannot access the Web portal.', 403);
+  }
   
   // Update last login
   await db.query(
@@ -156,12 +162,12 @@ const login = asyncHandler(async (req, res) => {
   );
   
   // Determine permissions
-  const hasWebAccess = user.level <= 5; // Admin to Team Leader
-  const canViewDashboard = user.level <= 5;
-  const canManageUsers = user.level === 1; // Only Admin
-  const canViewPinkBox = user.level === 1; // Only Admin
-  const canReviewIdeas = user.level <= 4; // Admin, Factory Manager, Prod Manager, Supervisor
-  const canCreateNews = user.level <= 4;
+  const hasWebAccess = user.level <= 3; 
+  const canViewDashboard = user.level <= 3;
+  const canManageUsers = user.level === 1; // Only Admin/GM
+  const canViewPinkBox = user.level === 1; // Only Admin/GM
+  const canReviewIdeas = user.level <= 3; // Admin, GM, Manager, Supervisor
+  const canCreateNews = user.level <= 3;
   
   // Remove password from response
   delete user.password;

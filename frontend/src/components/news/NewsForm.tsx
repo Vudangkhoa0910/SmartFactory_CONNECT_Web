@@ -1,5 +1,6 @@
 import React, { useState, DragEvent } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
+import api from "../../services/api";
 
 interface NewsItem {
   title: string;
@@ -13,6 +14,7 @@ export default function NewsForm() {
     content: "",
     attachments: [],
   });
+  const [loading, setLoading] = useState(false);
 
   const allowedTypes = [
     "application/pdf",
@@ -44,6 +46,45 @@ export default function NewsForm() {
     });
   };
 
+  const handleSubmit = async () => {
+    if (!news.title.trim() || !news.content.trim()) {
+      alert("Vui lòng nhập tiêu đề và nội dung!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("title", news.title);
+      formData.append("content", news.content);
+      formData.append("category", "company_announcement"); // Default category
+      formData.append("target_audience", "all"); // Default audience
+      formData.append("publish_at", new Date().toISOString()); // Publish immediately
+      formData.append("status", "published"); // Explicitly set status
+
+      news.attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+
+      await api.post("/news", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Đăng tin thành công!");
+      // Reset form
+      setNews({ title: "", content: "", attachments: [] });
+      // Reload page or trigger list update (optional, for now user can refresh)
+      window.location.reload(); 
+    } catch (error: any) {
+      console.error("Failed to create news:", error);
+      alert(`Đăng tin thất bại: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
       <h2 className="text-xl font-semibold mb-5">Tạo Tin Tức</h2>
@@ -55,6 +96,7 @@ export default function NewsForm() {
         className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 mb-3"
         value={news.title}
         onChange={(e) => setNews({ ...news, title: e.target.value })}
+        disabled={loading}
       />
 
       {/* Content */}
@@ -63,6 +105,7 @@ export default function NewsForm() {
         className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 h-32 mb-5"
         value={news.content}
         onChange={(e) => setNews({ ...news, content: e.target.value })}
+        disabled={loading}
       />
 
       {/* Upload Section */}
@@ -85,6 +128,7 @@ export default function NewsForm() {
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
+          disabled={loading}
         />
       </div>
 
@@ -103,6 +147,7 @@ export default function NewsForm() {
               <button
                 onClick={() => removeFile(index)}
                 className="text-red-500 hover:text-red-700"
+                disabled={loading}
               >
                 <X size={18} />
               </button>
@@ -112,8 +157,12 @@ export default function NewsForm() {
       )}
 
       {/* Button */}
-      <button className="mt-5 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">
-        Đăng Tin
+      <button 
+        onClick={handleSubmit}
+        disabled={loading}
+        className="mt-5 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? "Đang xử lý..." : "Đăng Tin"}
       </button>
     </div>
   );

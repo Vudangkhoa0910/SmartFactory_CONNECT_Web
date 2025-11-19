@@ -2,15 +2,15 @@ import { useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 
-export default function FeedbackTagChart() {
-  const labels: string[] = [
-    "Chất lượng",
-    "Hiệu suất",
-    "An toàn",
-    "Tiết kiệm năng lượng",
-    "Khác",
-  ];
-  const series: number[] = [45, 25, 15, 8, 7];
+export default function FeedbackTagChart({ data }: { data?: any[] }) {
+  // Default data if no API data
+  const defaultLabels = ["Chất lượng", "Hiệu suất", "An toàn", "Tiết kiệm năng lượng", "Khác"];
+  const defaultSeries = [45, 25, 15, 8, 7];
+
+  // Process API data if available
+  const labels = data ? data.map((item: any) => item.category) : defaultLabels;
+  const series = data ? data.map((item: any) => parseInt(item.count)) : defaultSeries;
+  
   const colors: string[] = [
     "#e5386d",
     "#ff4d6d",
@@ -18,7 +18,7 @@ export default function FeedbackTagChart() {
     "#ffb3c1",
     "#ffccd5",
   ];
-  const totalFeedback = series.reduce((a, b) => a + b, 0);
+  const totalFeedback = series.reduce((a: number, b: number) => a + b, 0);
 
   const [selectedSlice, setSelectedSlice] = useState<{
     index: number;

@@ -6,20 +6,17 @@ import PageMeta from "../../components/common/PageMeta";
 
 interface Department {
   id: number;
-  name: string;
   code: string;
+  name: string;
   description: string | null;
+  parent_id: number | null;
   manager_id: number | null;
-  manager?: {
-    id: number;
-    full_name: string;
-    employee_code: string;
-  };
   is_active: boolean;
   created_at: string;
-  _count?: {
-    users: number;
-  };
+  parent_name: string | null;
+  manager_name: string | null;
+  manager_code: string | null;
+  employee_count: string | number;
 }
 
 export default function DepartmentList() {
@@ -51,7 +48,7 @@ export default function DepartmentList() {
 
   const toggleDepartmentStatus = async (deptId: number, currentStatus: boolean) => {
     try {
-      await api.patch(`/departments/${deptId}`, { is_active: !currentStatus });
+      await api.put(`/departments/${deptId}`, { is_active: !currentStatus });
       fetchDepartments();
     } catch (error) {
       console.error("Failed to update department status:", error);
@@ -149,13 +146,13 @@ export default function DepartmentList() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        {dept.manager ? (
+                        {dept.manager_name ? (
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">
-                              {dept.manager.full_name}
+                              {dept.manager_name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {dept.manager.employee_code}
+                              {dept.manager_code}
                             </div>
                           </div>
                         ) : (
@@ -164,7 +161,7 @@ export default function DepartmentList() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {dept._count?.users || 0}
+                          {dept.employee_count || 0}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -218,7 +215,7 @@ export default function DepartmentList() {
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <div className="text-2xl font-bold text-brand-600">
-              {departments.reduce((sum, d) => sum + (d._count?.users || 0), 0)}
+              {departments.reduce((sum, d) => sum + (Number(d.employee_count) || 0), 0)}
             </div>
             <div className="text-sm text-gray-500">Tổng nhân viên</div>
           </div>

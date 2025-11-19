@@ -8,17 +8,13 @@ import PageMeta from "../../components/common/PageMeta";
 interface User {
   id: number;
   employee_code: string;
-  username: string;
   email: string;
   full_name: string;
   phone: string;
   role: string;
   level: number;
   department_id: number | null;
-  department?: {
-    id: number;
-    name: string;
-  };
+  department_name: string | null;
   is_active: boolean;
   last_login: string | null;
   created_at: string;
@@ -32,13 +28,16 @@ interface Department {
 
 const ROLES = [
   { value: "admin", label: "Admin", level: 1 },
+  { value: "factory_manager", label: "Factory Manager", level: 2 },
   { value: "production_manager", label: "Production Manager", level: 3 },
-  { value: "maintenance_manager", label: "Maintenance Manager", level: 3 },
   { value: "supervisor", label: "Supervisor", level: 4 },
   { value: "team_leader", label: "Team Leader", level: 5 },
-  { value: "logistics_manager", label: "Logistics Manager", level: 5 },
   { value: "operator", label: "Operator", level: 6 },
+  { value: "technician", label: "Technician", level: 7 },
   { value: "qc_inspector", label: "QC Inspector", level: 8 },
+  { value: "maintenance_manager", label: "Maintenance Manager", level: 9 },
+  { value: "maintenance_staff", label: "Maintenance Staff", level: 9 },
+  { value: "viewer", label: "Viewer", level: 10 },
 ];
 
 export default function UserManagement() {
@@ -83,7 +82,7 @@ export default function UserManagement() {
 
   const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
     try {
-      await api.patch(`/users/${userId}`, { is_active: !currentStatus });
+      await api.put(`/users/${userId}`, { is_active: !currentStatus });
       fetchUsers();
     } catch (error) {
       console.error("Failed to update user status:", error);
@@ -240,9 +239,9 @@ export default function UserManagement() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {user.department ? (
+                        {user.department_name ? (
                           <span className="text-gray-700 dark:text-gray-300">
-                            {user.department.name}
+                            {user.department_name}
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
