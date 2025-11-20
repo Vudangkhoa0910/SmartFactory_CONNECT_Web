@@ -62,18 +62,18 @@ export default function StatisticsChart() {
     xaxis: {
       type: "category", // Category-based x-axis
       categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
       ],
       axisBorder: {
         show: false, // Hide x-axis border
@@ -103,12 +103,12 @@ export default function StatisticsChart() {
 
   const series = [
     {
-      name: "Sales",
-      data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
+      name: "Đã xử lý",
+      data: [12, 18, 15, 10, 20, 15, 12, 18, 14, 25, 20, 12],
     },
     {
-      name: "Revenue",
-      data: [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
+      name: "Đã báo cáo",
+      data: [15, 22, 18, 12, 25, 19, 14, 20, 16, 28, 22, 15],
     },
   ];
   return (
@@ -116,10 +116,10 @@ export default function StatisticsChart() {
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
         <div className="w-full">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Statistics
+            Xu hướng sự cố
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Target you’ve set for each month
+            Sự cố đã báo cáo vs Đã xử lý
           </p>
         </div>
         <div className="flex items-start w-full gap-3 sm:justify-end">

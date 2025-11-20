@@ -18,10 +18,10 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Customers
+              Tổng nhân viên
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              3,782
+              2,300
             </h4>
           </div>
           <Badge color="success">
@@ -40,10 +40,10 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Orders
+              Tổng sự cố
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              5,359
+              156
             </h4>
           </div>
 
