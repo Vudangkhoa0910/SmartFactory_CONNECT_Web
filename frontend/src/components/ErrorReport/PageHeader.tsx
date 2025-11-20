@@ -1,17 +1,19 @@
 // src/components/PageHeader.tsx
 import React from "react";
-import { LayoutGrid, List, Plus, Search } from "lucide-react";
+import { LayoutGrid, List, Plus, Search, FileDown } from "lucide-react";
 
 interface PageHeaderProps {
   viewMode: "kanban" | "list";
   onViewModeChange: (mode: "kanban" | "list") => void;
   onSearchChange: (term: string) => void;
+  onExport: () => void;
 }
 
 export function PageHeader({
   viewMode,
   onViewModeChange,
   onSearchChange,
+  onExport,
 }: PageHeaderProps) {
   return (
     <header className="mb-6">
@@ -38,6 +40,15 @@ export function PageHeader({
               className="pl-10 pr-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+
+          <button
+            onClick={onExport}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+          >
+            <FileDown size={18} />
+            Xuất Excel
+          </button>
+
           <div className="bg-slate-200 dark:bg-slate-700 p-1 rounded-md flex items-center">
             <button
               onClick={() => onViewModeChange("kanban")}

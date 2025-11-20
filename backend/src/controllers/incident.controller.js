@@ -2,6 +2,7 @@ const db = require('../config/database');
 const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const path = require('path');
 const fs = require('fs').promises;
+const ExcelJS = require('exceljs');
 
 /**
  * Create new incident
@@ -1030,6 +1031,127 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Export incidents to Excel
+ * GET /api/incidents/export
+ */
+const exportIncidentsToExcel = asyncHandler(async (req, res) => {
+  const { filters } = req;
+  
+  // Build WHERE conditions (same as getIncidents but without pagination)
+  const conditions = [];
+  const params = [];
+  let paramIndex = 1;
+  
+  // Apply filters
+  if (filters.status) {
+    conditions.push(`status = $${paramIndex}`);
+    params.push(filters.status);
+    paramIndex++;
+  }
+  
+  if (filters.incident_type) {
+    conditions.push(`incident_type = $${paramIndex}`);
+    params.push(filters.incident_type);
+    paramIndex++;
+  }
+  
+  if (filters.priority) {
+    conditions.push(`priority = $${paramIndex}`);
+    params.push(filters.priority);
+    paramIndex++;
+  }
+  
+  if (filters.department_id) {
+    conditions.push(`department_id = $${paramIndex}`);
+    params.push(filters.department_id);
+    paramIndex++;
+  }
+  
+  if (filters.assigned_to) {
+    conditions.push(`assigned_to = $${paramIndex}`);
+    params.push(filters.assigned_to);
+    paramIndex++;
+  }
+  
+  if (filters.date_from) {
+    conditions.push(`created_at >= $${paramIndex}`);
+    params.push(filters.date_from);
+    paramIndex++;
+  }
+  
+  if (filters.date_to) {
+    conditions.push(`created_at <= $${paramIndex}`);
+    params.push(filters.date_to);
+    paramIndex++;
+  }
+  
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  
+  const query = `
+    SELECT 
+      i.*,
+      u.full_name as reporter_name,
+      u.employee_code as reporter_code,
+      d.name as department_name,
+      a.full_name as assigned_to_name,
+      r.full_name as resolved_by_name
+    FROM incidents i
+    LEFT JOIN users u ON i.reporter_id = u.id
+    LEFT JOIN departments d ON i.department_id = d.id
+    LEFT JOIN users a ON i.assigned_to = a.id
+    LEFT JOIN users r ON i.resolved_by = r.id
+    ${whereClause}
+    ORDER BY i.created_at DESC
+  `;
+  
+  const result = await db.query(query, params);
+  const incidents = result.rows;
+
+  // Create Workbook
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Incidents');
+
+  // Define Columns
+  worksheet.columns = [
+    { header: 'ID', key: 'id', width: 36 },
+    { header: 'Title', key: 'title', width: 30 },
+    { header: 'Type', key: 'incident_type', width: 15 },
+    { header: 'Priority', key: 'priority', width: 10 },
+    { header: 'Status', key: 'status', width: 15 },
+    { header: 'Department', key: 'department_name', width: 20 },
+    { header: 'Reporter', key: 'reporter_name', width: 20 },
+    { header: 'Assigned To', key: 'assigned_to_name', width: 20 },
+    { header: 'Created At', key: 'created_at', width: 20 },
+    { header: 'Resolved At', key: 'resolved_at', width: 20 },
+    { header: 'Resolved By', key: 'resolved_by_name', width: 20 },
+    { header: 'Description', key: 'description', width: 50 },
+    { header: 'Resolution Notes', key: 'resolution_notes', width: 50 },
+    { header: 'Root Cause', key: 'root_cause', width: 50 },
+    { header: 'Corrective Actions', key: 'corrective_actions', width: 50 }
+  ];
+
+  // Add Rows
+  incidents.forEach(incident => {
+    worksheet.addRow({
+      ...incident,
+      created_at: incident.created_at ? new Date(incident.created_at).toLocaleString() : '',
+      resolved_at: incident.resolved_at ? new Date(incident.resolved_at).toLocaleString() : ''
+    });
+  });
+
+  // Style Header
+  worksheet.getRow(1).font = { bold: true };
+  
+  // Set Response Headers
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename=incidents.xlsx');
+
+  // Write to Response
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
 module.exports = {
   createIncident,
   getIncidents,
@@ -1047,5 +1169,6 @@ module.exports = {
   quickAssignToDepartment,
   getKanbanData,
   moveIncidentStatus,
-  bulkUpdateIncidents
+  bulkUpdateIncidents,
+  exportIncidentsToExcel
 };

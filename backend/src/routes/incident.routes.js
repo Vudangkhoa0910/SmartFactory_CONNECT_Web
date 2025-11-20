@@ -211,6 +211,26 @@ router.post(
 );
 
 /**
+ * @route   GET /api/incidents/export
+ * @desc    Export incidents to Excel
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/export',
+  authenticate,
+  parseFilters([
+    'status',
+    'incident_type',
+    'priority',
+    'department_id',
+    'assigned_to',
+    'date_from',
+    'date_to'
+  ]),
+  incidentController.exportIncidentsToExcel
+);
+
+/**
  * @route   GET /api/incidents/:id
  * @desc    Get incident by ID
  * @access  Private (Authenticated users - own incidents or authorized roles)

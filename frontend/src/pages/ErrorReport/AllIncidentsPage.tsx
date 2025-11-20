@@ -195,6 +195,25 @@ export default function AllIncidentsPage() {
 
   const activeIncident = activeId ? incidents.find((i) => i.id === activeId) : null;
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/incidents/export', {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `incidents_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Failed to export incidents:", error);
+      alert("Xuất file thất bại");
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col font-sans overflow-hidden gap-4">
       {/* Header Section */}
@@ -203,6 +222,7 @@ export default function AllIncidentsPage() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onSearchChange={setSearchTerm}
+          onExport={handleExport}
         />
       </div>
 
