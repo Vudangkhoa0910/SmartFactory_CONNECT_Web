@@ -8,8 +8,8 @@ interface Props {
 
 export default function NewsDetailModal({ item, onClose }: Props) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl transform transition-all animate-fade-in-up">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[999999]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl transform transition-all scale-100 opacity-100">
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h2 className="text-xl font-bold">{item.title}</h2>
           <button
@@ -20,9 +20,9 @@ export default function NewsDetailModal({ item, onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
           <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-            {item.content}
+            {item.content || item.excerpt || "Không có nội dung chi tiết."}
           </p>
 
           {item.attachments?.length > 0 && (
@@ -32,7 +32,10 @@ export default function NewsDetailModal({ item, onClose }: Props) {
                 {item.attachments.map((file: any, index: number) => {
                   const filePath = file.path || file;
                   const fileName = file.original_name || file.filename || file;
-                  const downloadUrl = `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${filePath}`;
+                  // Handle URL construction safely
+                  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+                  const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+                  const downloadUrl = `${baseUrl}/${cleanPath}`;
                   
                   return (
                     <a

@@ -110,13 +110,16 @@ export default function NewsList() {
       
       setSelectedNews({
         ...item,
-        content: detail.content,
-        attachments: typeof detail.attachments === 'string' ? JSON.parse(detail.attachments) : detail.attachments
+        content: detail.content || item.content || '',
+        attachments: detail.attachments ? (typeof detail.attachments === 'string' ? JSON.parse(detail.attachments) : detail.attachments) : []
       });
     } catch (error) {
       console.error("Failed to fetch news details:", error);
       // Fallback to existing item if fetch fails
-      setSelectedNews(item);
+      setSelectedNews({
+        ...item,
+        content: item.content || item.excerpt || ''
+      });
     }
   };
 
