@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { BellRing } from "lucide-react";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 import { Incident, Priority } from "../../components/ErrorReport/index";
 import { DEPARTMENTS } from "../../components/ErrorReport/data";
@@ -136,9 +137,10 @@ const IncidentWorkspace: React.FC = () => {
       if (feedback) {
         await api.post(`/incidents/${id}/comments`, { comment: feedback });
       }
+      toast.success("Đã tiếp nhận sự cố");
     } catch (error) {
       console.error("Acknowledge failed", error);
-      alert("Tiếp nhận thất bại");
+      toast.error("Tiếp nhận thất bại");
     }
   };
 
@@ -166,9 +168,10 @@ const IncidentWorkspace: React.FC = () => {
       } else {
         setSelectedIncident(null);
       }
+      toast.success("Đã xử lý sự cố");
     } catch (error) {
       console.error("Resolve failed", error);
-      alert("Xử lý thất bại");
+      toast.error("Xử lý thất bại");
     }
   };
 

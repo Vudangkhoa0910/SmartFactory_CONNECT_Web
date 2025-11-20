@@ -1,6 +1,7 @@
 import React, { useState, DragEvent } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 interface NewsItem {
   title: string;
@@ -65,7 +66,7 @@ export default function NewsForm() {
 
   const handleSubmit = async () => {
     if (!news.title.trim() || !news.content.trim()) {
-      alert("Vui lòng nhập tiêu đề và nội dung!");
+      toast.warning("Vui lòng nhập tiêu đề và nội dung!");
       return;
     }
 
@@ -91,7 +92,7 @@ export default function NewsForm() {
         },
       });
 
-      alert("Đăng tin thành công!");
+      toast.success("Đăng tin thành công!");
       // Reset form
       setNews({ 
         title: "", 
@@ -105,7 +106,7 @@ export default function NewsForm() {
       window.location.reload(); 
     } catch (error: any) {
       console.error("Failed to create news:", error);
-      alert(`Đăng tin thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`Đăng tin thất bại: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 // src/pages/SensitiveInbox/ActionPanel.tsx
 import React, { useState } from "react";
 import { X, Send } from "lucide-react";
+import { toast } from "react-toastify";
 import { SensitiveMessage } from "./data";
 
 interface Department {
@@ -28,7 +29,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
 
   const handleForward = () => {
     if (!departmentId) {
-      alert("Vui lòng chọn phòng ban để chuyển tiếp.");
+      toast.warning("Vui lòng chọn phòng ban để chuyển tiếp.");
       return;
     }
     onForward(message.id, departmentId, note);

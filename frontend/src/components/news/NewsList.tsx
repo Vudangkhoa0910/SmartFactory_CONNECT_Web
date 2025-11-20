@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import NewsCard from "./NewsCard";
 import NewsDetailModal from "./NewsDetailModal";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 interface NewsItem {
   id: string;
@@ -90,14 +91,15 @@ export default function NewsList() {
         }));
       }
       console.log(`Đã xoá tin tức với ID: ${id}`);
+      toast.success("Đã xoá tin tức thành công");
     } catch (error) {
       console.error("Failed to delete news:", error);
-      alert("Xoá tin tức thất bại");
+      toast.error("Xoá tin tức thất bại");
     }
   };
 
   const handleEdit = (id: string) => {
-    alert(`Chức năng SỬA tin (ID: ${id}) đang chờ kết nối API.`);
+    toast.info(`Chức năng SỬA tin (ID: ${id}) đang chờ kết nối API.`);
   };
 
   const handleViewDetails = async (item: NewsItem) => {

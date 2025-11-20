@@ -12,6 +12,7 @@ import {
   DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { toast } from "react-toastify";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -173,7 +174,7 @@ export default function AllIncidentsPage() {
         setIncidents((prev) =>
           prev.map((i) => (i.id === active.id ? { ...i, status: oldStatus } : i))
         );
-        alert("Cập nhật trạng thái thất bại");
+        toast.error("Cập nhật trạng thái thất bại");
       }
     }
     // Nếu kéo trong cùng một cột -> Sắp xếp lại vị trí
@@ -208,9 +209,10 @@ export default function AllIncidentsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success("Xuất file thành công!");
     } catch (error) {
       console.error("Failed to export incidents:", error);
-      alert("Xuất file thất bại");
+      toast.error("Xuất file thất bại");
     }
   };
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useDepartments } from "../../hooks/useDepartments";
+import { toast } from "react-toastify";
 import {
   CURRENT_USER,
   HistoryEntry,
@@ -149,10 +150,10 @@ export default function SensitiveInboxPage() {
       ));
       
       // Show success message (could be a toast)
-      alert("Đã chuyển tiếp thành công!");
+      toast.success("Đã chuyển tiếp thành công!");
     } catch (error: any) {
       console.error("Forward failed:", error);
-      alert(`Chuyển tiếp thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`Chuyển tiếp thất bại: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -192,10 +193,10 @@ export default function SensitiveInboxPage() {
         return m;
       }));
       
-      alert("Đã gửi phản hồi thành công!");
+      toast.success("Đã gửi phản hồi thành công!");
     } catch (error: any) {
       console.error("Reply failed:", error);
-      alert(`Gửi phản hồi thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`Gửi phản hồi thất bại: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }

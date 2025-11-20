@@ -6,6 +6,7 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import api from "../../services/api";
+import { toast } from "react-toastify";
 
 export default function UserInfoCard() {
   const { user } = useAuth();
@@ -39,10 +40,11 @@ export default function UserInfoCard() {
       await api.put("/auth/profile", formData);
       // Ideally we should update the user context here, but a page reload or re-fetch would work too.
       // For now, let's just close the modal and maybe reload.
-      window.location.reload(); 
+      toast.success("Profile updated successfully");
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("Failed to update profile");
+      toast.error("Failed to update profile");
     } finally {
       setLoading(false);
       closeModal();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "react-toastify";
 import { PublicIdea, StatusType } from "../../components/feedback/types";
 import { IdeaList } from "../../components/feedback/IdeaList";
 import { IdeaDetail } from "../../components/feedback/IdeaDetail";
@@ -139,7 +140,7 @@ export default function PublicIdeasPage() {
         // Remove from list as it moves to next level (and out of current user's view scope)
         setIdeas((prev) => prev.filter((idea) => idea.id !== selectedIdea.id));
         setSelectedId(null);
-        alert("Đã chuyển tiếp thành công!");
+        toast.success("Đã chuyển tiếp thành công!");
         return;
       }
 
@@ -178,10 +179,10 @@ export default function PublicIdeasPage() {
           )
         );
       }
-      alert("Cập nhật trạng thái thành công!");
+      toast.success("Cập nhật trạng thái thành công!");
     } catch (error: any) {
       console.error("Update status failed:", error);
-      alert(`Cập nhật thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`Cập nhật thất bại: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -209,7 +210,7 @@ export default function PublicIdeasPage() {
       );
     } catch (error: any) {
       console.error("Send chat failed:", error);
-      alert(`Gửi tin nhắn thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`Gửi tin nhắn thất bại: ${error.response?.data?.message || error.message}`);
     }
   };
 
