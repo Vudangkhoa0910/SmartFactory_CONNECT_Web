@@ -108,6 +108,13 @@ const getIncidents = asyncHandler(async (req, res) => {
   }
   */
   
+  // Apply search filter
+  if (req.query.search) {
+    conditions.push(`(LOWER(i.title) LIKE $${paramIndex} OR LOWER(i.description) LIKE $${paramIndex} OR LOWER(i.location) LIKE $${paramIndex})`);
+    params.push(`%${req.query.search.toLowerCase()}%`);
+    paramIndex++;
+  }
+  
   // Apply filters
   if (filters.status) {
     conditions.push(`status = $${paramIndex}`);
@@ -140,13 +147,13 @@ const getIncidents = asyncHandler(async (req, res) => {
   }
   
   if (filters.date_from) {
-    conditions.push(`created_at >= $${paramIndex}`);
+    conditions.push(`i.created_at >= $${paramIndex}`);
     params.push(filters.date_from);
     paramIndex++;
   }
   
   if (filters.date_to) {
-    conditions.push(`created_at <= $${paramIndex}`);
+    conditions.push(`i.created_at <= $${paramIndex}`);
     params.push(filters.date_to);
     paramIndex++;
   }
@@ -154,7 +161,7 @@ const getIncidents = asyncHandler(async (req, res) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   
   // Get total count
-  const countQuery = `SELECT COUNT(*) FROM incidents ${whereClause}`;
+  const countQuery = `SELECT COUNT(*) FROM incidents i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
   

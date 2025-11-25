@@ -4,6 +4,7 @@ import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import { useAuth } from "../contexts/AuthContext";
+import ChatAssistant from "../components/ChatAssistant";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -39,6 +40,7 @@ const LayoutContent: React.FC = () => {
           <Outlet />
         </div>
       </div>
+      <ChatAssistant />
     </div>
   );
 };

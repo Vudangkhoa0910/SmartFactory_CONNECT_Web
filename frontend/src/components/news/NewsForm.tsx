@@ -1,5 +1,6 @@
-import React, { useState, DragEvent } from "react";
+import React, { useState, DragEvent, useEffect } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
+import { useLocation } from "react-router";
 import api from "../../services/api";
 import { toast } from "react-toastify";
 
@@ -13,6 +14,7 @@ interface NewsItem {
 }
 
 export default function NewsForm() {
+  const location = useLocation();
   const [news, setNews] = useState<NewsItem>({
     title: "",
     excerpt: "",
@@ -21,6 +23,21 @@ export default function NewsForm() {
     is_priority: false,
     attachments: [],
   });
+
+  // Auto-fill from navigation state (e.g. from Chat Assistant)
+  useEffect(() => {
+    if (location.state) {
+      setNews(prev => ({
+        ...prev,
+        title: location.state.title || prev.title,
+        content: location.state.content || prev.content,
+        category: location.state.category || prev.category
+      }));
+      // Optional: Clear state so it doesn't persist on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   const [loading, setLoading] = useState(false);
 
   const allowedTypes = [

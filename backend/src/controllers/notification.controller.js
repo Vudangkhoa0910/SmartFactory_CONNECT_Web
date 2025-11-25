@@ -7,12 +7,14 @@ const { asyncHandler } = require('../middlewares/error.middleware');
 const getNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { pagination } = req;
+  const { unread } = req.query;
   
   const notificationService = req.app.get('notificationService');
   
   const result = await notificationService.getUserNotifications(userId, {
     page: pagination.page,
-    limit: pagination.limit
+    limit: pagination.limit,
+    unreadOnly: unread === 'true'
   });
   
   res.json({

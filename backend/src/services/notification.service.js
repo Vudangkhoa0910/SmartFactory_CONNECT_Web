@@ -244,23 +244,27 @@ class NotificationService {
   /**
    * Get notifications for user
    */
-  async getUserNotifications(userId, { page = 1, limit = 20 }) {
+  async getUserNotifications(userId, { page = 1, limit = 20, unreadOnly = false }) {
     try {
       const offset = (page - 1) * limit;
       
-      const countResult = await db.query(
-        'SELECT COUNT(*) FROM notifications WHERE user_id = $1',
-        [userId]
-      );
+      let countQuery = 'SELECT COUNT(*) FROM notifications WHERE user_id = $1';
+      let dataQuery = `SELECT * FROM notifications WHERE user_id = $1`;
+      const queryParams = [userId];
       
+      if (unreadOnly) {
+        countQuery += ' AND is_read = false';
+        dataQuery += ' AND is_read = false';
+      }
+      
+      const countResult = await db.query(countQuery, queryParams);
       const totalItems = parseInt(countResult.rows[0].count);
       
+      dataQuery += ' ORDER BY created_at DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+      
       const result = await db.query(
-        `SELECT * FROM notifications 
-         WHERE user_id = $1 
-         ORDER BY created_at DESC 
-         LIMIT $2 OFFSET $3`,
-        [userId, limit, offset]
+        dataQuery,
+        [...queryParams, limit, offset]
       );
       
       return {
