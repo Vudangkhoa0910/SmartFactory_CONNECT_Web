@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const API_KEY = process.env.GEMINI_API_KEY ;
+const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCz6Dy7Gpsy1Zh8fcQfCFuqIRUJiMz26JY';
 const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 /**

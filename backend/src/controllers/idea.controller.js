@@ -106,18 +106,39 @@ const getIdeas = asyncHandler(async (req, res) => {
   const params = [];
   let paramIndex = 1;
   
-  // Access control based on ideabox_type
-  // Pink Box: Only Admin can see all, others see only their own
-  // White Box: Visibility based on handler_level and status
+  // Check if this is a chat search request
+  // Chat search will have 'from_chat' query param set by frontend
+  const isChatSearch = req.query.from_chat === 'true';
   
-  if (filters.ideabox_type === 'pink') {
+  // Access control based on ideabox_type
+  // SPECIAL RULE FOR CHAT SEARCH: Admin (level 1) can see ALL ideas regardless of handler_level/status
+  // In normal page view (Ideas List), apply strict visibility rules
+  
+  if (isChatSearch && userLevel === 1) {
+    // Admin in chat search: Can see ALL ideas without restrictions
+    // Just apply ideabox_type filter if specified
+    if (filters.ideabox_type) {
+      conditions.push(`i.ideabox_type = $${paramIndex}`);
+      params.push(filters.ideabox_type);
+      paramIndex++;
+    }
+  } else if (filters.ideabox_type === 'pink') {
+    conditions.push(`i.ideabox_type = $${paramIndex}`);
+    params.push(filters.ideabox_type);
+    paramIndex++;
+    
     if (userLevel > 1) {
       // Non-admin can only see their own pink box ideas
-      conditions.push(`submitter_id = $${paramIndex}`);
+      conditions.push(`i.submitter_id = $${paramIndex}`);
       params.push(userId);
       paramIndex++;
     }
+    // Admin can see all pink ideas (no additional condition)
   } else if (filters.ideabox_type === 'white') {
+    conditions.push(`i.ideabox_type = $${paramIndex}`);
+    params.push(filters.ideabox_type);
+    paramIndex++;
+    
     // White Box / General Logic
     // 1. Approved/Implemented ideas are visible to EVERYONE
     // 2. Submitter can always see their own ideas
@@ -126,71 +147,111 @@ const getIdeas = asyncHandler(async (req, res) => {
     // 5. Admins (Level 1) see 'general_manager' level ideas
     
     let visibilityClause = `(
-      status IN ('approved', 'implemented') 
-      OR submitter_id = $${paramIndex}
+      i.status IN ('approved', 'implemented') 
+      OR i.submitter_id = $${paramIndex}
     `;
     params.push(userId);
     paramIndex++;
 
     if (userLevel === 1) { // Admin
-      visibilityClause += ` OR handler_level = 'general_manager'`;
+      visibilityClause += ` OR i.handler_level = 'general_manager'`;
     } else if (userLevel === 2) { // Manager
-      visibilityClause += ` OR handler_level = 'manager'`;
+      visibilityClause += ` OR i.handler_level = 'manager'`;
     } else if (userLevel <= 4) { // Supervisor (Level 3/4)
-      visibilityClause += ` OR handler_level = 'supervisor'`; 
+      visibilityClause += ` OR i.handler_level = 'supervisor'`; 
     }
     
     visibilityClause += `)`;
     conditions.push(visibilityClause);
-  }
-  
-  // Apply other filters
-  if (filters.ideabox_type) {
-    conditions.push(`ideabox_type = $${paramIndex}`);
-    params.push(filters.ideabox_type);
+  } else if (!isChatSearch || userLevel > 1) {
+    // No ideabox_type specified and either:
+    // - Not a chat search, OR
+    // - User is not admin
+    // Show only approved/implemented + own ideas
+    conditions.push(`(i.status IN ('approved', 'implemented') OR i.submitter_id = $${paramIndex})`);
+    params.push(userId);
     paramIndex++;
   }
 
+  // Apply search filter
+  // Smart search with Vietnamese accent normalization
+  // Strategy: Split into words and use AND logic (all words must appear)
+  if (req.query.search) {
+    const searchTerm = req.query.search.toLowerCase().trim();
+    // Keep words >= 2 chars (was 3, now more flexible for Vietnamese)
+    const keywords = searchTerm.split(/\s+/).filter(k => k.length >= 2);
+    
+    if (keywords.length > 0) {
+      // Normalize Vietnamese accents for better matching
+      const normalizeVietnamese = (text) => {
+        return text
+          .replace(/hoá/g, 'hóa')
+          .replace(/uỷ/g, 'ủy')
+          .replace(/thuỷ/g, 'thủy')
+          .replace(/khoá/g, 'khóa')
+          .replace(/toá/g, 'tóa');
+      };
+      
+      // Build normalized field expressions
+      const normalizedTitle = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.title, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
+      const normalizedDesc = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.description, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
+      const normalizedBenefit = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.expected_benefit, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
+      
+      // Each keyword must appear in at least one field (AND logic for all keywords)
+      const keywordConditions = keywords.map((keyword) => {
+        const normalizedKeyword = normalizeVietnamese(keyword);
+        const searchPattern = `%${normalizedKeyword}%`;
+        const condition = `(${normalizedTitle} LIKE $${paramIndex} OR ${normalizedDesc} LIKE $${paramIndex} OR ${normalizedBenefit} LIKE $${paramIndex})`;
+        params.push(searchPattern);
+        paramIndex++;
+        return condition;
+      });
+      
+      // All keywords must match (AND logic)
+      conditions.push(`(${keywordConditions.join(' AND ')})`);
+    }
+  }
+
   if (filters.status) {
-    conditions.push(`status = $${paramIndex}`);
+    conditions.push(`i.status = $${paramIndex}`);
     params.push(filters.status);
     paramIndex++;
   }
   
   if (filters.category) {
-    conditions.push(`category = $${paramIndex}`);
+    conditions.push(`i.category = $${paramIndex}`);
     params.push(filters.category);
     paramIndex++;
   }
   
   if (filters.department_id) {
-    conditions.push(`department_id = $${paramIndex}`);
+    conditions.push(`i.department_id = $${paramIndex}`);
     params.push(filters.department_id);
     paramIndex++;
   }
   
   if (filters.assigned_to) {
-    conditions.push(`assigned_to = $${paramIndex}`);
+    conditions.push(`i.assigned_to = $${paramIndex}`);
     params.push(filters.assigned_to);
     paramIndex++;
   }
   
   if (filters.date_from) {
-    conditions.push(`created_at >= $${paramIndex}`);
+    conditions.push(`i.created_at >= $${paramIndex}`);
     params.push(filters.date_from);
     paramIndex++;
   }
   
   if (filters.date_to) {
-    conditions.push(`created_at <= $${paramIndex}`);
+    conditions.push(`i.created_at <= $${paramIndex}`);
     params.push(filters.date_to);
     paramIndex++;
   }
   
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   
-  // Get total count
-  const countQuery = `SELECT COUNT(*) FROM ideas ${whereClause}`;
+  // Get total count (need alias 'i' to match WHERE conditions)
+  const countQuery = `SELECT COUNT(*) FROM ideas i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
   
@@ -969,6 +1030,119 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Get idea responses history
+ * GET /api/ideas/:id/responses
+ */
+const getIdeaResponses = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  // Check if idea exists
+  const ideaQuery = `
+    SELECT id, ideabox_type, submitter_id, department_id
+    FROM ideas
+    WHERE id = $1
+  `;
+  
+  const ideaResult = await db.query(ideaQuery, [id]);
+  
+  if (ideaResult.rows.length === 0) {
+    throw new AppError('Idea not found', 404);
+  }
+  
+  const idea = ideaResult.rows[0];
+  const userLevel = req.user.level;
+  const userRole = req.user.role;
+  
+  // Check access permission
+  // Only admin can view responses history via chatbox
+  if (userRole !== 'admin') {
+    throw new AppError('Only administrators can view idea responses history', 403);
+  }
+  
+  // Get all responses with user information
+  const responsesQuery = `
+    SELECT 
+      ir.id,
+      ir.response,
+      ir.attachments,
+      ir.created_at,
+      u.id as user_id,
+      u.full_name as user_name,
+      u.role as user_role,
+      u.level as user_level,
+      d.name as department_name
+    FROM idea_responses ir
+    LEFT JOIN users u ON ir.user_id = u.id
+    LEFT JOIN departments d ON u.department_id = d.id
+    WHERE ir.idea_id = $1
+    ORDER BY ir.created_at ASC
+  `;
+  
+  const responsesResult = await db.query(responsesQuery, [id]);
+  
+  res.json({
+    success: true,
+    data: responsesResult.rows
+  });
+});
+
+/**
+ * Get idea history
+ * GET /api/ideas/:id/history
+ */
+const getIdeaHistory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  // Check if idea exists
+  const ideaQuery = `
+    SELECT id, ideabox_type, submitter_id, department_id
+    FROM ideas
+    WHERE id = $1
+  `;
+  
+  const ideaResult = await db.query(ideaQuery, [id]);
+  
+  if (ideaResult.rows.length === 0) {
+    throw new AppError('Idea not found', 404);
+  }
+  
+  const idea = ideaResult.rows[0];
+  const userRole = req.user.role;
+  
+  // Check access permission
+  // Only admin can view action history via chatbox
+  if (userRole !== 'admin') {
+    throw new AppError('Only administrators can view idea action history', 403);
+  }
+  
+  // Get all history with user information
+  const historyQuery = `
+    SELECT 
+      ih.id,
+      ih.action,
+      ih.details,
+      ih.created_at,
+      u.id as user_id,
+      u.full_name as user_name,
+      u.role as user_role,
+      u.level as user_level,
+      d.name as department_name
+    FROM idea_history ih
+    LEFT JOIN users u ON ih.performed_by = u.id
+    LEFT JOIN departments d ON u.department_id = d.id
+    WHERE ih.idea_id = $1
+    ORDER BY ih.created_at ASC
+  `;
+  
+  const historyResult = await db.query(historyQuery, [id]);
+  
+  res.json({
+    success: true,
+    data: historyResult.rows
+  });
+});
+
 module.exports = {
   createIdea,
   getIdeas,
@@ -983,5 +1157,7 @@ module.exports = {
   getKaizenBank,
   searchKaizenBank,
   getIdeaDifficulty,
-  getIdeasKanban
+  getIdeasKanban,
+  getIdeaResponses,
+  getIdeaHistory
 };

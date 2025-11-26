@@ -216,6 +216,32 @@ router.get(
 );
 
 /**
+ * @route   GET /api/ideas/:id/responses
+ * @desc    Get idea responses history
+ * @access  Private
+ */
+router.get(
+  '/:id/responses',
+  authenticate,
+  ideaIdValidation,
+  validate,
+  ideaController.getIdeaResponses
+);
+
+/**
+ * @route   GET /api/ideas/:id/history
+ * @desc    Get idea action history
+ * @access  Private
+ */
+router.get(
+  '/:id/history',
+  authenticate,
+  ideaIdValidation,
+  validate,
+  ideaController.getIdeaHistory
+);
+
+/**
  * @route   GET /api/ideas/:id
  * @desc    Get idea by ID
  * @access  Private (Role-based access)

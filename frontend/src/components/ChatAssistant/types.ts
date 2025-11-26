@@ -38,6 +38,69 @@ export interface Incident {
   resolved_at?: string;
 }
 
+// Dùng cho dữ liệu ý tưởng từ API
+export interface Idea {
+  id: string;
+  ideabox_type: 'white' | 'pink';
+  category: string;
+  title: string;
+  description?: string;
+  expected_benefit?: string;
+  status: string;
+  submitter_id?: string;
+  submitter_name?: string;
+  department_id?: string;
+  department_name?: string;
+  is_anonymous?: boolean;
+  attachments?: string;
+  handler_level?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  feasibility_score?: number;
+  impact_score?: number;
+  implementation_cost?: number;
+  implementation_time?: number;
+  reviewed_by?: string;
+  reviewed_by_name?: string;
+  review_notes?: string;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at?: string;
+  implemented_at?: string;
+}
+
+// Dùng cho dữ liệu phản hồi ý tưởng
+export interface IdeaResponse {
+  id: string;
+  response: string;
+  attachments?: unknown[];
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  user_level: number;
+  department_name?: string;
+}
+
+// Dùng cho lịch sử ý tưởng
+export interface IdeaHistory {
+  id: string;
+  action: string;
+  details: {
+    note?: string;
+    old_status?: string;
+    new_status?: string;
+    review_notes?: string;
+    [key: string]: unknown;
+  };
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  user_level: number;
+  department_name?: string;
+}
+
 // Dùng trong nội bộ component để hiển thị tin nhắn
 export interface UIMessage {
   role: 'user' | 'model';
@@ -48,5 +111,6 @@ export interface UIMessage {
     className?: string;
   }[];
   notificationCards?: Notification[];
-  incidentCards?: Incident[]; // Thêm field để hiển thị danh sách sự cố dạng card
+  incidentCards?: Incident[];
+  ideaCards?: Idea[];
 }

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { generateNewsContent } from '../../services/gemini';
 import { navMap } from './navigationMap';
-import { UIMessage, Notification, Incident } from './types';
+import { UIMessage, Notification, Incident, Idea } from './types';
 
 interface CommandHandlerParams {
   input: string;
@@ -25,6 +25,11 @@ export async function handleCommand({
   navigate,
   cachedNotifications,
 }: CommandHandlerParams): Promise<boolean> {
+  
+  // Check if user is admin
+  const userStr = localStorage.getItem('user');
+  const currentUser = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = currentUser?.role === 'admin';
     
   // --- HANDLE PENDING ACTIONS ---
   if (pendingAction === 'DELETE_ALL_INCIDENTS') {
@@ -40,16 +45,65 @@ export async function handleCommand({
   
   // --- HANDLE HELP COMMAND ---
   if (lowerInput.includes('hướng dẫn') || lowerInput.includes('trợ giúp') || lowerInput.includes('help') || lowerInput === 'h' || lowerInput === '?' || lowerInput.includes('từ khóa') || lowerInput.includes('lệnh')) {
-    const helpMessage = {
-      role: 'model' as const,
-      text: `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc\n\n**🔍 TÌM KIẾM SỰ CỐ:**\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\n**🎯 LỌC THEO TRẠNG THÁI:**\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\n**⚡ LỌC THEO ƯU TIÊN:**\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\n**📰 TẠO TIN TỨC:**\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`,
-      actions: [
+    
+    let helpMessage = `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
+    
+    // Only show admin commands if user is admin
+    if (isAdmin) {
+      helpMessage += `\n\n**🔍 TÌM KIẾM SỰ CỐ (ADMIN):**\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\n**🎯 LỌC THEO TRẠNG THÁI:**\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\n**⚡ LỌC THEO ƯU TIÊN:**\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\n**💡 TÌM KIẾM Ý TƯỞNG (ADMIN):**\n• "tìm ý tưởng" - Tìm tất cả ý tưởng\n• "tìm ý tưởng [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm hòm trắng [từ khóa]" - Tìm ý tưởng hòm trắng\n• "tìm hòm hồng [từ khóa]" - Tìm ý tưởng hòm hồng\n• "tìm ý tưởng tháng [số]" - Tìm theo tháng\n• "tìm hòm trắng cải tiến quy trình tháng 9"\n\n**🏷️ LỌC TRẠNG THÁI Ý TƯỞNG:**\n• Thêm: "chờ xử lý", "đang xem xét", "đã phê duyệt", "từ chối", "đã triển khai"\n\n**📰 TẠO TIN TỨC (ADMIN):**\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI`;
+    }
+    
+    helpMessage += `\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
+    
+    const actions: Array<{
+      label: string;
+      onClick: () => void;
+      className: string;
+    }> = [
+      {
+        label: '🔔 Ví dụ: Xem thông báo',
+        onClick: () => {
+          const exampleInput = 'xem thông báo';
+          setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
+          handleCommand({
+            input: exampleInput,
+            lowerInput: exampleInput.toLowerCase(),
+            pendingAction,
+            cachedNotifications,
+            setMessages,
+            setPendingAction,
+            navigate
+          });
+        },
+        className: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50'
+      },
+      {
+        label: '🧭 Ví dụ: Đi đến Dashboard',
+        onClick: () => {
+          const exampleInput = 'dashboard';
+          setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
+          handleCommand({
+            input: exampleInput,
+            lowerInput: exampleInput.toLowerCase(),
+            pendingAction,
+            cachedNotifications,
+            setMessages,
+            setPendingAction,
+            navigate
+          });
+        },
+        className: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
+      }
+    ];
+    
+    // Only add admin-only examples if user is admin
+    if (isAdmin) {
+      actions.unshift(
         {
           label: '📋 Ví dụ: Tìm sự cố',
           onClick: () => {
             const exampleInput = 'tìm sự cố máy CNC tháng 11';
             setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-            // Trigger the command
             handleCommand({
               input: exampleInput,
               lowerInput: exampleInput.toLowerCase(),
@@ -63,9 +117,9 @@ export async function handleCommand({
           className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
         },
         {
-          label: '🔔 Ví dụ: Xem thông báo',
+          label: '💡 Ví dụ: Tìm ý tưởng',
           onClick: () => {
-            const exampleInput = 'xem thông báo';
+            const exampleInput = 'tìm hòm trắng cải tiến tháng 9';
             setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
             handleCommand({
               input: exampleInput,
@@ -77,33 +131,167 @@ export async function handleCommand({
               navigate
             });
           },
-          className: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50'
-        },
-        {
-          label: '🧭 Ví dụ: Đi đến Dashboard',
-          onClick: () => {
-            const exampleInput = 'dashboard';
-            setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-            handleCommand({
-              input: exampleInput,
-              lowerInput: exampleInput.toLowerCase(),
-              pendingAction,
-              cachedNotifications,
-              setMessages,
-              setPendingAction,
-              navigate
-            });
-          },
-          className: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
+          className: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50'
         }
-      ]
-    };
+      );
+    }
     
-    setMessages(prev => [...prev, helpMessage]);
+    setMessages(prev => [...prev, {
+      role: 'model',
+      text: helpMessage,
+      actions
+    }]);
+    return true;
+  }
+  
+  // --- HANDLE IDEA SEARCH (must be BEFORE navigation to avoid "ý tưởng" keyword conflict) ---
+  if (lowerInput.includes('tìm ý tưởng') || lowerInput.includes('tìm kiếm ý tưởng') || 
+      lowerInput.includes('tìm hòm trắng') || lowerInput.includes('tìm hòm hồng') || 
+      lowerInput.includes('tìm white') || lowerInput.includes('tìm pink')) {
+    
+    // Check admin permission
+    if (!isAdmin) {
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: '🚫 **Quyền truy cập bị từ chối**\n\nBạn không có quyền tìm kiếm ý tưởng. Chỉ Administrator mới có quyền này.' 
+      }]);
+      return true;
+    }
+    
+    setMessages(prev => [...prev, { role: 'model', text: '🔍 Đang tìm kiếm ý tưởng...' }]);
+    
+    try {
+      const searchParams = new URLSearchParams();
+      
+      // Important: Mark this as a chat search so backend applies special Admin rules
+      searchParams.append('from_chat', 'true');
+      
+      // Determine ideabox type
+      if (lowerInput.includes('hòm trắng') || lowerInput.includes('white')) {
+        searchParams.append('ideabox_type', 'white');
+      } else if (lowerInput.includes('hòm hồng') || lowerInput.includes('pink')) {
+        searchParams.append('ideabox_type', 'pink');
+      }
+      
+      // Search by keyword - remove search-related words
+      let keywords = input.replace(/(tìm|kiếm|ý tưởng|hòm trắng|hòm hồng|white|pink|trong|tháng|năm|ngày)/gi, '').trim();
+      
+      // Extract date filters
+      const currentYear = new Date().getFullYear();
+      
+      const yearMatch = lowerInput.match(/(?:năm\s+)?(\d{4})/);
+      let year = yearMatch ? parseInt(yearMatch[1]) : null;
+      
+      const monthMatch = lowerInput.match(/(?:tháng|t)\s*(\d{1,2})/i);
+      let month = monthMatch ? parseInt(monthMatch[1]) : null;
+      
+      const fullDateMatch = lowerInput.match(/(?:ngày\s+)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?/);
+      
+      if (fullDateMatch) {
+        const day = parseInt(fullDateMatch[1]);
+        month = parseInt(fullDateMatch[2]);
+        year = fullDateMatch[3] ? (fullDateMatch[3].length === 2 ? 2000 + parseInt(fullDateMatch[3]) : parseInt(fullDateMatch[3])) : currentYear;
+        
+        const startDate = new Date(year, month - 1, day);
+        const endDate = new Date(year, month - 1, day, 23, 59, 59);
+        searchParams.append('date_from', startDate.toISOString());
+        searchParams.append('date_to', endDate.toISOString());
+      } else if (month && year) {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+        searchParams.append('date_from', startDate.toISOString());
+        searchParams.append('date_to', endDate.toISOString());
+      } else if (month && !year) {
+        const startDate = new Date(currentYear, month - 1, 1);
+        const endDate = new Date(currentYear, month, 0, 23, 59, 59);
+        searchParams.append('date_from', startDate.toISOString());
+        searchParams.append('date_to', endDate.toISOString());
+      } else if (year && !month) {
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year, 11, 31, 23, 59, 59);
+        searchParams.append('date_from', startDate.toISOString());
+        searchParams.append('date_to', endDate.toISOString());
+      }
+      
+      // Remove date strings from keywords
+      keywords = keywords.replace(/(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?/g, '').trim();
+      keywords = keywords.replace(/\d{4}/g, '').trim();
+      keywords = keywords.replace(/\d{1,2}/g, '').trim();
+      
+      if (keywords) {
+        searchParams.append('search', keywords);
+      }
+      
+      // Check for status keywords
+      if (lowerInput.includes('đang xem xét') || lowerInput.includes('under_review')) {
+        searchParams.append('status', 'under_review');
+      } else if (lowerInput.includes('chờ xử lý') || lowerInput.includes('pending')) {
+        searchParams.append('status', 'pending');
+      } else if (lowerInput.includes('đã phê duyệt') || lowerInput.includes('approved')) {
+        searchParams.append('status', 'approved');
+      } else if (lowerInput.includes('từ chối') || lowerInput.includes('rejected')) {
+        searchParams.append('status', 'rejected');
+      } else if (lowerInput.includes('đã triển khai') || lowerInput.includes('implemented')) {
+        searchParams.append('status', 'implemented');
+      }
+      
+      searchParams.append('limit', '20');
+      searchParams.append('page', '1');
+      
+      const response = await api.get(`/ideas?${searchParams.toString()}`);
+      const ideas: Idea[] = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      
+      if (ideas.length === 0) {
+        setMessages(prev => [...prev, { 
+          role: 'model', 
+          text: '❌ Không tìm thấy ý tưởng nào phù hợp với tiêu chí tìm kiếm.' 
+        }]);
+      } else {
+        let resultText = `💡 **Tìm thấy ${ideas.length} ý tưởng:`
+        
+        const ideaboxType = searchParams.get('ideabox_type');
+        if (ideaboxType === 'white') {
+          resultText += ' (Hòm Trắng)**';
+        } else if (ideaboxType === 'pink') {
+          resultText += ' (Hòm Hồng)**';
+        } else {
+          resultText += '**';
+        }
+        
+        // Add date range info
+        if (searchParams.has('date_from') && searchParams.has('date_to')) {
+          const dateFrom = new Date(searchParams.get('date_from')!);
+          if (fullDateMatch) {
+            resultText += `\n📅 Ngày: ${dateFrom.toLocaleDateString('vi-VN')}`;
+          } else if (month && year) {
+            resultText += `\n📅 Tháng ${month}/${year}`;
+          } else if (month) {
+            resultText += `\n📅 Tháng ${month}/${currentYear}`;
+          } else if (year) {
+            resultText += `\n📅 Năm ${year}`;
+          }
+        }
+        
+        resultText += '\n\n💡 Click vào card để xem chi tiết';
+        
+        setMessages(prev => [...prev, {
+          role: 'model',
+          text: resultText,
+          ideaCards: ideas
+        }]);
+      }
+    } catch (error) {
+      console.error('Search ideas error:', error);
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: '❌ Có lỗi khi tìm kiếm ý tưởng. Vui lòng thử lại.' 
+      }]);
+    }
     return true;
   }
   
   // --- HANDLE NAVIGATION ---
+  // All users can navigate to any page
   const sortedKeys = Object.keys(navMap).sort((a, b) => b.length - a.length);
   for (const key of sortedKeys) {
     if (lowerInput.includes(key)) {
@@ -209,6 +397,16 @@ export async function handleCommand({
 
   // --- HANDLE INCIDENT SEARCH ---
   if (lowerInput.includes('tìm sự cố') || lowerInput.includes('tìm kiếm sự cố') || lowerInput.includes('tìm báo cáo') || lowerInput.includes('tìm incident')) {
+    
+    // Check admin permission
+    if (!isAdmin) {
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: '🚫 **Quyền truy cập bị từ chối**\n\nBạn không có quyền tìm kiếm sự cố/báo cáo. Chỉ Administrator mới có quyền này.' 
+      }]);
+      return true;
+    }
+    
     setMessages(prev => [...prev, { role: 'model', text: '🔍 Đang tìm kiếm sự cố...' }]);
     
     try {
