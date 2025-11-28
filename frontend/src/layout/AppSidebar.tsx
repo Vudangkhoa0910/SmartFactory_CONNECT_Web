@@ -48,6 +48,15 @@ const navItems: NavItem[] = [
     name: "Lịch",
     path: "/calendar",
   },
+  {
+    icon: <CalenderIcon />,
+    name: "Đặt phòng họp",
+    subItems: [
+      { name: "Đặt phòng", path: "/room-booking", pro: false },
+      { name: "Lịch của tôi", path: "/my-bookings", pro: false },
+      { name: "Duyệt đặt phòng", path: "/admin/booking-approval", pro: false, new: true },
+    ],
+  },
 ];
 
 const othersItems1: NavItem[] = [

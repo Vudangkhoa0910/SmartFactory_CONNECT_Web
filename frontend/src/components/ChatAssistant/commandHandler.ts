@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { generateNewsContent } from '../../services/gemini';
 import { navMap } from './navigationMap';
 import { UIMessage, Notification, Incident, Idea } from './types';
+import { handleRoomBooking } from './roomBookingHandler';
 
 interface CommandHandlerParams {
   input: string;
@@ -43,23 +44,73 @@ export async function handleCommand({
     return true;
   }
   
+  // --- HANDLE ROOM BOOKING NAVIGATION COMMANDS (CHECK BEFORE BOOKING HANDLER) ---
+  if (lowerInput === 'lịch đặt phòng' || lowerInput === 'đến lịch đặt phòng') {
+    navigate('/room-booking');
+    setMessages(prev => [...prev, { 
+      role: 'model', 
+      text: '📅 Đã chuyển đến trang **Đặt phòng họp**' 
+    }]);
+    return true;
+  }
+
+  if (lowerInput === 'lịch của tôi' || lowerInput === 'đến lịch của tôi' || lowerInput === 'lịch cá nhân') {
+    navigate('/my-bookings');
+    setMessages(prev => [...prev, { 
+      role: 'model', 
+      text: '📅 Đã chuyển đến trang **Lịch của tôi**' 
+    }]);
+    return true;
+  }
+
+  if (lowerInput === 'duyệt đặt phòng' || lowerInput === 'đến duyệt đặt phòng' || lowerInput === 'duyệt phòng') {
+    navigate('/admin/booking-approval');
+    setMessages(prev => [...prev, { 
+      role: 'model', 
+      text: '✅ Đã chuyển đến trang **Duyệt đặt phòng**' 
+    }]);
+    return true;
+  }
+  
+  // --- HANDLE ROOM BOOKING (AFTER NAVIGATION CHECKS) ---
+  if (lowerInput.includes('đặt phòng') || lowerInput.includes('book') || lowerInput.includes('đặt lịch')) {
+    return await handleRoomBooking(input, lowerInput, setMessages);
+  }
+  
   // --- HANDLE HELP COMMAND ---
   if (lowerInput.includes('hướng dẫn') || lowerInput.includes('trợ giúp') || lowerInput.includes('help') || lowerInput === 'h' || lowerInput === '?' || lowerInput.includes('từ khóa') || lowerInput.includes('lệnh')) {
     
-    let helpMessage = `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
+    let helpMessage = `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**📅 ĐẶT PHÒNG HỌP NHANH:**\n• "Đặt phòng [số người] tổ chức [mục đích] từ [giờ] đến [giờ] ngày [ngày] tháng [tháng]"\n• VD: "Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11"\n• "xem lịch phòng" - Xem tất cả phòng và lịch đặt\n\n**📅 QUẢN LÝ LỊCH ĐẶT PHÒNG:**\n• "lịch đặt phòng" - Di chuyển đến trang đặt phòng\n• "lịch của tôi" - Di chuyển đến trang lịch của tôi\n• "duyệt đặt phòng" - Di chuyển đến trang duyệt đặt phòng\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
     
     // Only show admin commands if user is admin
     if (isAdmin) {
       helpMessage += `\n\n**🔍 TÌM KIẾM SỰ CỐ (ADMIN):**\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\n**🎯 LỌC THEO TRẠNG THÁI:**\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\n**⚡ LỌC THEO ƯU TIÊN:**\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\n**💡 TÌM KIẾM Ý TƯỞNG (ADMIN):**\n• "tìm ý tưởng" - Tìm tất cả ý tưởng\n• "tìm ý tưởng [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm hòm trắng [từ khóa]" - Tìm ý tưởng hòm trắng\n• "tìm hòm hồng [từ khóa]" - Tìm ý tưởng hòm hồng\n• "tìm ý tưởng tháng [số]" - Tìm theo tháng\n• "tìm hòm trắng cải tiến quy trình tháng 9"\n\n**🏷️ LỌC TRẠNG THÁI Ý TƯỞNG:**\n• Thêm: "chờ xử lý", "đang xem xét", "đã phê duyệt", "từ chối", "đã triển khai"\n\n**📰 TẠO TIN TỨC (ADMIN):**\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI`;
     }
     
-    helpMessage += `\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
+    helpMessage += `\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n• "lịch đặt phòng" - Trang đặt phòng họp\n• "lịch của tôi" - Trang lịch cá nhân\n• "duyệt đặt phòng" - Trang duyệt đặt phòng\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
     
     const actions: Array<{
       label: string;
       onClick: () => void;
       className: string;
     }> = [
+      {
+        label: '📅 Ví dụ: Đặt phòng họp',
+        onClick: () => {
+          const exampleInput = 'Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11 năm 2025';
+          setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
+          handleCommand({
+            input: exampleInput,
+            lowerInput: exampleInput.toLowerCase(),
+            pendingAction,
+            cachedNotifications,
+            setMessages,
+            setPendingAction,
+            navigate
+          });
+        },
+        className: 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+      },
       {
         label: '🔔 Ví dụ: Xem thông báo',
         onClick: () => {

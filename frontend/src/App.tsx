@@ -31,6 +31,9 @@ import FeedbackDashboard from "./pages/Dashboard/FeedbackDashboard";
 import UserList from "./pages/UserManagement/UserList";
 import DepartmentList from "./pages/UserManagement/DepartmentList";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoomBookingPage from "./pages/RoomBookingPage";
+import AdminApprovalPage from "./pages/AdminApprovalPage";
+import MyBookingsPage from "./pages/MyBookingsPage";
 
 export default function App() {
   return (
@@ -94,6 +97,18 @@ export default function App() {
 
             {/* News */}
             <Route index path="/news" element={<NewIndex />} />
+
+            {/* Room Booking */}
+            <Route path="/room-booking" element={<RoomBookingPage />} />
+            <Route path="/my-bookings" element={<MyBookingsPage />} />
+            <Route 
+              path="/admin/booking-approval" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminApprovalPage />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* User Management - Admin Only */}
             <Route 

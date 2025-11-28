@@ -1,14 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { UIMessage, Notification, Incident } from './types';
+import { UIMessage, Notification, Incident, Idea } from './types';
 
 interface MessageListProps {
   messages: UIMessage[];
   isLoading: boolean;
   onNotificationClick?: (notification: Notification) => void;
   onIncidentClick?: (incident: Incident) => void;
+  onIdeaClick?: (idea: Idea) => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotificationClick, onIncidentClick }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotificationClick, onIncidentClick, onIdeaClick }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -157,6 +158,125 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                                 })}
                               </p>
                             )}
+                          </div>
+                        </div>
+
+                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                          💡 Click để xem chi tiết
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Hiển thị Idea Cards */}
+              {msg.ideaCards && msg.ideaCards.length > 0 && (
+                <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
+                  {msg.ideaCards.map((idea, cardIdx) => {
+                    // Determine card color based on ideabox_type
+                    const isWhite = idea.ideabox_type === 'white';
+                    const bgColor = isWhite 
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30'
+                      : 'bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/30 dark:to-rose-900/30';
+                    const borderColor = isWhite
+                      ? 'border-blue-200 dark:border-blue-700'
+                      : 'border-pink-200 dark:border-pink-700';
+                    const badgeColor = isWhite
+                      ? 'bg-blue-500'
+                      : 'bg-pink-500';
+                    
+                    // Status badge
+                    const statusColors: Record<string, string> = {
+                      'pending': 'bg-yellow-500',
+                      'under_review': 'bg-blue-500',
+                      'approved': 'bg-green-500',
+                      'rejected': 'bg-red-500',
+                      'implemented': 'bg-purple-500'
+                    };
+                    const statusLabels: Record<string, string> = {
+                      'pending': 'Chờ xử lý',
+                      'under_review': 'Đang xem xét',
+                      'approved': 'Đã phê duyệt',
+                      'rejected': 'Từ chối',
+                      'implemented': 'Đã triển khai'
+                    };
+
+                    return (
+                      <div
+                        key={idea.id}
+                        className={`${bgColor} border ${borderColor} rounded-lg p-3 hover:shadow-lg transition-shadow cursor-pointer`}
+                        onClick={() => onIdeaClick && onIdeaClick(idea)}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Số thứ tự */}
+                          <div className={`flex-shrink-0 w-8 h-8 ${badgeColor} text-white rounded-full 
+                                          flex items-center justify-center font-bold text-sm`}>
+                            {cardIdx + 1}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            {/* Ideabox Type Badge */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-xs px-2 py-0.5 ${badgeColor} text-white rounded-full font-medium`}>
+                                {isWhite ? '⚪ Hòm Trắng' : '💖 Hòm Hồng'}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 ${statusColors[idea.status] || 'bg-gray-500'} text-white rounded-full`}>
+                                {statusLabels[idea.status] || idea.status}
+                              </span>
+                            </div>
+
+                            {/* Title */}
+                            <h4 className="font-semibold text-slate-800 dark:text-white text-sm mb-1">
+                              {idea.title}
+                            </h4>
+
+                            {/* Category */}
+                            {idea.category && (
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+                                🏷️ {idea.category}
+                              </p>
+                            )}
+
+                            {/* Description snippet */}
+                            {idea.description && (
+                              <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-2">
+                                {idea.description.substring(0, 100)}
+                                {idea.description.length > 100 ? '...' : ''}
+                              </p>
+                            )}
+
+                            {/* Scores (if available) */}
+                            <div className="flex gap-3 text-xs mb-1">
+                              {idea.feasibility_score !== null && idea.feasibility_score !== undefined && (
+                                <span className="text-slate-600 dark:text-slate-400">
+                                  ⚙️ Khả thi: <strong>{idea.feasibility_score}/10</strong>
+                                </span>
+                              )}
+                              {idea.impact_score !== null && idea.impact_score !== undefined && (
+                                <span className="text-slate-600 dark:text-slate-400">
+                                  🎯 Tác động: <strong>{idea.impact_score}/10</strong>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Submitter & Date */}
+                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                              {idea.is_anonymous ? (
+                                <span>👤 Ẩn danh</span>
+                              ) : (
+                                idea.submitter_name && <span>👤 {idea.submitter_name}</span>
+                              )}
+                              {idea.created_at && (
+                                <span>
+                                  📅 {new Date(idea.created_at).toLocaleDateString('vi-VN', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
