@@ -90,6 +90,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/room-bookings', roomBookingRoutes);
 
+// Translation routes
+const translationRoutes = require('./src/routes/translation.routes');
+app.use('/api/translations', translationRoutes);
+
 // 404 handler
 app.use(notFound);
 
