@@ -31,10 +31,12 @@ import FeedbackDashboard from "./pages/Dashboard/FeedbackDashboard";
 import UserList from "./pages/UserManagement/UserList";
 import DepartmentList from "./pages/UserManagement/DepartmentList";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import TranslationTest from "./pages/TranslationTest";
 
 export default function App() {
   return (
-    <>
+    <LanguageProvider>
       <ToastContainer position="top-right" autoClose={3000} style={{ top: '80px' }} />
       <Router>
         <ScrollToTop />
@@ -42,6 +44,9 @@ export default function App() {
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
+
+            {/* Translation Test Page */}
+            <Route path="/translation-test" element={<TranslationTest />} />
 
             <Route index path="/incident-queue" element={<IncidentQueue />} />
 
@@ -145,6 +150,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </>
+    </LanguageProvider>
   );
 }

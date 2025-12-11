@@ -88,6 +88,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 
+// Translation routes
+const translationRoutes = require('./src/routes/translation.routes');
+app.use('/api/translations', translationRoutes);
+
 // 404 handler
 app.use(notFound);
 
