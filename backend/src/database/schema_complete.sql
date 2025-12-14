@@ -388,30 +388,9 @@ COMMENT ON TABLE notifications IS 'User notifications for real-time updates';
 -- INITIAL DATA
 -- =====================================================
 
--- Insert default admin user (password: Admin123)
-INSERT INTO users (employee_code, email, password, full_name, role, level, is_active)
-VALUES (
-  'ADMIN001',
-  'admin@smartfactory.com',
-  '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyLPnkC8U8Wy',
-  'System Administrator',
-  'admin',
-  1,
-  true
-) ON CONFLICT (email) DO NOTHING;
-
--- Insert sample departments
-INSERT INTO departments (code, name, description, is_active) VALUES
-  ('PROD', 'Production', 'Main production department', true),
-  ('QC', 'Quality Control', 'Quality assurance and control', true),
-  ('MAINT', 'Maintenance', 'Equipment maintenance', true),
-  ('ADMIN', 'Administration', 'Administrative department', true)
-ON CONFLICT (code) DO NOTHING;
-
 -- Success message
 DO $$
 BEGIN
   RAISE NOTICE '✓ Database schema created successfully!';
-  RAISE NOTICE '✓ Default admin user created: admin@smartfactory.com / Admin123';
-  RAISE NOTICE '✓ Sample departments created';
+  RAISE NOTICE '✓ Ready to use. Please create admin user and departments via API.';
 END $$;
