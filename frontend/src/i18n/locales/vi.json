@@ -1,0 +1,474 @@
+{
+  "app": {
+    "name": "SmartFactory CONNECT",
+    "tagline": "Hệ thống quản lý nhà máy thông minh",
+    "platform": "SmartFactory CONNECT Web Platform"
+  },
+  
+  "menu": {
+    "dashboard": "Tổng quan",
+    "overview": "Tổng quan",
+    "incidents": "Báo cáo sự cố",
+    "incident_queue": "Hàng đợi sự cố",
+    "all_incidents": "Tất cả sự cố",
+    "incident_list": "Danh sách sự cố",
+    "ideas": "Ý kiến đóng góp",
+    "public_ideas": "Hòm trắng",
+    "admin_inbox": "Hòm hồng",
+    "kaizen_bank": "Ngân hàng cải tiến",
+    "news": "Tin tức",
+    "calendar": "Lịch",
+    "booking": "Đặt phòng họp",
+    "my_bookings": "Đặt phòng của tôi",
+    "admin_approval": "Phê duyệt đặt phòng",
+    "users": "Quản lý người dùng",
+    "user_list": "Danh sách người dùng",
+    "departments": "Quản lý phòng ban",
+    "management": "Quản lý",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất",
+    "queue": "Hàng đợi"
+  },
+
+  "button": {
+    "submit": "Gửi",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "export": "Xuất",
+    "import": "Nhập",
+    "close": "Đóng",
+    "back": "Quay lại",
+    "back_to_home": "Về trang chủ",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "confirm": "Xác nhận",
+    "create": "Tạo mới",
+    "update": "Cập nhật",
+    "refresh": "Làm mới",
+    "retry": "Thử lại",
+    "view": "Xem",
+    "view_all": "Xem tất cả",
+    "view_details": "Xem chi tiết",
+    "approve": "Phê duyệt",
+    "reject": "Từ chối",
+    "print": "In",
+    "download": "Tải xuống",
+    "upload": "Tải lên",
+    "add": "Thêm",
+    "remove": "Xóa",
+    "reset": "Đặt lại",
+    "clear": "Xóa",
+    "apply": "Áp dụng",
+    "select_all": "Chọn tất cả",
+    "deselect_all": "Bỏ chọn tất cả"
+  },
+
+  "status": {
+    "pending": "Đang chờ",
+    "assigned": "Đã phân công",
+    "in_progress": "Đang xử lý",
+    "on_hold": "Tạm dừng",
+    "resolved": "Đã giải quyết",
+    "closed": "Đã đóng",
+    "cancelled": "Đã hủy",
+    "approved": "Đã phê duyệt",
+    "rejected": "Đã từ chối",
+    "draft": "Bản nháp",
+    "published": "Đã công bố",
+    "active": "Hoạt động",
+    "inactive": "Ngừng hoạt động",
+    "new": "Mới",
+    "completed": "Hoàn thành"
+  },
+
+  "priority": {
+    "low": "Thấp",
+    "normal": "Bình thường",
+    "medium": "Trung bình",
+    "high": "Cao",
+    "critical": "Khẩn cấp"
+  },
+
+  "incident": {
+    "title": "Quản lý sự cố",
+    "create": "Tạo sự cố mới",
+    "list": "Danh sách sự cố",
+    "details": "Chi tiết sự cố",
+    "total": "Tổng số sự cố",
+    "report": "Báo cáo sự cố",
+    "pending": "Sự cố đang chờ",
+    "resolved": "Sự cố đã giải quyết",
+    "incidents": "Sự cố",
+    "queue_description": "Xử lý các sự cố đang chờ trong hệ thống",
+    "select_to_process": "Chọn sự cố để xem chi tiết và xử lý",
+    "waiting": "đang chờ xử lý",
+    "type": {
+      "safety": "An toàn",
+      "quality": "Chất lượng",
+      "equipment": "Thiết bị",
+      "environment": "Môi trường",
+      "other": "Khác"
+    }
+  },
+
+  "idea": {
+    "title": "Quản lý ý kiến",
+    "create": "Tạo ý kiến",
+    "list": "Danh sách ý kiến",
+    "details": "Chi tiết ý kiến",
+    "total": "Tổng số ý kiến",
+    "white_box": "Hòm trắng",
+    "pink_box": "Hòm hồng",
+    "description": "Xem và quản lý ý kiến cải tiến",
+    "category": {
+      "safety": "An toàn",
+      "quality": "Chất lượng",
+      "productivity": "Năng suất",
+      "cost_saving": "Tiết kiệm chi phí",
+      "other": "Khác"
+    }
+  },
+
+  "booking": {
+    "title": "Đặt phòng họp",
+    "create": "Đặt phòng mới",
+    "my_bookings": "Đặt phòng của tôi",
+    "room": "Phòng họp",
+    "date": "Ngày",
+    "time": "Thời gian",
+    "start_time": "Thời gian bắt đầu",
+    "end_time": "Thời gian kết thúc",
+    "attendees": "Người tham dự",
+    "purpose": "Mục đích",
+    "notes": "Ghi chú",
+    "approval": "Phê duyệt đặt phòng",
+    "description": "Đặt phòng họp với khung giờ linh hoạt",
+    "my_bookings_desc": "Xem và quản lý đặt phòng của bạn",
+    "load_error": "Không thể tải danh sách đặt phòng",
+    "meeting_type": {
+      "department_meeting": "Họp phòng ban",
+      "team_standup": "Họp đứng team",
+      "project_review": "Họp review dự án",
+      "training_session": "Đào tạo nội bộ",
+      "client_meeting": "Gặp khách hàng",
+      "interview": "Phỏng vấn",
+      "workshop": "Hội thảo",
+      "company_event": "Sự kiện công ty",
+      "celebration": "Sinh nhật/Kỷ niệm",
+      "technical_discussion": "Thảo luận kỹ thuật",
+      "brainstorming": "Động não ý tưởng",
+      "presentation": "Thuyết trình",
+      "other": "Khác"
+    }
+  },
+
+  "news": {
+    "title": "Tin tức",
+    "create": "Tạo tin tức",
+    "list": "Danh sách tin tức",
+    "details": "Chi tiết tin tức",
+    "category": "Danh mục",
+    "author": "Tác giả",
+    "published_at": "Ngày công bố",
+    "latest": "Tin tức mới nhất",
+    "description": "Quản lý tin tức công ty"
+  },
+
+  "user": {
+    "title": "Quản lý người dùng",
+    "list": "Danh sách người dùng",
+    "create": "Thêm người dùng",
+    "edit": "Sửa thông tin",
+    "profile": "Hồ sơ",
+    "name": "Họ tên",
+    "email": "Email",
+    "phone": "Số điện thoại",
+    "role": "Vai trò",
+    "department": "Phòng ban",
+    "employee_id": "Mã nhân viên"
+  },
+
+  "label": {
+    "title": "Tiêu đề",
+    "description": "Mô tả",
+    "location": "Vị trí",
+    "department": "Phòng ban",
+    "reporter": "Người báo cáo",
+    "assigned_to": "Được giao cho",
+    "priority": "Mức độ ưu tiên",
+    "status": "Trạng thái",
+    "category": "Danh mục",
+    "type": "Loại",
+    "date": "Ngày",
+    "time": "Thời gian",
+    "created_at": "Ngày tạo",
+    "updated_at": "Ngày cập nhật",
+    "created_by": "Người tạo",
+    "updated_by": "Người cập nhật",
+    "attachments": "Tệp đính kèm",
+    "comments": "Bình luận",
+    "actions": "Thao tác",
+    "select": "Chọn",
+    "all": "Tất cả",
+    "none": "Không có",
+    "details": "Chi tiết",
+    "summary": "Tóm tắt",
+    "image": "Hình ảnh"
+  },
+
+  "message": {
+    "success": "Thành công",
+    "error": "Lỗi",
+    "warning": "Cảnh báo",
+    "info": "Thông tin",
+    "loading": "Đang tải...",
+    "saving": "Đang lưu...",
+    "deleting": "Đang xóa...",
+    "no_data": "Không có dữ liệu",
+    "no_results": "Không tìm thấy kết quả",
+    "confirm_delete": "Bạn có chắc chắn muốn xóa?",
+    "confirm_action": "Bạn có chắc chắn muốn thực hiện?",
+    "save_success": "Lưu thành công",
+    "save_error": "Lưu thất bại",
+    "delete_success": "Xóa thành công",
+    "delete_error": "Xóa thất bại",
+    "update_success": "Cập nhật thành công",
+    "update_error": "Cập nhật thất bại",
+    "create_success": "Tạo thành công",
+    "create_error": "Tạo thất bại",
+    "required_field": "Trường bắt buộc",
+    "invalid_email": "Email không hợp lệ",
+    "invalid_phone": "Số điện thoại không hợp lệ",
+    "welcome": "Chào mừng"
+  },
+
+  "auth": {
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "register": "Đăng ký",
+    "forgot_password": "Quên mật khẩu?",
+    "reset_password": "Đặt lại mật khẩu",
+    "change_password": "Đổi mật khẩu",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirm_password": "Xác nhận mật khẩu",
+    "remember_me": "Ghi nhớ đăng nhập",
+    "login_success": "Đăng nhập thành công",
+    "logout_success": "Đăng xuất thành công",
+    "login_error": "Đăng nhập thất bại",
+    "signing_in": "Đang đăng nhập...",
+    "sign_in": "Đăng nhập",
+    "sign_in_subtitle": "Đăng nhập để truy cập bảng điều khiển",
+    "email_or_employee_code": "Email hoặc mã nhân viên",
+    "enter_password": "Nhập mật khẩu của bạn",
+    "no_web_access": "Tài khoản này không có quyền truy cập web",
+    "login_failed": "Đăng nhập thất bại. Vui lòng kiểm tra thông tin xác thực."
+  },
+
+  "dashboard": {
+    "title": "Tổng quan",
+    "welcome": "Chào mừng",
+    "total_incidents": "Tổng số sự cố",
+    "total_ideas": "Tổng số ý kiến",
+    "pending_incidents": "Sự cố đang chờ",
+    "resolved_incidents": "Sự cố đã giải quyết",
+    "safety_score": "Điểm an toàn",
+    "recent_activities": "Hoạt động gần đây",
+    "quick_actions": "Thao tác nhanh",
+    "statistics": "Thống kê",
+    "overview": "Tổng quan hoạt động nhà máy",
+    "monthly_target": "Mục tiêu tháng",
+    "need_action": "Cần hành động ngay",
+    "completion_rate": "Tỷ lệ hoàn thành",
+    "contributions": "Đóng góp ý kiến",
+    "pending_review": "Chờ xét duyệt",
+    "online_employees": "Nhân viên trực tuyến",
+    "active": "Đang hoạt động",
+    "priority_distribution": "Phân bố mức độ ưu tiên",
+    "department_performance": "Hiệu suất phòng ban (Top 5)",
+    "resolved": "Đã giải quyết",
+    "feedback_ideas": "Phản hồi & Ý kiến",
+    "departments": "Phòng ban",
+    "report_incident": "Báo cáo sự cố",
+    "submit_feedback": "Gửi phản hồi",
+    "book_room": "Đặt phòng họp",
+    "view_news": "Xem tin tức"
+  },
+
+  "table": {
+    "showing": "Hiển thị",
+    "of": "trong",
+    "entries": "mục",
+    "per_page": "mục/trang",
+    "first": "Đầu",
+    "last": "Cuối",
+    "no_data": "Không có dữ liệu",
+    "page": "Trang",
+    "rows_per_page": "Số dòng/trang"
+  },
+
+  "search": {
+    "placeholder": "Tìm kiếm...",
+    "no_results": "Không tìm thấy kết quả",
+    "results_for": "Kết quả cho:",
+    "search_incidents": "Tìm kiếm sự cố...",
+    "search_ideas": "Tìm kiếm ý kiến...",
+    "search_users": "Tìm kiếm người dùng..."
+  },
+
+  "notification": {
+    "title": "Thông báo",
+    "mark_all_read": "Đánh dấu tất cả đã đọc",
+    "no_notifications": "Không có thông báo",
+    "view_all": "Xem tất cả thông báo",
+    "new": "Thông báo mới"
+  },
+
+  "error": {
+    "page_not_found": "Không tìm thấy trang",
+    "access_denied": "Truy cập bị từ chối",
+    "server_error": "Lỗi máy chủ",
+    "network_error": "Lỗi mạng",
+    "go_back": "Quay lại",
+    "go_home": "Về trang chủ",
+    "404_message": "Không tìm thấy trang bạn đang tìm kiếm!",
+    "occurred": "Đã xảy ra lỗi"
+  },
+
+  "date": {
+    "today": "Hôm nay",
+    "yesterday": "Hôm qua",
+    "tomorrow": "Ngày mai",
+    "this_week": "Tuần này",
+    "this_month": "Tháng này",
+    "this_year": "Năm nay",
+    "last_week": "Tuần trước",
+    "last_month": "Tháng trước"
+  },
+
+  "time": {
+    "hours_ago": "giờ trước",
+    "minutes_ago": "phút trước",
+    "seconds_ago": "giây trước",
+    "just_now": "Vừa xong",
+    "days_ago": "ngày trước"
+  },
+
+  "common": {
+    "yes": "Có",
+    "no": "Không",
+    "or": "hoặc",
+    "and": "và",
+    "required": "Bắt buộc",
+    "optional": "Tùy chọn",
+    "total": "Tổng",
+    "action": "Thao tác",
+    "no_activities": "Không có hoạt động",
+    "no_department_data": "Không có dữ liệu phòng ban"
+  },
+
+  "sidebar": {
+    "error_report": "Báo cáo lỗi",
+    "feedback": "Phản hồi",
+    "storage": "Lưu trữ"
+  },
+
+  "footer": {
+    "copyright": "© 2025 - SmartFactory CONNECT"
+  },
+
+  "role": {
+    "admin": "Quản trị viên",
+    "factory_manager": "Giám đốc nhà máy",
+    "production_manager": "Trưởng phòng sản xuất",
+    "supervisor": "Giám sát viên",
+    "team_leader": "Trưởng nhóm",
+    "operator": "Công nhân vận hành",
+    "technician": "Kỹ thuật viên",
+    "qc_inspector": "Kiểm tra viên QC",
+    "maintenance_manager": "Trưởng phòng bảo trì",
+    "maintenance_staff": "Nhân viên bảo trì",
+    "viewer": "Người xem"
+  },
+
+  "department": {
+    "title": "Quản lý phòng ban",
+    "list": "Danh sách phòng ban",
+    "create": "Thêm phòng ban",
+    "edit": "Sửa phòng ban",
+    "code": "Mã phòng ban",
+    "name": "Tên phòng ban",
+    "description": "Mô tả",
+    "manager": "Trưởng phòng",
+    "parent": "Phòng ban cha",
+    "employee_count": "Số nhân viên",
+    "all_departments": "Tất cả phòng ban"
+  },
+
+  "calendar": {
+    "title": "Lịch",
+    "event": "Sự kiện",
+    "add_event": "Thêm sự kiện",
+    "edit_event": "Sửa sự kiện",
+    "delete_event": "Xóa sự kiện",
+    "event_title": "Tiêu đề sự kiện",
+    "start_date": "Ngày bắt đầu",
+    "end_date": "Ngày kết thúc",
+    "level": {
+      "high": "Mức độ cao",
+      "medium": "Trung bình",
+      "low": "Thấp"
+    },
+    "events": {
+      "conference": "Hội nghị sự kiện",
+      "meeting": "Cuộc họp",
+      "workshop": "Hội thảo",
+      "interview": "Phỏng vấn",
+      "celebration": "Sinh nhật/Kỷ niệm",
+      "brainstorming": "Brainstorm ý tưởng",
+      "presentation": "Thuyết trình",
+      "other": "Khác"
+    }
+  },
+
+  "profile": {
+    "title": "Hồ sơ",
+    "user_profile": "Hồ sơ người dùng",
+    "edit_profile": "Sửa hồ sơ",
+    "personal_info": "Thông tin cá nhân",
+    "contact_info": "Thông tin liên hệ",
+    "address": "Địa chỉ",
+    "change_avatar": "Đổi ảnh đại diện",
+    "full_name": "Họ và tên",
+    "employee_code": "Mã nhân viên",
+    "last_login": "Đăng nhập lần cuối",
+    "created_at": "Ngày tạo",
+    "never": "Chưa từng"
+  },
+
+  "filter": {
+    "all_roles": "Tất cả vai trò",
+    "all_departments": "Tất cả phòng ban",
+    "all_statuses": "Tất cả trạng thái",
+    "all_priorities": "Tất cả mức độ",
+    "search_placeholder": "Tìm kiếm theo tên, email hoặc mã nhân viên..."
+  },
+
+  "page": {
+    "user_management": "Quản lý người dùng",
+    "department_management": "Quản lý phòng ban",
+    "profile": "Hồ sơ",
+    "calendar": "Lịch",
+    "images": "Hình ảnh",
+    "videos": "Video",
+    "forms": "Biểu mẫu",
+    "form_elements": "Các thành phần biểu mẫu",
+    "line_chart": "Biểu đồ đường",
+    "bar_chart": "Biểu đồ cột"
+  }
+}
