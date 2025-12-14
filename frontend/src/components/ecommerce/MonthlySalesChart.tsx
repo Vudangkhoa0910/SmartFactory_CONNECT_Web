@@ -3,9 +3,29 @@ import { ApexOptions } from "apexcharts";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import dashboardService, { IncidentTrendData } from "../../services/dashboard.service";
 
 export default function MonthlySalesChart() {
+  const [data, setData] = useState<IncidentTrendData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardService.getIncidentTrend('year');
+        setData(response);
+      } catch (err) {
+        console.error('Failed to fetch monthly incidents:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const options: ApexOptions = {
     colors: ["#dc2626"],
     chart: {
@@ -33,19 +53,9 @@ export default function MonthlySalesChart() {
       colors: ["transparent"],
     },
     xaxis: {
-      categories: [
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "T6",
-        "T7",
-        "T8",
-        "T9",
-        "T10",
-        "T11",
-        "T12",
+      categories: data?.categories || [
+        "T1", "T2", "T3", "T4", "T5", "T6",
+        "T7", "T8", "T9", "T10", "T11", "T12",
       ],
       axisBorder: {
         show: false,
@@ -75,7 +85,6 @@ export default function MonthlySalesChart() {
     fill: {
       opacity: 1,
     },
-
     tooltip: {
       x: {
         show: false,
@@ -85,13 +94,13 @@ export default function MonthlySalesChart() {
       },
     },
   };
+
   const series = [
     {
       name: "Sự cố",
-      data: [15, 22, 18, 12, 25, 19, 14, 20, 16, 28, 22, 15],
+      data: data?.reported || [],
     },
   ];
-  const [isOpen, setIsOpen] = useState(false);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -100,6 +109,22 @@ export default function MonthlySalesChart() {
   function closeDropdown() {
     setIsOpen(false);
   }
+
+  if (isLoading) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:pt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Sự cố hàng tháng
+          </h3>
+        </div>
+        <div className="flex items-center justify-center h-[180px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:pt-6">
       <div className="flex items-center justify-between">
