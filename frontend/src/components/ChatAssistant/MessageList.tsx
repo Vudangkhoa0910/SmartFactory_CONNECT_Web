@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { UIMessage, Notification, Incident, Idea } from './types';
+import { Lightbulb, User, Calendar, Building2, Tag, Target, Settings2, Circle } from 'lucide-react';
 
 interface MessageListProps {
   messages: UIMessage[];
@@ -70,8 +71,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
           </div>
         </div>
 
-        <div className="mt-2 text-xs text-red-600 dark:text-red-200 font-medium">
-          💡 Gõ "đã xem {cardIdx + 1}" để đánh dấu đã đọc
+        <div className="mt-2 text-xs text-red-600 dark:text-red-200 font-medium flex items-center gap-1">
+          <Lightbulb className="w-3 h-3" /> Gõ "đã xem {cardIdx + 1}" để đánh dấu đã đọc
         </div>
       </div>
     ))}
@@ -92,18 +93,18 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                     
                     // Status labels
                     const statusLabels: {[key: string]: string} = {
-                      pending: '⏳ Chờ xử lý',
-                      in_progress: '⏳ Đang xử lý',
-                      resolved: '✅ Đã giải quyết',
-                      closed: '🔒 Đã đóng'
+                      pending: 'Chờ xử lý',
+                      in_progress: 'Đang xử lý',
+                      resolved: 'Đã giải quyết',
+                      closed: 'Đã đóng'
                     };
                     
                     // Priority labels
                     const priorityLabels: {[key: string]: string} = {
-                      critical: '🔴 Khẩn cấp',
-                      high: '🟠 Cao',
-                      medium: '🟡 Trung bình',
-                      low: '🔵 Thấp'
+                      critical: 'Khẩn cấp',
+                      high: 'Cao',
+                      medium: 'Trung bình',
+                      low: 'Thấp'
                     };
                     
                     return (
@@ -139,17 +140,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                             
                             {/* Assignee & Department */}
                             {(incident.assigned_to_name || incident.department_name) && (
-                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                                {incident.assigned_to_name && `👤 ${incident.assigned_to_name}`}
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 flex items-center gap-2">
+                                {incident.assigned_to_name && <span className="flex items-center gap-1"><User className="w-3 h-3" /> {incident.assigned_to_name}</span>}
                                 {incident.assigned_to_name && incident.department_name && ' • '}
-                                {incident.department_name && `🏢 ${incident.department_name}`}
+                                {incident.department_name && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {incident.department_name}</span>}
                               </p>
                             )}
 
                             {/* Created date */}
                             {incident.created_at && (
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                📅 {new Date(incident.created_at).toLocaleDateString('vi-VN', {
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> {new Date(incident.created_at).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -161,8 +162,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                           </div>
                         </div>
 
-                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                          💡 Click để xem chi tiết
+                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
+                          <Lightbulb className="w-3 h-3" /> Click để xem chi tiết
                         </div>
                       </div>
                     );
@@ -218,8 +219,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                           <div className="flex-1 min-w-0">
                             {/* Ideabox Type Badge */}
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-xs px-2 py-0.5 ${badgeColor} text-white rounded-full font-medium`}>
-                                {isWhite ? '⚪ Hòm Trắng' : '💖 Hòm Hồng'}
+                              <span className={`text-xs px-2 py-0.5 ${badgeColor} text-white rounded-full font-medium flex items-center gap-1`}>
+                                <Circle className="w-2 h-2" fill={isWhite ? 'white' : 'currentColor'} /> {isWhite ? 'Hòm Trắng' : 'Hòm Hồng'}
                               </span>
                               <span className={`text-xs px-2 py-0.5 ${statusColors[idea.status] || 'bg-gray-500'} text-white rounded-full`}>
                                 {statusLabels[idea.status] || idea.status}
@@ -233,8 +234,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
 
                             {/* Category */}
                             {idea.category && (
-                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                                🏷️ {idea.category}
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                <Tag className="w-3 h-3" /> {idea.category}
                               </p>
                             )}
 
@@ -249,13 +250,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                             {/* Scores (if available) */}
                             <div className="flex gap-3 text-xs mb-1">
                               {idea.feasibility_score !== null && idea.feasibility_score !== undefined && (
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  ⚙️ Khả thi: <strong>{idea.feasibility_score}/10</strong>
+                                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <Settings2 className="w-3 h-3" /> Khả thi: <strong>{idea.feasibility_score}/10</strong>
                                 </span>
                               )}
                               {idea.impact_score !== null && idea.impact_score !== undefined && (
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  🎯 Tác động: <strong>{idea.impact_score}/10</strong>
+                                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <Target className="w-3 h-3" /> Tác động: <strong>{idea.impact_score}/10</strong>
                                 </span>
                               )}
                             </div>
@@ -263,13 +264,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                             {/* Submitter & Date */}
                             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                               {idea.is_anonymous ? (
-                                <span>👤 Ẩn danh</span>
+                                <span className="flex items-center gap-1"><User className="w-3 h-3" /> Ẩn danh</span>
                               ) : (
-                                idea.submitter_name && <span>👤 {idea.submitter_name}</span>
+                                idea.submitter_name && <span className="flex items-center gap-1"><User className="w-3 h-3" /> {idea.submitter_name}</span>
                               )}
                               {idea.created_at && (
-                                <span>
-                                  📅 {new Date(idea.created_at).toLocaleDateString('vi-VN', {
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" /> {new Date(idea.created_at).toLocaleDateString('vi-VN', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric'
@@ -280,8 +281,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                           </div>
                         </div>
 
-                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                          💡 Click để xem chi tiết
+                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
+                          <Lightbulb className="w-3 h-3" /> Click để xem chi tiết
                         </div>
                       </div>
                     );

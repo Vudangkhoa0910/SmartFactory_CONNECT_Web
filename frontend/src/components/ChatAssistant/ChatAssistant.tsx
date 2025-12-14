@@ -96,64 +96,64 @@ const ChatAssistant: React.FC = () => {
           onNotificationClick={(notification) => {
             setMessages(prev => [...prev, {
               role: 'model',
-              text: `📄 **Chi tiết thông báo:**\n\n**${notification.title}**\n\n${notification.message || notification.content || 'Không có nội dung chi tiết.'}`
+              text: `**Chi tiết thông báo:**\n\n**${notification.title}**\n\n${notification.message || notification.content || 'Không có nội dung chi tiết.'}`
             }]);
           }}
           onIncidentClick={(incident) => {
             const statusLabels: {[key: string]: string} = {
-              pending: '⏳ Chờ xử lý',
-              in_progress: '⏳ Đang xử lý',
-              resolved: '✅ Đã giải quyết',
-              closed: '🔒 Đã đóng'
+              pending: 'Chờ xử lý',
+              in_progress: 'Đang xử lý',
+              resolved: 'Đã giải quyết',
+              closed: 'Đã đóng'
             };
             
             const priorityLabels: {[key: string]: string} = {
-              critical: '🔴 Khẩn cấp',
-              high: '🟠 Cao',
-              medium: '🟡 Trung bình',
-              low: '🔵 Thấp'
+              critical: 'Khẩn cấp',
+              high: 'Cao',
+              medium: 'Trung bình',
+              low: 'Thấp'
             };
             
             const typeLabels: {[key: string]: string} = {
-              safety: '⚠️ An toàn',
-              quality: '⭐ Chất lượng',
-              equipment: '🔧 Thiết bị',
-              other: '📌 Khác'
+              safety: 'An toàn',
+              quality: 'Chất lượng',
+              equipment: 'Thiết bị',
+              other: 'Khác'
             };
             
-            let detailText = `🚨 **Chi tiết sự cố #${incident.id}**\n\n`;
+            let detailText = `**Chi tiết sự cố #${incident.id}**\n\n`;
             detailText += `**${incident.title}**\n\n`;
             
             if (incident.description) {
-              detailText += `📝 **Mô tả:** ${incident.description}\n\n`;
+              detailText += `**Mô tả:** ${incident.description}\n\n`;
             }
             
-            detailText += `📊 **Trạng thái:** ${statusLabels[incident.status] || incident.status}\n`;
-            detailText += `⚡ **Mức độ ưu tiên:** ${priorityLabels[incident.priority] || incident.priority}\n`;
-            detailText += `🏷️ **Loại:** ${typeLabels[incident.incident_type] || incident.incident_type}\n`;
+            detailText += `**Trạng thái:** ${statusLabels[incident.status] || incident.status}\n`;
+            detailText += `**Mức độ ưu tiên:** ${priorityLabels[incident.priority] || incident.priority}\n`;
+            detailText += `**Loại:** ${typeLabels[incident.incident_type] || incident.incident_type}\n`;
             
             if (incident.location) {
-              detailText += `📍 **Vị trí:** ${incident.location}\n`;
+              detailText += `**Vị trí:** ${incident.location}\n`;
             }
             
             if (incident.reporter_name) {
-              detailText += `👤 **Người báo cáo:** ${incident.reporter_name}${incident.reporter_code ? ` (${incident.reporter_code})` : ''}\n`;
+              detailText += `**Người báo cáo:** ${incident.reporter_name}${incident.reporter_code ? ` (${incident.reporter_code})` : ''}\n`;
             }
             
             if (incident.assigned_to_name) {
-              detailText += `👨‍💼 **Người phụ trách:** ${incident.assigned_to_name}\n`;
+              detailText += `**Người phụ trách:** ${incident.assigned_to_name}\n`;
             }
             
             if (incident.department_name) {
-              detailText += `🏢 **Phòng ban:** ${incident.department_name}\n`;
+              detailText += `**Phòng ban:** ${incident.department_name}\n`;
             }
             
             if (incident.created_at) {
-              detailText += `📅 **Thời gian tạo:** ${new Date(incident.created_at).toLocaleString('vi-VN')}\n`;
+              detailText += `**Thời gian tạo:** ${new Date(incident.created_at).toLocaleString('vi-VN')}\n`;
             }
             
             if (incident.resolved_at) {
-              detailText += `✅ **Thời gian giải quyết:** ${new Date(incident.resolved_at).toLocaleString('vi-VN')}\n`;
+              detailText += `**Thời gian giải quyết:** ${new Date(incident.resolved_at).toLocaleString('vi-VN')}\n`;
             }
             
             setMessages(prev => [...prev, {
@@ -161,7 +161,7 @@ const ChatAssistant: React.FC = () => {
               text: detailText,
               actions: [
                 {
-                  label: '📊 Xem chi tiết đầy đủ',
+                  label: 'Xem chi tiết đầy đủ',
                   onClick: () => navigate(`/incidents/${incident.id}`)
                 }
               ]
@@ -169,112 +169,112 @@ const ChatAssistant: React.FC = () => {
           }}
           onIdeaClick={(idea) => {
             const statusLabels: {[key: string]: string} = {
-              pending: '⏳ Chờ xử lý',
-              under_review: '🔍 Đang xem xét',
-              approved: '✅ Đã phê duyệt',
-              rejected: '❌ Từ chối',
-              implemented: '🎉 Đã triển khai'
+              pending: 'Chờ xử lý',
+              under_review: 'Đang xem xét',
+              approved: 'Đã phê duyệt',
+              rejected: 'Từ chối',
+              implemented: 'Đã triển khai'
             };
             
             const categoryLabels: {[key: string]: string} = {
-              cost_reduction: '💰 Giảm chi phí',
-              quality_improvement: '⭐ Cải thiện chất lượng',
-              safety: '⚠️ An toàn',
-              efficiency: '⚡ Hiệu quả',
-              environment: '🌱 Môi trường',
-              employee_welfare: '👥 Phúc lợi nhân viên',
-              innovation: '💡 Đổi mới',
-              other: '📌 Khác'
+              cost_reduction: 'Giảm chi phí',
+              quality_improvement: 'Cải thiện chất lượng',
+              safety: 'An toàn',
+              efficiency: 'Hiệu quả',
+              environment: 'Môi trường',
+              employee_welfare: 'Phúc lợi nhân viên',
+              innovation: 'Đổi mới',
+              other: 'Khác'
             };
             
-            let detailText = `💡 **Chi tiết ý tưởng #${idea.id}**\n\n`;
+            let detailText = `**Chi tiết ý tưởng #${idea.id}**\n\n`;
             
             // Ideabox type
             detailText += idea.ideabox_type === 'white' 
-              ? `⚪ **Loại:** Hòm Trắng (White Box)\n` 
-              : `💖 **Loại:** Hòm Hồng (Pink Box)\n`;
+              ? `**Loại:** Hòm Trắng (White Box)\n` 
+              : `**Loại:** Hòm Hồng (Pink Box)\n`;
             
             // Title
             detailText += `\n**${idea.title}**\n\n`;
             
             // Status and Category
-            detailText += `📊 **Trạng thái:** ${statusLabels[idea.status] || idea.status}\n`;
-            detailText += `🏷️ **Danh mục:** ${categoryLabels[idea.category] || idea.category}\n\n`;
+            detailText += `**Trạng thái:** ${statusLabels[idea.status] || idea.status}\n`;
+            detailText += `**Danh mục:** ${categoryLabels[idea.category] || idea.category}\n\n`;
             
             // Description
             if (idea.description) {
-              detailText += `📝 **Mô tả:**\n${idea.description}\n\n`;
+              detailText += `**Mô tả:**\n${idea.description}\n\n`;
             }
             
             // Expected benefit
             if (idea.expected_benefit) {
-              detailText += `🎯 **Lợi ích kỳ vọng:**\n${idea.expected_benefit}\n\n`;
+              detailText += `**Lợi ích kỳ vọng:**\n${idea.expected_benefit}\n\n`;
             }
             
             // Scores
             if (idea.feasibility_score !== null && idea.feasibility_score !== undefined) {
-              detailText += `⚙️ **Điểm khả thi:** ${idea.feasibility_score}/10\n`;
+              detailText += `**Điểm khả thi:** ${idea.feasibility_score}/10\n`;
             }
             if (idea.impact_score !== null && idea.impact_score !== undefined) {
-              detailText += `🎯 **Điểm tác động:** ${idea.impact_score}/10\n`;
+              detailText += `**Điểm tác động:** ${idea.impact_score}/10\n`;
             }
             
             // Cost and Time
             if (idea.implementation_cost) {
-              detailText += `💵 **Chi phí triển khai:** ${idea.implementation_cost.toLocaleString('vi-VN')} VNĐ\n`;
+              detailText += `**Chi phí triển khai:** ${idea.implementation_cost.toLocaleString('vi-VN')} VNĐ\n`;
             }
             if (idea.implementation_time) {
-              detailText += `⏱️ **Thời gian triển khai:** ${idea.implementation_time} ngày\n`;
+              detailText += `**Thời gian triển khai:** ${idea.implementation_time} ngày\n`;
             }
             
             // Submitter
             detailText += `\n`;
             if (idea.is_anonymous) {
-              detailText += `👤 **Người đề xuất:** Ẩn danh\n`;
+              detailText += `**Người đề xuất:** Ẩn danh\n`;
             } else if (idea.submitter_name) {
-              detailText += `👤 **Người đề xuất:** ${idea.submitter_name}\n`;
+              detailText += `**Người đề xuất:** ${idea.submitter_name}\n`;
             }
             
             // Department
             if (idea.department_name) {
-              detailText += `🏢 **Phòng ban:** ${idea.department_name}\n`;
+              detailText += `**Phòng ban:** ${idea.department_name}\n`;
             }
             
             // Handler info
             if (idea.handler_level) {
               const levelLabels: {[key: string]: string} = {
-                supervisor: '👨‍💼 Cấp giám sát',
-                manager: '👔 Cấp quản lý',
-                general_manager: '🎩 Tổng giám đốc'
+                supervisor: 'Cấp giám sát',
+                manager: 'Cấp quản lý',
+                general_manager: 'Tổng giám đốc'
               };
-              detailText += `🔐 **Cấp xử lý:** ${levelLabels[idea.handler_level] || idea.handler_level}\n`;
+              detailText += `**Cấp xử lý:** ${levelLabels[idea.handler_level] || idea.handler_level}\n`;
             }
             
             if (idea.assigned_to_name) {
-              detailText += `👨‍💼 **Người phụ trách:** ${idea.assigned_to_name}\n`;
+              detailText += `**Người phụ trách:** ${idea.assigned_to_name}\n`;
             }
             
             // Review info
             if (idea.reviewed_by_name) {
-              detailText += `\n✍️ **Người đánh giá:** ${idea.reviewed_by_name}\n`;
+              detailText += `\n**Người đánh giá:** ${idea.reviewed_by_name}\n`;
               if (idea.review_notes) {
-                detailText += `📋 **Nhận xét:** ${idea.review_notes}\n`;
+                detailText += `**Nhận xét:** ${idea.review_notes}\n`;
               }
               if (idea.reviewed_at) {
-                detailText += `📅 **Ngày đánh giá:** ${new Date(idea.reviewed_at).toLocaleString('vi-VN')}\n`;
+                detailText += `**Ngày đánh giá:** ${new Date(idea.reviewed_at).toLocaleString('vi-VN')}\n`;
               }
             }
             
             // Dates
             detailText += `\n`;
             if (idea.created_at) {
-              detailText += `📅 **Thời gian tạo:** ${new Date(idea.created_at).toLocaleString('vi-VN')}\n`;
+              detailText += `**Thời gian tạo:** ${new Date(idea.created_at).toLocaleString('vi-VN')}\n`;
             }
             if (idea.updated_at) {
-              detailText += `📝 **Cập nhật lần cuối:** ${new Date(idea.updated_at).toLocaleString('vi-VN')}\n`;
+              detailText += `**Cập nhật lần cuối:** ${new Date(idea.updated_at).toLocaleString('vi-VN')}\n`;
             }
             if (idea.implemented_at) {
-              detailText += `🎉 **Thời gian triển khai:** ${new Date(idea.implemented_at).toLocaleString('vi-VN')}\n`;
+              detailText += `**Thời gian triển khai:** ${new Date(idea.implemented_at).toLocaleString('vi-VN')}\n`;
             }
             
             setMessages(prev => [...prev, {
@@ -282,12 +282,12 @@ const ChatAssistant: React.FC = () => {
               text: detailText,
               actions: [
                 {
-                  label: '📊 Xem chi tiết đầy đủ',
+                  label: 'Xem chi tiết đầy đủ',
                   onClick: () => navigate(`/ideas/${idea.id}`)
                 },
                 // Response history button - only for admin
                 ...(isAdmin ? [{
-                  label: '📜 Lịch sử phản hồi',
+                  label: 'Lịch sử phản hồi',
                   onClick: async () => {
                     try {
                       setMessages(prev => [...prev, {
