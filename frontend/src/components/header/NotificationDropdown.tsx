@@ -1,24 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Link } from "react-router";
-import { Notification } from "../../types/notification.types";
+import { AlertTriangle, Wrench, Shield, Factory, CheckCircle, Users, Settings } from "lucide-react";
 import { 
-  MOCK_NOTIFICATIONS, 
-  getUnreadCount, 
+  getRecentNotifications,
+  markAsRead as apiMarkAsRead,
+  markAllAsRead as apiMarkAllAsRead,
   formatNotificationTime,
-  getUnreadNotifications 
-} from "../../data/notifications.data";
-import { 
-  NOTIFICATION_COLORS, 
-  NOTIFICATION_TYPE_LABELS,
-  PRIORITY_LABELS 
-} from "../../types/notification.types";
+  getTypeLabel,
+  getPriorityColor,
+  Notification
+} from "../../services/notification.service";
+
+// Type labels for display
+const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  incident: 'Sự cố',
+  idea: 'Ý tưởng',
+  safety: 'An toàn',
+  maintenance: 'Bảo trì',
+  production: 'Sản xuất',
+  quality: 'Chất lượng',
+  system: 'Hệ thống',
+  booking: 'Đặt phòng',
+};
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const unreadCount = getUnreadCount(notifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getRecentNotifications(10);
+      setNotifications(data);
+      setUnreadCount(data.filter(n => n.status === 'unread').length);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -33,19 +67,31 @@ export default function NotificationDropdown() {
   };
 
   // Đánh dấu thông báo là đã đọc
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === notificationId ? { ...n, status: 'read' as const } : n
-      )
-    );
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await apiMarkAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notificationId ? { ...n, status: 'read' as const } : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
   };
 
   // Đánh dấu tất cả là đã đọc
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, status: 'read' as const }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      await apiMarkAllAsRead();
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, status: 'read' as const }))
+      );
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Error marking all notifications as read:", err);
+    }
   };
 
   // Lấy màu badge theo priority
@@ -200,13 +246,13 @@ export default function NotificationDropdown() {
                       <div className="relative flex-shrink-0">
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full ${getPriorityColor(notif.priority)}`}>
                           <span className="text-base">
-                            {notif.type === 'incident' && '🚨'}
-                            {notif.type === 'maintenance' && '🔧'}
-                            {notif.type === 'safety' && '⚠️'}
-                            {notif.type === 'production' && '🏭'}
-                            {notif.type === 'quality' && '✓'}
-                            {notif.type === 'hr' && '👥'}
-                            {notif.type === 'system' && '⚙️'}
+                            {notif.type === 'incident' && <AlertTriangle className="w-5 h-5" />}
+                            {notif.type === 'maintenance' && <Wrench className="w-5 h-5" />}
+                            {notif.type === 'safety' && <Shield className="w-5 h-5" />}
+                            {notif.type === 'production' && <Factory className="w-5 h-5" />}
+                            {notif.type === 'quality' && <CheckCircle className="w-5 h-5" />}
+                            {notif.type === 'hr' && <Users className="w-5 h-5" />}
+                            {notif.type === 'system' && <Settings className="w-5 h-5" />}
                           </span>
                         </div>
                         {notif.status === 'unread' && (
