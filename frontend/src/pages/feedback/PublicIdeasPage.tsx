@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import { PublicIdea, StatusType } from "../../components/feedback/types";
 import { IdeaList } from "../../components/feedback/IdeaList";
 import { IdeaDetail } from "../../components/feedback/IdeaDetail";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface BackendHistory {
   created_at: string;
@@ -37,6 +39,7 @@ interface BackendIdea {
 
 export default function PublicIdeasPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [ideas, setIdeas] = useState<PublicIdea[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -216,22 +219,27 @@ export default function PublicIdeasPage() {
 
   if (loading && ideas.length === 0) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-rose-600">Đang tải dữ liệu...</div>
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* Danh sách ý tưởng */}
-      <IdeaList
-        ideas={ideas}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
+    <>
+      <PageMeta
+        title={`${t('menu.public_ideas')} | SmartFactory CONNECT`}
+        description={t('idea.description')}
       />
+      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white text-gray-900">
+        {/* Danh sách ý tưởng */}
+        <IdeaList
+          ideas={ideas}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
 
-      {/* Chi tiết ý tưởng */}
+        {/* Chi tiết ý tưởng */}
       {selectedIdea && (
         <IdeaDetail
           key={selectedIdea.id}
@@ -241,6 +249,7 @@ export default function PublicIdeasPage() {
           showForwardButton={isNotAdmin}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
