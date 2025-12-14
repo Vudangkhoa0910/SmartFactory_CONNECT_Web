@@ -10,7 +10,8 @@ export type Status =
   | "Đang xử lý"
   | "Tạm dừng"
   | "Hoàn thành"
-  | "Đã đóng";
+  | "Đã đóng"
+  | "Đã xử lý";
 
 export type Priority = "Critical" | "High" | "Normal" | "Low";
 
@@ -22,6 +23,20 @@ export interface Incident {
   assignedTo: string;
   location: string;
   createdAt: Date;
+  // Additional optional fields used by IncidentQueue
+  timestamp?: Date;
+  source?: string;
+  description?: string;
+  reporter?: string;
+  department?: string;
+  history?: IncidentHistoryEntry[];
+  images?: string[];
+}
+
+export interface IncidentHistoryEntry {
+  action: string;
+  time: Date | string;
+  note?: string;
 }
 
 /**
