@@ -1,5 +1,7 @@
 const db = require('../config/database');
 const { AppError, asyncHandler } = require('../middlewares/error.middleware');
+const escalationService = require('../services/escalation.service');
+const ratingService = require('../services/rating.service');
 
 /**
  * Create new idea
@@ -29,10 +31,10 @@ const createIdea = asyncHandler(async (req, res) => {
   // For Pink Box (anonymous), we still store submitter_id but mark as anonymous
   const is_anonymous = ideabox_type === 'pink';
   
-  // Set initial handler level
-  // White Box: Starts at Supervisor
-  // Pink Box: Starts at Admin (General Manager)
-  const handler_level = ideabox_type === 'pink' ? 'general_manager' : 'supervisor';
+  // Set initial handler level as INTEGER
+  // White Box: Starts at Supervisor (level 1)
+  // Pink Box: Starts at Admin/GM (level 3)
+  const handler_level = ideabox_type === 'pink' ? 3 : 1;
 
   const query = `
     INSERT INTO ideas (
@@ -46,8 +48,10 @@ const createIdea = asyncHandler(async (req, res) => {
       is_anonymous,
       attachments,
       status,
-      handler_level
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10)
+      handler_level,
+      difficulty_level,
+      priority
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10, 'B', 'medium')
     RETURNING *
   `;
   
@@ -1143,6 +1147,126 @@ const getIdeaHistory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Escalate idea to next handler level (Supervisor -> Manager -> GM)
+ * POST /api/ideas/:id/escalate-level
+ */
+const escalateToNextLevel = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user.id;
+  
+  const result = await escalationService.escalateIdea(id, userId, reason, false);
+  
+  // Send notification
+  const notificationService = req.app.get('notificationService');
+  if (notificationService && result.newHandler) {
+    await notificationService.createNotification({
+      type: 'idea_escalated',
+      title: 'Idea Escalated to You',
+      message: `An idea has been escalated to ${result.levelName}`,
+      user_id: result.newHandler.id,
+      reference_type: 'idea',
+      reference_id: id,
+    });
+  }
+  
+  res.json({
+    success: true,
+    message: `Idea escalated to ${result.levelName}`,
+    data: result
+  });
+});
+
+/**
+ * Submit rating for an idea
+ * POST /api/ideas/:id/rating
+ */
+const submitRating = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  const rating = await ratingService.rateIdea(id, userId, req.body);
+  
+  res.json({
+    success: true,
+    message: 'Rating submitted successfully',
+    data: rating
+  });
+});
+
+/**
+ * Get rating for an idea
+ * GET /api/ideas/:id/rating
+ */
+const getRating = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const rating = await ratingService.getIdeaRating(id);
+  
+  res.json({
+    success: true,
+    data: rating
+  });
+});
+
+/**
+ * Get rating statistics for ideas
+ * GET /api/ideas/rating-stats
+ */
+const getRatingStats = asyncHandler(async (req, res) => {
+  const { department_id, start_date, end_date } = req.query;
+  
+  const stats = await ratingService.getIdeaRatingStats({
+    department_id,
+    start_date,
+    end_date
+  });
+  
+  res.json({
+    success: true,
+    data: stats
+  });
+});
+
+/**
+ * Update difficulty level (A-D classification)
+ * PUT /api/ideas/:id/difficulty
+ */
+const updateDifficultyLevel = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { difficulty_level } = req.body;
+  const userId = req.user.id;
+  
+  if (!['A', 'B', 'C', 'D'].includes(difficulty_level)) {
+    throw new AppError('Invalid difficulty level. Must be A, B, C, or D', 400);
+  }
+  
+  const result = await db.query(`
+    UPDATE ideas 
+    SET difficulty_level = $1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $2
+    RETURNING *
+  `, [difficulty_level, id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('Idea not found', 404);
+  }
+  
+  // Log history
+  await db.query(`
+    INSERT INTO idea_history (idea_id, action, performed_by, details)
+    VALUES ($1, 'difficulty_updated', $2, $3)
+  `, [id, userId, JSON.stringify({ difficulty_level })]);
+  
+  res.json({
+    success: true,
+    message: 'Difficulty level updated',
+    data: result.rows[0]
+  });
+});
+
+// Export all functions at the end
 module.exports = {
   createIdea,
   getIdeas,
@@ -1159,5 +1283,11 @@ module.exports = {
   getIdeaDifficulty,
   getIdeasKanban,
   getIdeaResponses,
-  getIdeaHistory
+  getIdeaHistory,
+  // SRS Escalation & Rating APIs
+  escalateToNextLevel,
+  submitRating,
+  getRating,
+  getRatingStats,
+  updateDifficultyLevel,
 };
