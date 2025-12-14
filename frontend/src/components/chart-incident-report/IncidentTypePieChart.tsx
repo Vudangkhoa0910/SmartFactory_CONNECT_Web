@@ -1,10 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import api from "../../services/api";
+
+interface IncidentTypeData {
+  incident_type: string;
+  count: number;
+  percentage: number;
+}
+
+// Map incident types to Vietnamese labels
+const INCIDENT_TYPE_LABELS: Record<string, string> = {
+  machine: "Máy móc",
+  quality: "Chất lượng",
+  safety: "An toàn",
+  environment: "Môi trường",
+  other: "Khác"
+};
 
 export default function IncidentTypeModernRougeChart() {
-  const labels = ["Nhân sự", "Vận hành", "Thiết bị", "Kỹ thuật", "Khác"];
-  const series = [12, 25, 32, 18, 7];
+  const [data, setData] = useState<IncidentTypeData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get('/dashboard/incidents/stats');
+        setData(response.data.data.byType || []);
+      } catch (error) {
+        console.error('Failed to fetch incident type data:', error);
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const labels = data.map(item => INCIDENT_TYPE_LABELS[item.incident_type] || item.incident_type);
+  const series = data.map(item => Number(item.count));
 
   // **1. Bảng màu mới: Đỏ -> Hồng -> Hồng Pastel**
   const colors = ["#e5386d", "#ff4d6d", "#ff8fa3", "#ffb3c1", "#ffccd5"];
@@ -73,6 +108,37 @@ export default function IncidentTypeModernRougeChart() {
       itemMargin: { horizontal: 10, vertical: 5 },
     },
   };
+
+  if (loading) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Phân Tích Loại Sự Cố
+        </h3>
+        <div className="flex h-80 items-center justify-center">
+          <div className="text-gray-500 dark:text-gray-400">Đang tải...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Phân Tích Loại Sự Cố
+        </h3>
+        <div className="flex h-80 items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-500 dark:text-gray-400">Chưa có dữ liệu thiết bị lỗi</p>
+            <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+              Dữ liệu sẽ hiển thị khi có sự cố được báo cáo
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     // **4. Container cao cấp**
