@@ -7,7 +7,7 @@ const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-
 
 /**
  * @route POST /api/chat/message
- * @desc Send message to Gemini AI
+ * @desc Send message to Gemini 
  * @access Public (or Protected if needed)
  */
 router.post('/message', async (req, res) => {

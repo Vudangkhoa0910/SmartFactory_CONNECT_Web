@@ -177,6 +177,24 @@ router.post(
 );
 
 /**
+ * @route   PUT /api/users/preferences
+ * @desc    Update current user preferences (language, etc)
+ * @access  Private
+ */
+router.put(
+  '/preferences',
+  authenticate,
+  [
+    body('preferred_language')
+      .optional()
+      .isIn(['vi', 'ja'])
+      .withMessage('Language must be vi or ja'),
+  ],
+  validate,
+  userController.updatePreferences
+);
+
+/**
  * @route   PUT /api/users/:id
  * @desc    Update user
  * @access  Private (Admin, Factory Manager)

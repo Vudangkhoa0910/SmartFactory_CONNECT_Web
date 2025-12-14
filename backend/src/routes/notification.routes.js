@@ -22,6 +22,28 @@ router.get(
 );
 
 /**
+ * @route   GET /api/notifications/recent
+ * @desc    Get recent notifications (for dropdown)
+ * @access  Private
+ */
+router.get(
+  '/recent',
+  authenticate,
+  notificationController.getRecentNotifications
+);
+
+/**
+ * @route   GET /api/notifications/stats
+ * @desc    Get notification statistics
+ * @access  Private
+ */
+router.get(
+  '/stats',
+  authenticate,
+  notificationController.getNotificationStats
+);
+
+/**
  * @route   GET /api/notifications/unread-count
  * @desc    Get unread notification count
  * @access  Private

@@ -6,6 +6,148 @@ const { authenticate, authorizeLevel } = require('../middlewares/auth.middleware
 const { uploadIdeaFiles } = require('../middlewares/upload.middleware');
 const { validate, pagination, parseSort, parseFilters } = require('../middlewares/validation.middleware');
 
+/**
+ * @swagger
+ * /api/ideas:
+ *   get:
+ *     summary: Get all ideas
+ *     tags: [Ideas]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, under_review, approved, rejected, implemented, on_hold]
+ *       - in: query
+ *         name: box_type
+ *         schema:
+ *           type: string
+ *           enum: [white, pink]
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: List of ideas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Idea'
+ *   post:
+ *     summary: Create new idea
+ *     tags: [Ideas]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateIdea'
+ *     responses:
+ *       201:
+ *         description: Idea created successfully
+ */
+
+/**
+ * @swagger
+ * /api/ideas/stats:
+ *   get:
+ *     summary: Get idea statistics
+ *     tags: [Ideas]
+ *     responses:
+ *       200:
+ *         description: Idea statistics
+ */
+
+/**
+ * @swagger
+ * /api/ideas/kaizen-bank:
+ *   get:
+ *     summary: Get Kaizen Bank (implemented ideas)
+ *     tags: [Ideas]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of implemented ideas
+ */
+
+/**
+ * @swagger
+ * /api/ideas/{id}:
+ *   get:
+ *     summary: Get idea by ID
+ *     tags: [Ideas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Idea details
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+
+/**
+ * @swagger
+ * /api/ideas/{id}/review:
+ *   put:
+ *     summary: Review idea (approve/reject)
+ *     tags: [Ideas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [approved, rejected]
+ *               review_notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Idea reviewed successfully
+ */
+
 // Validation rules
 const createIdeaValidation = [
   body('ideabox_type')
@@ -324,6 +466,92 @@ router.post(
   ],
   validate,
   ideaController.escalateIdea
+);
+
+/**
+ * @route   POST /api/ideas/:id/escalate-level
+ * @desc    Escalate idea to next handler level (Supervisor -> Manager -> GM)
+ * @access  Private (Supervisor and above)
+ */
+router.post(
+  '/:id/escalate-level',
+  authenticate,
+  authorizeLevel(4),
+  [
+    param('id').isUUID(),
+    body('reason').trim().notEmpty().withMessage('Escalation reason is required')
+  ],
+  validate,
+  ideaController.escalateToNextLevel
+);
+
+/**
+ * @route   POST /api/ideas/:id/rating
+ * @desc    Submit rating for an idea
+ * @access  Private (Submitter only)
+ */
+router.post(
+  '/:id/rating',
+  authenticate,
+  [
+    param('id').isUUID(),
+    body('overall_rating').isInt({ min: 1, max: 5 }),
+    body('response_quality').optional().isInt({ min: 1, max: 5 }),
+    body('response_time').optional().isInt({ min: 1, max: 5 }),
+    body('implementation_quality').optional().isInt({ min: 1, max: 5 }),
+    body('feedback').optional().trim(),
+    body('is_satisfied').optional().isBoolean()
+  ],
+  validate,
+  ideaController.submitRating
+);
+
+/**
+ * @route   GET /api/ideas/:id/rating
+ * @desc    Get rating for an idea
+ * @access  Private
+ */
+router.get(
+  '/:id/rating',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  ideaController.getRating
+);
+
+/**
+ * @route   GET /api/ideas/rating-stats
+ * @desc    Get rating statistics
+ * @access  Private (Supervisor and above)
+ */
+router.get(
+  '/rating-stats',
+  authenticate,
+  authorizeLevel(4),
+  [
+    query('department_id').optional().isUUID(),
+    query('start_date').optional().isISO8601(),
+    query('end_date').optional().isISO8601()
+  ],
+  validate,
+  ideaController.getRatingStats
+);
+
+/**
+ * @route   PUT /api/ideas/:id/difficulty
+ * @desc    Update idea difficulty level (A-D)
+ * @access  Private (Supervisor and above)
+ */
+router.put(
+  '/:id/difficulty',
+  authenticate,
+  authorizeLevel(4),
+  [
+    param('id').isUUID(),
+    body('difficulty_level').isIn(['A', 'B', 'C', 'D']).withMessage('Difficulty must be A, B, C, or D')
+  ],
+  validate,
+  ideaController.updateDifficultyLevel
 );
 
 module.exports = router;

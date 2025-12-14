@@ -6,6 +6,189 @@ const { authenticate, authorize, authorizeLevel } = require('../middlewares/auth
 const { uploadIncidentFiles } = require('../middlewares/upload.middleware');
 const { validate, pagination, parseSort, parseFilters } = require('../middlewares/validation.middleware');
 
+/**
+ * @swagger
+ * /api/incidents:
+ *   get:
+ *     summary: Get all incidents
+ *     tags: [Incidents]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, assigned, in_progress, resolved, closed, cancelled, escalated]
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [critical, high, medium, low]
+ *       - in: query
+ *         name: incident_type
+ *         schema:
+ *           type: string
+ *           enum: [machine, quality, safety, environment, other]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: List of incidents
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Incident'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *   post:
+ *     summary: Create new incident
+ *     tags: [Incidents]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateIncident'
+ *     responses:
+ *       201:
+ *         description: Incident created successfully
+ *       400:
+ *         description: Validation error
+ */
+
+/**
+ * @swagger
+ * /api/incidents/{id}:
+ *   get:
+ *     summary: Get incident by ID
+ *     tags: [Incidents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Incident details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Incident'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *   put:
+ *     summary: Update incident
+ *     tags: [Incidents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Incident updated successfully
+ */
+
+/**
+ * @swagger
+ * /api/incidents/{id}/assign:
+ *   put:
+ *     summary: Assign incident to user
+ *     tags: [Incidents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assigned_to
+ *             properties:
+ *               assigned_to:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Incident assigned successfully
+ */
+
+/**
+ * @swagger
+ * /api/incidents/{id}/status:
+ *   put:
+ *     summary: Update incident status
+ *     tags: [Incidents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, assigned, in_progress, resolved, closed, cancelled, escalated]
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ */
+
 // Validation rules
 const createIncidentValidation = [
   body('incident_type')
@@ -378,6 +561,117 @@ router.post(
   rateIncidentValidation,
   validate,
   incidentController.rateIncident
+);
+
+/**
+ * @route   POST /api/incidents/:id/escalate-level
+ * @desc    Escalate incident to next handler level
+ * @access  Private (Team Leader and above)
+ */
+router.post(
+  '/:id/escalate-level',
+  authenticate,
+  authorizeLevel(5),
+  [
+    param('id').isUUID(),
+    body('reason').trim().notEmpty().withMessage('Escalation reason is required')
+  ],
+  validate,
+  incidentController.escalateToNextLevel
+);
+
+/**
+ * @route   POST /api/incidents/:id/assign-departments
+ * @desc    Assign incident to multiple departments
+ * @access  Private (Supervisor and above)
+ */
+router.post(
+  '/:id/assign-departments',
+  authenticate,
+  authorizeLevel(4),
+  [
+    param('id').isUUID(),
+    body('departments').isArray({ min: 1 }).withMessage('Departments array is required'),
+    body('departments.*.department_id').isUUID().withMessage('Invalid department ID'),
+    body('departments.*.assigned_to').optional().isUUID(),
+    body('departments.*.task_description').optional().trim(),
+    body('departments.*.priority').optional().isIn(['low', 'medium', 'high', 'critical']),
+    body('departments.*.due_date').optional().isISO8601()
+  ],
+  validate,
+  incidentController.assignToDepartments
+);
+
+/**
+ * @route   GET /api/incidents/:id/departments
+ * @desc    Get department assignments for an incident
+ * @access  Private
+ */
+router.get(
+  '/:id/departments',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  incidentController.getDepartmentAssignments
+);
+
+/**
+ * @route   PUT /api/incidents/:id/departments/:assignmentId
+ * @desc    Update department assignment status
+ * @access  Private
+ */
+router.put(
+  '/:id/departments/:assignmentId',
+  authenticate,
+  [
+    param('id').isUUID(),
+    param('assignmentId').isUUID(),
+    body('status').isIn(['pending', 'accepted', 'in_progress', 'completed', 'rejected']),
+    body('completion_notes').optional().trim()
+  ],
+  validate,
+  incidentController.updateDepartmentAssignment
+);
+
+/**
+ * @route   POST /api/incidents/:id/detailed-rating
+ * @desc    Submit detailed rating for incident
+ * @access  Private (Reporter only)
+ */
+router.post(
+  '/:id/detailed-rating',
+  authenticate,
+  [
+    param('id').isUUID(),
+    body('overall_rating').isInt({ min: 1, max: 5 }),
+    body('response_speed').optional().isInt({ min: 1, max: 5 }),
+    body('solution_quality').optional().isInt({ min: 1, max: 5 }),
+    body('communication').optional().isInt({ min: 1, max: 5 }),
+    body('professionalism').optional().isInt({ min: 1, max: 5 }),
+    body('feedback').optional().trim(),
+    body('is_satisfied').optional().isBoolean(),
+    body('would_recommend').optional().isBoolean()
+  ],
+  validate,
+  incidentController.submitDetailedRating
+);
+
+/**
+ * @route   GET /api/incidents/rating-stats
+ * @desc    Get rating statistics
+ * @access  Private (Supervisor and above)
+ */
+router.get(
+  '/rating-stats',
+  authenticate,
+  authorizeLevel(4),
+  [
+    query('department_id').optional().isUUID(),
+    query('start_date').optional().isISO8601(),
+    query('end_date').optional().isISO8601()
+  ],
+  validate,
+  incidentController.getRatingStats
 );
 
 module.exports = router;
