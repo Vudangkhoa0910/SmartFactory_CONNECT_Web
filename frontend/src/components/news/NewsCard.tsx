@@ -10,11 +10,11 @@ interface Props {
 
 export default function NewsCard({ item, onDelete, onEdit, onView }: Props) {
   return (
-    <div className="border p-4 rounded-xl flex justify-between items-start dark:border-gray-700 transition-all hover:shadow-md dark:hover:bg-gray-700/50">
+    <div className="border border-gray-200 p-4 rounded-xl flex justify-between items-start bg-white transition-all hover:shadow-md">
       <div className="cursor-pointer flex-grow" onClick={() => onView(item)}>
-        <h3 className="font-semibold text-lg">{item.title}</h3>
-        <p className="text-sm opacity-70 mt-1">{item.excerpt}</p>
-        <div className="text-xs mt-2 opacity-60">
+        <h3 className="font-semibold text-lg text-gray-900">{item.title}</h3>
+        <p className="text-sm text-gray-600 mt-1">{item.excerpt}</p>
+        <div className="text-xs mt-2 text-gray-500">
           Ngày đăng: {item.publish_at}
         </div>
       </div>
@@ -22,14 +22,14 @@ export default function NewsCard({ item, onDelete, onEdit, onView }: Props) {
       <div className="flex gap-3 pl-4">
         <button
           onClick={() => onEdit(item.id)}
-          className="text-blue-600 hover:text-blue-800"
+          className="text-gray-500 hover:text-red-600 transition-colors"
           aria-label="Chỉnh sửa"
         >
           <Pencil size={20} />
         </button>
         <button
           onClick={() => onDelete(item.id)}
-          className="text-red-600 hover:text-red-800"
+          className="text-gray-500 hover:text-red-600 transition-colors"
           aria-label="Xoá"
         >
           <Trash2 size={20} />
