@@ -6,10 +6,10 @@ import { BoxIcon } from "../../icons";
 
 export default function Buttons() {
   return (
-    <div>
+    <div className="p-4">
       <PageMeta
-        title="React.js Buttons Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Buttons Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Buttons | SmartFactory CONNECT"
+        description="UI Elements - Buttons - SmartFactory CONNECT"
       />
       <PageBreadcrumb pageTitle="Buttons" />
       <div className="space-y-5 sm:space-y-6">

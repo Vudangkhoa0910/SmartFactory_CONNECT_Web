@@ -6,10 +6,10 @@ import ComponentCard from "../../components/common/ComponentCard";
 
 export default function Badges() {
   return (
-    <div>
+    <div className="p-4">
       <PageMeta
-        title="React.js Badges Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Badges Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Badges | SmartFactory CONNECT"
+        description="UI Elements - Badges - SmartFactory CONNECT"
       />
       <PageBreadcrumb pageTitle="Badges" />
       <div className="space-y-5 sm:space-y-6">
