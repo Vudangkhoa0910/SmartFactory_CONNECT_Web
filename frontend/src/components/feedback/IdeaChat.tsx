@@ -34,11 +34,8 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
   };
 
   return (
-    <div className="mt-4">
-      <h3 className="font-semibold mb-2 flex items-center gap-2">
-        <Send size={16} /> Phản hồi
-      </h3>
-      <div className="h-48 overflow-y-auto bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700">
+    <div>
+      <div className="h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border border-gray-200">
         {chat.map((msg) => (
           <div
             key={msg.id}
@@ -49,8 +46,8 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
             <div
               className={`px-3 py-2 rounded-lg max-w-xs text-sm ${
                 msg.sender === "manager"
-                  ? "bg-rose-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-200 text-gray-800"
               }`}
             >
               {msg.text}
@@ -60,18 +57,18 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
         {/* Mốc để cuộn tới */}
         <div ref={chatEndRef} />
       </div>
-      <div className="flex mt-2 gap-2">
+      <div className="flex mt-3 gap-2">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyPress={handleKeyPress} // <-- Thêm sự kiện này
+          onKeyPress={handleKeyPress}
           placeholder="Nhập phản hồi..."
-          className="flex-1 px-3 py-2 rounded-md bg-white dark:bg-gray-900 border dark:border-gray-700 focus:ring-rose-500 focus:border-rose-500"
+          className="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 focus:ring-2 focus:ring-red-500 focus:border-transparent focus:outline-none"
         />
         <button
           onClick={handleSend}
-          className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 flex items-center gap-2 disabled:opacity-50"
-          disabled={!text.trim()} // Vô hiệu hóa nút khi không có text
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 transition-colors"
+          disabled={!text.trim()}
         >
           <Send size={16} /> Gửi
         </button>

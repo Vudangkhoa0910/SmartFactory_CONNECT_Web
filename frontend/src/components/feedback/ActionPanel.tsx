@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { X, Send } from "lucide-react";
 import { toast } from "react-toastify";
-import { SensitiveMessage } from "./data";
+import { SensitiveMessage } from "./types";
 
 interface Department {
   id: string;
