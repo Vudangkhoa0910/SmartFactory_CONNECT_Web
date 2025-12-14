@@ -1,12 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { getProcessingTimeByPriority, ProcessingTimeData } from "../../services/dashboard.service";
 
 export default function DemographicCard() {
   const [isOpen, setIsOpen] = useState(false);
+  const [data, setData] = useState<ProcessingTimeData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await getProcessingTimeByPriority();
+        setData(result);
+      } catch (err) {
+        console.error("Error fetching processing time:", err);
+        // Fallback data
+        setData({
+          categories: ["Nghiêm trọng", "Cao", "Trung bình", "Thấp"],
+          avgHours: [0, 0, 0, 0],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -42,7 +64,7 @@ export default function DemographicCard() {
       colors: ["transparent"],
     },
     xaxis: {
-      categories: ["Nghiêm trọng", "Cao", "Trung bình", "Thấp"],
+      categories: data?.categories || ["Nghiêm trọng", "Cao", "Trung bình", "Thấp"],
       axisBorder: {
         show: false,
       },
@@ -82,7 +104,7 @@ export default function DemographicCard() {
   const series = [
     {
       name: "Thời gian xử lý",
-      data: [2.5, 5.0, 12.5, 24.0],
+      data: data?.avgHours || [0, 0, 0, 0],
     },
   ];
 
@@ -124,7 +146,13 @@ export default function DemographicCard() {
 
       <div className="mb-2">
         <div id="chartFour" className="-ml-5">
-          <Chart options={options} series={series} type="bar" height={350} />
+          {loading ? (
+            <div className="flex items-center justify-center h-[350px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            </div>
+          ) : (
+            <Chart options={options} series={series} type="bar" height={350} />
+          )}
         </div>
       </div>
     </div>

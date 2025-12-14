@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -5,8 +6,55 @@ import {
   GroupIcon,
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
+import dashboardService, { DashboardSummary } from "../../services/dashboard.service";
 
 export default function EcommerceMetrics() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getDashboardSummary();
+        setSummary(data);
+      } catch (err) {
+        console.error('Failed to fetch dashboard summary:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSummary();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 md:p-6 animate-pulse">
+          <div className="w-12 h-12 bg-gray-200 rounded-xl dark:bg-gray-700"></div>
+          <div className="mt-5">
+            <div className="h-4 bg-gray-200 rounded w-24 dark:bg-gray-700"></div>
+            <div className="h-8 bg-gray-200 rounded w-16 mt-2 dark:bg-gray-700"></div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 md:p-6 animate-pulse">
+          <div className="w-12 h-12 bg-gray-200 rounded-xl dark:bg-gray-700"></div>
+          <div className="mt-5">
+            <div className="h-4 bg-gray-200 rounded w-24 dark:bg-gray-700"></div>
+            <div className="h-8 bg-gray-200 rounded w-16 mt-2 dark:bg-gray-700"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeUsers = summary?.active_users || 0;
+  const totalIncidents = summary?.total_incidents || 0;
+  const pendingIncidents = summary?.pending_incidents || 0;
+  const resolvedRate = totalIncidents > 0 
+    ? Math.round((summary?.resolved_incidents || 0) / totalIncidents * 100) 
+    : 100;
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* <!-- Metric Item Start --> */}
@@ -18,15 +66,15 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Tổng nhân viên
+              Nhân viên hoạt động
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              2,300
+              {activeUsers.toLocaleString()}
             </h4>
           </div>
           <Badge color="success">
             <ArrowUpIcon />
-            11.01%
+            Đang hoạt động
           </Badge>
         </div>
       </div>
@@ -43,13 +91,22 @@ export default function EcommerceMetrics() {
               Tổng sự cố
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              156
+              {totalIncidents.toLocaleString()}
             </h4>
           </div>
 
-          <Badge color="error">
-            <ArrowDownIcon />
-            9.05%
+          <Badge color={pendingIncidents > 0 ? "warning" : "success"}>
+            {pendingIncidents > 0 ? (
+              <>
+                <ArrowDownIcon />
+                {pendingIncidents} đang xử lý
+              </>
+            ) : (
+              <>
+                <ArrowUpIcon />
+                {resolvedRate}% đã xử lý
+              </>
+            )}
           </Badge>
         </div>
       </div>
