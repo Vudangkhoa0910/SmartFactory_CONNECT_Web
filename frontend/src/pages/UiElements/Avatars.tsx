@@ -5,10 +5,10 @@ import PageMeta from "../../components/common/PageMeta";
 
 export default function Avatars() {
   return (
-    <>
+    <div className="p-4">
       <PageMeta
-        title="React.js Avatars Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Avatars Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Avatars | SmartFactory CONNECT"
+        description="UI Elements - Avatars - SmartFactory CONNECT"
       />
       <PageBreadcrumb pageTitle="Avatars" />
       <div className="space-y-5 sm:space-y-6">
@@ -118,6 +118,6 @@ export default function Avatars() {
           </div>
         </ComponentCard>
       </div>
-    </>
+    </div>
   );
 }
