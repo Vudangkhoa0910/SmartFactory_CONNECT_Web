@@ -6,6 +6,7 @@ import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,7 @@ export default function SignInForm() {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t, initFromUser } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,14 +35,19 @@ export default function SignInForm() {
         
       const user = await login(loginData);
       
+      // Initialize language from user preference
+      if (user.preferred_language) {
+        initFromUser(user.preferred_language);
+      }
+      
       // Redirect based on permissions
       if (user.permissions.has_web_access) {
         navigate('/');
       } else {
-        setError('Your account does not have web dashboard access');
+        setError(t('auth.no_web_access'));
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || t('auth.login_failed'));
     } finally {
       setLoading(false);
     }
@@ -54,7 +61,7 @@ export default function SignInForm() {
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeftIcon className="size-5" />
-          Back to home
+          {t('button.back_to_home')}
         </Link>
       </div>
       
@@ -62,10 +69,10 @@ export default function SignInForm() {
         <div>
           <div className="mb-6 text-center sm:mb-8">
             <h1 className="mb-2 text-2xl font-bold text-gray-800 sm:text-3xl dark:text-white/90">
-              SmartFactory CONNECT
+              {t('app.name')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Sign in to access your dashboard
+              {t('auth.sign_in_subtitle')}
             </p>
           </div>
 
@@ -79,7 +86,7 @@ export default function SignInForm() {
             <div className="space-y-5">
               <div>
                 <Label htmlFor="login">
-                  Email or Employee Code <span className="text-red-500">*</span>
+                  {t('auth.email_or_employee_code')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="login"
@@ -94,13 +101,13 @@ export default function SignInForm() {
               
               <div>
                 <Label htmlFor="password">
-                  Password <span className="text-red-500">*</span>
+                  {t('auth.password')} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder={t('auth.enter_password')}
                     value={credentials.password}
                     onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                     required
@@ -129,14 +136,14 @@ export default function SignInForm() {
                     onChange={setRememberMe}
                   />
                   <Label htmlFor="keep-logged-in" className="!mb-0 font-normal">
-                    Remember me
+                    {t('auth.remember_me')}
                   </Label>
                 </div>
                 <Link
                   to="/forgot-password"
                   className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400"
                 >
-                  Forgot password?
+                  {t('auth.forgot_password')}
                 </Link>
               </div>
               
@@ -147,26 +154,11 @@ export default function SignInForm() {
                   size="sm"
                   disabled={loading}
                 >
-                  {loading ? 'Signing in...' : 'Sign in'}
+                  {loading ? t('auth.signing_in') : t('auth.sign_in')}
                 </Button>
               </div>
             </div>
           </form>
-
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Demo Accounts:
-            </p>
-            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-              <li>• Admin (Level 1): <code className="px-1 bg-white dark:bg-gray-900 rounded">admin@smartfactory.com</code> / admin123</li>
-              <li>• Manager (Level 2): <code className="px-1 bg-white dark:bg-gray-900 rounded">PROD001</code> / Manager123!</li>
-              <li>• Supervisor (Level 3): <code className="px-1 bg-white dark:bg-gray-900 rounded">SUP001</code> / Manager123!</li>
-              <li className="pt-2 text-gray-500 italic">Mobile Only (No Web Access):</li>
-              <li>• Team Leader (Level 5): <code className="px-1 bg-white dark:bg-gray-900 rounded">TL001</code></li>
-              <li>• Operator (Level 6): <code className="px-1 bg-white dark:bg-gray-900 rounded">OP001</code></li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
