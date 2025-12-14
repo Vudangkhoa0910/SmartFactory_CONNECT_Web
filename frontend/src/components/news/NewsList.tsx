@@ -126,15 +126,15 @@ export default function NewsList() {
   const listToDisplay = activeTab === "today" ? news.today : news.history;
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       {/* Tabs */}
-      <div className="flex border-b dark:border-gray-700 mb-4">
+      <div className="flex border-b border-gray-200 mb-4">
         <button
           onClick={() => setActiveTab("today")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "today"
-              ? "border-b-2 border-red-500 text-red-500"
-              : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+              ? "border-b-2 border-red-600 text-red-600"
+              : "text-gray-500 hover:text-gray-800"
           }`}
         >
           Tin tức gần đây
@@ -143,8 +143,8 @@ export default function NewsList() {
           onClick={() => setActiveTab("history")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "history"
-              ? "border-b-2 border-red-500 text-red-500"
-              : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+              ? "border-b-2 border-red-600 text-red-600"
+              : "text-gray-500 hover:text-gray-800"
           }`}
         >
           Lịch sử
@@ -154,7 +154,9 @@ export default function NewsList() {
       {/* News List */}
       <div className="space-y-4">
         {loading ? (
-          <p className="text-center text-gray-500 py-8">Đang tải tin tức...</p>
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
         ) : listToDisplay.length > 0 ? (
           listToDisplay.map((item) => (
             <NewsCard

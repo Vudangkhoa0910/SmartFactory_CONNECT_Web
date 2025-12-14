@@ -130,14 +130,14 @@ export default function NewsForm() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
-      <h2 className="text-xl font-semibold mb-5">Tạo Tin Tức</h2>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-5 text-gray-900">Tạo Tin Tức</h2>
 
       {/* Category & Priority */}
       <div className="flex gap-4 mb-3">
         <div className="flex-1">
           <select
-            className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600"
+            className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             value={news.category}
             onChange={(e) => setNews({ ...news, category: e.target.value })}
             disabled={loading}
@@ -158,7 +158,7 @@ export default function NewsForm() {
               onChange={(e) => setNews({ ...news, is_priority: e.target.checked })}
               disabled={loading}
             />
-            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span className="ml-2 text-sm font-medium text-gray-700">
               Tin quan trọng
             </span>
           </label>
@@ -169,7 +169,7 @@ export default function NewsForm() {
       <input
         type="text"
         placeholder="Tiêu đề"
-        className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 mb-3"
+        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.title}
         onChange={(e) => setNews({ ...news, title: e.target.value })}
         disabled={loading}
@@ -179,7 +179,7 @@ export default function NewsForm() {
       <input
         type="text"
         placeholder="Mô tả ngắn (hiển thị trên danh sách)"
-        className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 mb-3"
+        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.excerpt}
         onChange={(e) => setNews({ ...news, excerpt: e.target.value })}
         disabled={loading}
@@ -188,7 +188,7 @@ export default function NewsForm() {
       {/* Content */}
       <textarea
         placeholder="Nội dung"
-        className="w-full px-4 py-2 rounded-md border dark:bg-gray-700 dark:border-gray-600 h-32 mb-5"
+        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white h-32 mb-5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.content}
         onChange={(e) => setNews({ ...news, content: e.target.value })}
         disabled={loading}
@@ -196,16 +196,16 @@ export default function NewsForm() {
 
       {/* Upload Section */}
       <div
-        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+        className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 hover:border-red-300 transition"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
         onClick={() => document.getElementById("fileInput")?.click()}
       >
-        <UploadCloud className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-        <p className="text-gray-600 dark:text-gray-300 font-medium mb-1">
+        <UploadCloud className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+        <p className="text-gray-600 font-medium mb-1">
           Kéo thả file vào đây
         </p>
-        <p className="text-xs opacity-70">PDF / DOC / DOCX / JPG / PNG</p>
+        <p className="text-xs text-gray-400">PDF / DOC / DOCX / JPG / PNG</p>
 
         <input
           type="file"
@@ -224,15 +224,15 @@ export default function NewsForm() {
           {news.attachments.map((file, index) => (
             <div
               key={index}
-              className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg"
+              className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg border border-gray-100"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-gray-700">
                 <FileText className="w-5 h-5" />
                 <span className="text-sm">{file.name}</span>
               </div>
               <button
                 onClick={() => removeFile(index)}
-                className="text-red-500 hover:text-red-700"
+                className="text-gray-400 hover:text-red-600 transition-colors"
                 disabled={loading}
               >
                 <X size={18} />
@@ -246,7 +246,7 @@ export default function NewsForm() {
       <button 
         onClick={handleSubmit}
         disabled={loading}
-        className="mt-5 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-5 w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Đang xử lý..." : "Đăng Tin"}
       </button>
