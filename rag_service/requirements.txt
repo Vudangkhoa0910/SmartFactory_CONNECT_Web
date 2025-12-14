@@ -1,0 +1,30 @@
+# RAG Incident Router Service
+# Install: pip install -r requirements.txt
+# Updated: December 2025
+
+# ============================================
+# CORE DEPENDENCIES
+# ============================================
+
+# Tokenizer (for PhoBERT)
+transformers>=4.46.0
+
+# ONNX Runtime (faster inference)
+onnxruntime>=1.20.0
+
+# Vietnamese Word Segmentation (required for PhoBERT)
+pyvi>=0.1.1
+
+# Vector Database
+psycopg2-binary>=2.9.9
+pgvector>=0.3.0
+
+# API Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+
+# Utilities
+python-dotenv>=1.0.0
+numpy>=1.26.0
+tqdm>=4.66.0
