@@ -3,6 +3,8 @@ const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const path = require('path');
 const fs = require('fs').promises;
 const ExcelJS = require('exceljs');
+const escalationService = require('../services/escalation.service');
+const ratingService = require('../services/rating.service');
 
 /**
  * Create new incident
@@ -1159,6 +1161,203 @@ const exportIncidentsToExcel = asyncHandler(async (req, res) => {
   res.end();
 });
 
+/**
+ * Escalate incident to next handler level
+ * POST /api/incidents/:id/escalate-level
+ */
+const escalateToNextLevel = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user.id;
+  
+  const result = await escalationService.escalateIncident(id, userId, reason, false);
+  
+  // Get notification service and send notification
+  const notificationService = req.app.get('notificationService');
+  if (notificationService && result.newHandler) {
+    await notificationService.createNotification({
+      type: 'incident_escalated',
+      title: 'Incident Escalated to You',
+      message: `An incident has been escalated to ${result.levelName}`,
+      user_id: result.newHandler.id,
+      reference_type: 'incident',
+      reference_id: id,
+    });
+  }
+  
+  res.json({
+    success: true,
+    message: `Incident escalated to ${result.levelName}`,
+    data: result
+  });
+});
+
+/**
+ * Assign incident to multiple departments
+ * POST /api/incidents/:id/assign-departments
+ */
+const assignToDepartments = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { departments } = req.body; // Array of { department_id, assigned_to, task_description, priority, due_date }
+  const userId = req.user.id;
+  
+  if (!departments || !Array.isArray(departments) || departments.length === 0) {
+    throw new AppError('Departments array is required', 400);
+  }
+  
+  const results = await escalationService.assignIncidentToDepartments(id, departments, userId);
+  
+  // Send notifications to assigned departments
+  const notificationService = req.app.get('notificationService');
+  const io = req.app.get('io');
+  
+  for (const assignment of results) {
+    // Notify department
+    if (io && assignment.department_id) {
+      io.notifyDepartment(assignment.department_id, 'department_task_assigned', {
+        type: 'incident',
+        incident_id: id,
+        task_description: assignment.task_description,
+        priority: assignment.priority,
+      });
+    }
+    
+    // Notify specific assignee
+    if (notificationService && assignment.assigned_to) {
+      await notificationService.createNotification({
+        type: 'incident_assigned',
+        title: 'New Department Task',
+        message: `Your department has been assigned to help with an incident`,
+        user_id: assignment.assigned_to,
+        reference_type: 'incident',
+        reference_id: id,
+      });
+    }
+  }
+  
+  res.json({
+    success: true,
+    message: `Incident assigned to ${results.length} department(s)`,
+    data: results
+  });
+});
+
+/**
+ * Get department assignments for an incident
+ * GET /api/incidents/:id/departments
+ */
+const getDepartmentAssignments = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const result = await db.query(`
+    SELECT 
+      ida.*,
+      d.name as department_name,
+      d.code as department_code,
+      u1.full_name as assigned_by_name,
+      u2.full_name as assigned_to_name
+    FROM incident_department_assignments ida
+    JOIN departments d ON ida.department_id = d.id
+    JOIN users u1 ON ida.assigned_by = u1.id
+    LEFT JOIN users u2 ON ida.assigned_to = u2.id
+    WHERE ida.incident_id = $1
+    ORDER BY ida.created_at DESC
+  `, [id]);
+  
+  res.json({
+    success: true,
+    data: result.rows
+  });
+});
+
+/**
+ * Update department assignment status
+ * PUT /api/incidents/:id/departments/:assignmentId
+ */
+const updateDepartmentAssignment = asyncHandler(async (req, res) => {
+  const { id, assignmentId } = req.params;
+  const { status, completion_notes } = req.body;
+  const userId = req.user.id;
+  
+  const updateFields = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
+  const params = [status];
+  let paramIndex = 2;
+  
+  if (status === 'in_progress' && !req.body.started_at) {
+    updateFields.push(`started_at = CURRENT_TIMESTAMP`);
+  }
+  
+  if (status === 'completed') {
+    updateFields.push(`completed_at = CURRENT_TIMESTAMP`);
+    if (completion_notes) {
+      updateFields.push(`completion_notes = $${paramIndex++}`);
+      params.push(completion_notes);
+    }
+  }
+  
+  params.push(assignmentId, id);
+  
+  const result = await db.query(`
+    UPDATE incident_department_assignments
+    SET ${updateFields.join(', ')}
+    WHERE id = $${paramIndex++} AND incident_id = $${paramIndex}
+    RETURNING *
+  `, params);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('Assignment not found', 404);
+  }
+  
+  // Log history
+  await db.query(`
+    INSERT INTO incident_history (incident_id, action, performed_by, details)
+    VALUES ($1, 'department_task_updated', $2, $3)
+  `, [id, userId, JSON.stringify({ assignment_id: assignmentId, status })]);
+  
+  res.json({
+    success: true,
+    message: 'Department assignment updated',
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Submit detailed rating for incident
+ * POST /api/incidents/:id/detailed-rating
+ */
+const submitDetailedRating = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  const rating = await ratingService.rateIncident(id, userId, req.body);
+  
+  res.json({
+    success: true,
+    message: 'Rating submitted successfully',
+    data: rating
+  });
+});
+
+/**
+ * Get rating statistics for incidents
+ * GET /api/incidents/rating-stats
+ */
+const getRatingStats = asyncHandler(async (req, res) => {
+  const { department_id, start_date, end_date } = req.query;
+  
+  const stats = await ratingService.getIncidentRatingStats({
+    department_id,
+    start_date,
+    end_date
+  });
+  
+  res.json({
+    success: true,
+    data: stats
+  });
+});
+
+// Export all functions at the end
 module.exports = {
   createIncident,
   getIncidents,
@@ -1177,5 +1376,12 @@ module.exports = {
   getKanbanData,
   moveIncidentStatus,
   bulkUpdateIncidents,
-  exportIncidentsToExcel
+  exportIncidentsToExcel,
+  // New escalation & rating APIs
+  escalateToNextLevel,
+  assignToDepartments,
+  getDepartmentAssignments,
+  updateDepartmentAssignment,
+  submitDetailedRating,
+  getRatingStats,
 };
