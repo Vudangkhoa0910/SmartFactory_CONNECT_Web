@@ -7,31 +7,34 @@ interface IdeaHistoryProps {
 
 export const IdeaHistory: React.FC<IdeaHistoryProps> = ({ history }) => {
   if (history.length === 0)
-    return <p className="text-gray-500 dark:text-gray-400">Chưa có lịch sử.</p>;
+    return <p className="text-gray-500">Chưa có lịch sử.</p>;
 
   return (
-    <div className="space-y-3">
-      {history.map((h, idx) => (
-        <div
-          key={idx}
-          className="p-2 border rounded-md hover:shadow-sm transition"
-        >
-          <div className="flex justify-between items-center text-sm">
-            <span className="font-semibold">{h.by}</span>
-            <span className="italic text-gray-500 dark:text-gray-400">
-              {h.time.toLocaleString("vi-VN")}
-            </span>
+    <div>
+      <h3 className="font-semibold mb-3 text-gray-900">Lịch sử hành động</h3>
+      <div className="space-y-3">
+        {history.map((h, idx) => (
+          <div
+            key={idx}
+            className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition bg-gray-50"
+          >
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-semibold text-gray-900">{h.by}</span>
+              <span className="text-gray-500 text-xs">
+                {h.time.toLocaleString("vi-VN")}
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="font-medium text-red-600">{h.action}</span>
+              {h.note && (
+                <p className="mt-1 text-gray-600 text-sm">
+                  Phương hướng: {h.note}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="mt-1">
-            <span className="font-semibold">{h.action}</span>
-            {h.note && (
-              <p className="mt-0.5 text-gray-600 dark:text-gray-300">
-                Phương hướng: {h.note}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
