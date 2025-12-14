@@ -11,19 +11,19 @@ export default function IncidentDashboard() {
   return (
     <>
       <PageMeta
-        title="Factory Incident Dashboard"
+        title="Thống kê Sự cố | SmartFactory CONNECT"
         description="Dashboard hiển thị thống kê sự cố nhà máy"
       />
 
-      <div className="grid grid-cols-12 gap-4 md:gap-6">
+      <div className="p-4 grid grid-cols-12 gap-4">
         {/* 1. Tổng quan */}
-        <div className="col-span-12 xl:col-span-7 space-y-6">
+        <div className="col-span-12 xl:col-span-7 space-y-4">
           <IncidentOverview />
           <IncidentTypePieChart />
         </div>
 
         {/* 2. KPI và thời gian */}
-        <div className="col-span-12 xl:col-span-5 space-y-6">
+        <div className="col-span-12 xl:col-span-5 space-y-4">
           <AvgTimeStats />
           <ResponseTimeCard />
           <ResolveTimeCard />
