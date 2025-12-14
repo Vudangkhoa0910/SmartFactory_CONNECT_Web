@@ -298,6 +298,58 @@ class NotificationService {
       throw error;
     }
   }
+
+  /**
+   * Get total count for user
+   */
+  async getTotalCount(userId) {
+    try {
+      const result = await db.query(
+        'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1',
+        [userId]
+      );
+      return parseInt(result.rows[0].count);
+    } catch (error) {
+      console.error('Error getting total count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get count by type for user
+   */
+  async getCountByType(userId) {
+    try {
+      const result = await db.query(
+        `SELECT type, COUNT(*) as count 
+         FROM notifications 
+         WHERE user_id = $1 
+         GROUP BY type`,
+        [userId]
+      );
+      const byType = {};
+      result.rows.forEach(row => {
+        byType[row.type] = parseInt(row.count);
+      });
+      return byType;
+    } catch (error) {
+      console.error('Error getting count by type:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Get count by priority for user (from related entities)
+   */
+  async getCountByPriority(userId) {
+    try {
+      // For now return empty - priority is on the notification reference
+      return { critical: 0, high: 0, medium: 0, low: 0 };
+    } catch (error) {
+      console.error('Error getting count by priority:', error);
+      return {};
+    }
+  }
 }
 
 module.exports = NotificationService;
