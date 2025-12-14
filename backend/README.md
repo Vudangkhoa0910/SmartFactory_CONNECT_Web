@@ -74,10 +74,32 @@ CREATE DATABASE smartfactory_db;
 Chạy migration để tạo schema:
 
 ```bash
+# Option 1: Schema đầy đủ (khuyến nghị)
+psql -U your_db_user -d smartfactory_db -f src/database/schema_complete.sql
+
+# Option 2: Schema cơ bản
 psql -U your_db_user -d smartfactory_db -f src/database/schema_incidents_ideas_news.sql
+
+# Thêm room booking (nếu cần)
+psql -U your_db_user -d smartfactory_db -f src/database/schema_room_booking.sql
+
+# Migrations bổ sung
+psql -U your_db_user -d smartfactory_db -f src/database/migrations/add_translation_tables.sql
 ```
 
-### 4. Chạy ứng dụng
+### 4. Tạo user mặc định (nếu cần)
+
+```bash
+node scripts/create_default_users.js
+```
+
+### 4. Tạo user mặc định (nếu cần)
+
+```bash
+node scripts/create_default_users.js
+```
+
+### 5. Chạy ứng dụng
 
 **Development mode:**
 
@@ -99,19 +121,48 @@ Server sẽ chạy tại: `http://localhost:3000`
 backend/
 ├── src/
 │   ├── config/
-│   │   └── database.js              # PostgreSQL connection
+│   │   ├── database.js              # PostgreSQL connection
+│   │   └── socket.js                # Socket.io configuration
 │   ├── controllers/
-│   │   └── incident.controller.js   # Incident business logic
+│   │   ├── auth.controller.js       # Authentication logic
+│   │   ├── incident.controller.js   # Incident management
+│   │   ├── idea.controller.js       # Ideas/Kaizen management
+│   │   ├── news.controller.js       # News management
+│   │   ├── department.controller.js # Department management
+│   │   ├── room-booking.controller.js # Room booking
+│   │   ├── translation.controller.js # Multi-language
+│   │   └── ...
+│   ├── services/
+│   │   ├── notification.service.js  # Notification logic
+│   │   ├── translation.service.js   # Translation logic
+│   │   └── ...
 │   ├── middlewares/
 │   │   ├── auth.middleware.js       # JWT authentication
 │   │   ├── error.middleware.js      # Error handling
 │   │   ├── upload.middleware.js     # File upload
 │   │   └── validation.middleware.js # Request validation
 │   ├── routes/
-│   │   └── incident.routes.js       # Incident API routes
+│   │   ├── auth.routes.js           # Auth endpoints
+│   │   ├── incident.routes.js       # Incident endpoints
+│   │   ├── idea.routes.js           # Idea endpoints
+│   │   ├── news.routes.js           # News endpoints
+│   │   ├── room-booking.routes.js   # Room booking endpoints
+│   │   └── ...
 │   └── database/
-│       └── schema_incidents_ideas_news.sql
+│       ├── schema_complete.sql      # Full schema
+│       ├── schema_incidents_ideas_news.sql
+│       ├── schema_room_booking.sql
+│       ├── migrations/              # Database migrations
+│       └── README.md                # Database documentation
+├── scripts/
+│   ├── create_default_users.js      # Create default users
+│   ├── backup_postgresql.sh         # Backup script
+│   └── ...
 ├── uploads/                          # File uploads directory
+│   ├── incidents/
+│   ├── ideas/
+│   ├── news/
+│   └── temp/
 ├── logs/                             # Application logs
 ├── .env                              # Environment variables
 ├── .env.example                      # Environment template
