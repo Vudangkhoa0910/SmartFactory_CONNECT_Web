@@ -35,17 +35,17 @@ export default function FeedbackDashboard() {
   return (
     <>
       <PageMeta
-        title="Feedback Dashboard | TailAdmin - React.js Admin Dashboard Template"
+        title="Thống kê Ý kiến | SmartFactory CONNECT"
         description="Trang tổng quan thống kê và phân tích các ý kiến đóng góp."
       />
 
       {/* Sử dụng flex-col và gap để tạo khoảng cách nhất quán giữa các hàng */}
-      <div className="flex flex-col gap-4 md:gap-6">
+      <div className="p-4 flex flex-col gap-4">
         {/* Hàng 1: Các chỉ số chính */}
         <FeedbackMetrics data={stats?.overall} />
 
         {/* Hàng 2: Hai biểu đồ tròn nằm cạnh nhau */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Cột trái: Phân loại theo Tag */}
           <div className="col-span-1">
             <FeedbackTagChart data={stats?.by_category} />
