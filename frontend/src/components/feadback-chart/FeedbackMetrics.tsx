@@ -55,9 +55,14 @@ const ClockIcon: React.FC = () => (
 );
 
 export default function FeedbackMetrics({ data }: { data?: any }) {
-  // Use real data if available, otherwise fallback to defaults or 0
-  const acceptanceRate = data ? Math.round((data.approved / data.total_ideas) * 100) || 0 : 85;
-  const rejectionRate = data ? Math.round((data.rejected / data.total_ideas) * 100) || 0 : 15;
+  // Calculate rates from real data
+  const totalIdeas = data?.total_ideas || 0;
+  const approvedCount = data?.approved || 0;
+  const rejectedCount = data?.rejected || 0;
+  
+  const acceptanceRate = totalIdeas > 0 ? Math.round((approvedCount / totalIdeas) * 100) : 0;
+  const rejectionRate = totalIdeas > 0 ? Math.round((rejectedCount / totalIdeas) * 100) : 0;
+  const avgProcessingDays = data?.avg_processing_days || 0;
   
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
@@ -75,7 +80,7 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
               {acceptanceRate}%
             </h4>
           </div>
-          <Badge color="success">+5.2%</Badge>
+          <Badge color="success">{approvedCount} ý tưởng</Badge>
         </div>
       </div>
 
@@ -93,7 +98,7 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
               {rejectionRate}%
             </h4>
           </div>
-          <Badge color="error">-1.5%</Badge>
+          <Badge color="error">{rejectedCount} ý tưởng</Badge>
         </div>
       </div>
 
@@ -108,7 +113,7 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
               Thời gian xử lý trung bình
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              2.5 Ngày
+              {avgProcessingDays > 0 ? `${avgProcessingDays.toFixed(1)} Ngày` : 'N/A'}
             </h4>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { useEffect, useState } from "react";
+import dashboardService, { IdeaDifficultyData } from "../../services/dashboard.service";
 
 type ChartSeries = {
   name: string;
@@ -7,6 +9,26 @@ type ChartSeries = {
 }[];
 
 export default function FeedbackDifficultyChart() {
+  const [data, setData] = useState<IdeaDifficultyData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardService.getIdeaDifficultyDistribution();
+        setData(response);
+      } catch (err) {
+        console.error('Failed to fetch idea difficulty:', err);
+        setError('Không thể tải dữ liệu');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const options: ApexOptions = {
     colors: ["#e5386d"],
     fill: {
@@ -59,7 +81,7 @@ export default function FeedbackDifficultyChart() {
       },
     },
     xaxis: {
-      categories: ["Dễ", "Trung bình", "Khó", "Rất khó"],
+      categories: data?.categories || ["Dễ", "Trung bình", "Khó", "Rất khó"],
       labels: {
         style: {
           colors: "#6B7280",
@@ -79,9 +101,8 @@ export default function FeedbackDifficultyChart() {
         },
       },
     },
-    // ✨ ĐÃ SỬA: Chỉnh sửa Tooltip
     tooltip: {
-      theme: "light", // Đổi từ "dark" sang "light" để có nền trắng và shadow mặc định
+      theme: "light",
       y: {
         formatter: function (val: number) {
           return val + " ý kiến";
@@ -93,9 +114,35 @@ export default function FeedbackDifficultyChart() {
   const series: ChartSeries = [
     {
       name: "Số lượng",
-      data: [76, 102, 65, 23],
+      data: data?.counts || [],
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Mức độ khó của ý kiến
+        </h3>
+        <div className="flex items-center justify-center h-[350px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Mức độ khó của ý kiến
+        </h3>
+        <div className="flex items-center justify-center h-[350px] text-red-500">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
