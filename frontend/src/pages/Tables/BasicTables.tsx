@@ -5,10 +5,10 @@ import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 
 export default function BasicTables() {
   return (
-    <>
+    <div className="p-4">
       <PageMeta
-        title="React.js Basic Tables Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Basic Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Bảng dữ liệu | SmartFactory CONNECT"
+        description="Trang hiển thị các bảng dữ liệu cơ bản"
       />
       <PageBreadcrumb pageTitle="Basic Tables" />
       <div className="space-y-6">
@@ -16,6 +16,6 @@ export default function BasicTables() {
           <BasicTableOne />
         </ComponentCard>
       </div>
-    </>
+    </div>
   );
 }
