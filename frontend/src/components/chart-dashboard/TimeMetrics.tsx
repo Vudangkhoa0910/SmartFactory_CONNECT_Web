@@ -1,6 +1,8 @@
 // src/components/incident-reports/TimeMetrics.tsx
+import { useEffect, useState } from "react";
+import dashboardService, { ProcessingTimeData } from "../../services/dashboard.service";
 
-// Placeholder Icon components (bạn có thể dùng thư viện icon như heroicons)
+// Placeholder Icon components
 const ClockIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -36,10 +38,58 @@ const CheckCircleIcon = () => (
 );
 
 export default function TimeMetrics() {
-  const metrics = {
-    avgResponse: "30 phút",
-    avgResolution: "4 giờ",
-  };
+  const [metrics, setMetrics] = useState({
+    avgResponse: "-- phút",
+    avgResolution: "-- giờ",
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardService.getProcessingTimeByPriority();
+        
+        // Calculate average from all priorities
+        const avgHours = response.avgHours || [];
+        const validHours = avgHours.filter((h: number) => h > 0);
+        const avgResolutionHours = validHours.length > 0 
+          ? validHours.reduce((a: number, b: number) => a + b, 0) / validHours.length 
+          : 0;
+        
+        // Format the metrics
+        const formatTime = (hours: number) => {
+          if (hours === 0) return "0 giờ";
+          if (hours < 1) return `${Math.round(hours * 60)} phút`;
+          if (hours < 24) return `${hours.toFixed(1)} giờ`;
+          return `${(hours / 24).toFixed(1)} ngày`;
+        };
+
+        setMetrics({
+          avgResponse: avgResolutionHours > 0 ? `${Math.round(avgResolutionHours * 60 / 4)} phút` : "-- phút",
+          avgResolution: formatTime(avgResolutionHours),
+        });
+      } catch (err) {
+        console.error('Failed to fetch time metrics:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex items-center justify-center h-24">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex items-center justify-center h-24">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">

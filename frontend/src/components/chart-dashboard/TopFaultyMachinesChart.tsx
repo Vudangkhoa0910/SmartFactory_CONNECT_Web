@@ -1,4 +1,5 @@
 // src/components/incident-reports/TopFaultyMachinesChart.tsx
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -11,19 +12,12 @@ import {
 } from "recharts";
 import DashboardCard from "./DashboardCard";
 import CustomTooltip from "./CustomTooltip";
+import dashboardService, { TopMachineData } from "../../services/dashboard.service";
 
-const data = [
-  { name: "Máy A", Lỗi: 30 },
-  { name: "Máy B", Lỗi: 25 },
-  { name: "Khu C", Lỗi: 22 },
-  { name: "Máy D", Lỗi: 20 },
-  { name: "Máy E", Lỗi: 18 },
-  { name: "Dây chuyền F", Lỗi: 15 },
-  { name: "Máy G", Lỗi: 12 },
-  { name: "Máy H", Lỗi: 10 },
-  { name: "Khu I", Lỗi: 8 },
-  { name: "Máy K", Lỗi: 5 },
-];
+interface ChartData {
+  name: string;
+  Lỗi: number;
+}
 
 // Custom shape cho cột bo tròn
 const RoundedBar = (props: any) => {
@@ -41,6 +35,51 @@ const RoundedBar = (props: any) => {
 };
 
 export default function TopFaultyMachinesChart() {
+  const [data, setData] = useState<ChartData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardService.getTopMachinesWithErrors();
+        
+        // Transform API data to chart format
+        const chartData: ChartData[] = response.map((item: TopMachineData) => ({
+          name: item.machine_name || item.machine_code || 'Unknown',
+          Lỗi: item.error_count
+        }));
+        
+        setData(chartData);
+      } catch (err) {
+        console.error('Failed to fetch top machines data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <DashboardCard title="Top 10 máy móc/vị trí lỗi">
+        <div className="flex items-center justify-center h-[300px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </DashboardCard>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <DashboardCard title="Top 10 máy móc/vị trí lỗi">
+        <div className="flex items-center justify-center h-[300px] text-gray-500">
+          Chưa có dữ liệu thiết bị
+        </div>
+      </DashboardCard>
+    );
+  }
+
   return (
     <DashboardCard title="Top 10 máy móc/vị trí lỗi">
       <ResponsiveContainer width="100%" height={300}>
