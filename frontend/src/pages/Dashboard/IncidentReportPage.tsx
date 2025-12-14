@@ -6,13 +6,15 @@ import DepartmentKPIChart from "../../components/chart-incident-report/Departmen
 import ResponseTimeCard from "../../components/chart-incident-report/ResponseTimeCard";
 import ResolveTimeCard from "../../components/chart-incident-report/ResolveTimeCard";
 import AvgTimeStats from "../../components/chart-incident-report/AvgTimeStats";
-
+import { useTranslation } from "../../contexts/LanguageContext";
 export default function IncidentDashboard() {
+  const { t } = useTranslation();
+
   return (
     <>
       <PageMeta
-        title="Thống kê Sự cố | SmartFactory CONNECT"
-        description="Dashboard hiển thị thống kê sự cố nhà máy"
+        title={t('incident_report.title')}
+        description={t('incident_report.description')}
       />
 
       <div className="p-4 grid grid-cols-12 gap-4">

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { SensitiveMessage, HistoryAction } from "./types";
 import { ActionPanel } from "./ActionPanel";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -31,6 +32,7 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
   onForward,
   onReply,
 }) => {
+  const { t } = useTranslation();
   const [activePanel, setActivePanel] = useState<"none" | "forward">("none");
   const [replyContent, setReplyContent] = useState("");
 
@@ -38,7 +40,7 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
     return (
       <main className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50">
         <Inbox size={64} className="text-gray-300" />
-        <p className="mt-4 text-lg">Chưa có góp ý nào được chọn</p>
+        <p className="mt-4 text-lg">{t('feedback.no_selection')}</p>
       </main>
     );
   }
@@ -73,13 +75,13 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
         </h2>
         <div className="flex items-center gap-2">
           <button className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 border border-gray-200 hover:bg-gray-50 transition-colors text-gray-700">
-            <Archive size={14} /> Lưu trữ
+            <Archive size={14} /> {t('feedback.archive')}
           </button>
           <button
             onClick={() => setActivePanel("forward")}
             className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 flex items-center gap-1.5 transition-colors"
           >
-            <Send size={14} /> Chuyển tiếp
+            <Send size={14} /> {t('feedback.forward')}
           </button>
         </div>
       </header>
@@ -114,12 +116,12 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
           ))}
         </div>
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-sm mb-3 text-gray-900">Phản hồi góp ý</h4>
+          <h4 className="font-semibold text-sm mb-3 text-gray-900">{t('feedback.reply_title')}</h4>
           <textarea
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             rows={4}
-            placeholder="Nhập nội dung phản hồi..."
+            placeholder={t('feedback.reply_placeholder')}
             className="w-full p-3 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
           <div className="text-right mt-3">
@@ -128,12 +130,12 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
               className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-300 transition-colors"
               disabled={!replyContent.trim()}
             >
-              Gửi phản hồi
+              {t('feedback.send_reply')}
             </button>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-sm mb-3 text-gray-900">Lịch sử hoạt động</h4>
+          <h4 className="font-semibold text-sm mb-3 text-gray-900">{t('feedback.history_title')}</h4>
           <ul className="space-y-3">
             {message.history.map((entry, index) => (
               <li key={index} className="flex items-start gap-3 text-sm">

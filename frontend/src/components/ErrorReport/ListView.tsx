@@ -9,13 +9,15 @@ import {
 } from "@tanstack/react-table";
 import { ChevronsUpDown } from "lucide-react";
 import { Incident } from "../types/index";
-import { columns } from "./tableColumns";
+import { getColumns } from "./tableColumns";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export function ListView({ data }: { data: Incident[] }) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const table = useReactTable({
     data,
-    columns,
+    columns: getColumns(t),
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

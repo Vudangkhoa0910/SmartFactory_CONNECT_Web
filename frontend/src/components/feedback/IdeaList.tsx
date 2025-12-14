@@ -3,6 +3,7 @@
 import React from "react";
 import { Inbox, Mail } from "lucide-react";
 import { PublicIdea } from "./types";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface IdeaListProps {
   ideas: PublicIdea[];
@@ -15,6 +16,8 @@ export const IdeaList: React.FC<IdeaListProps> = ({
   selectedId,
   onSelect,
 }) => {
+  const { t } = useTranslation();
+
   // Empty state
   if (ideas.length === 0) {
     return (
@@ -22,15 +25,15 @@ export const IdeaList: React.FC<IdeaListProps> = ({
         <header className="p-4 border-b border-gray-200 flex items-center gap-3 shrink-0">
           <Mail size={20} className="text-red-600" />
           <h2 className="text-lg font-bold text-gray-900">
-            Hòm thư Trắng
+            {t('feedback.white_box_title')}
           </h2>
         </header>
         <div className="flex-grow flex flex-col items-center justify-center text-center p-6">
           <Inbox size={48} className="mb-4 text-gray-300" />
           <h3 className="font-semibold text-gray-700">
-            Hòm thư trống
+            {t('error_report.empty_queue')}
           </h3>
-          <p className="text-sm mt-1 text-gray-500">Chưa có ý kiến đóng góp nào được gửi.</p>
+          <p className="text-sm mt-1 text-gray-500">{t('message.no_data')}</p>
         </div>
       </aside>
     );
@@ -42,7 +45,7 @@ export const IdeaList: React.FC<IdeaListProps> = ({
       <header className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
         <Mail size={20} className="text-red-600" />
         <h2 className="text-lg font-bold text-gray-900">
-          Hòm thư Trắng
+          {t('feedback.white_box_title')}
         </h2>
       </header>
 

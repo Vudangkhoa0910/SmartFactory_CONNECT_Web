@@ -1,6 +1,7 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { useEffect, useState } from "react";
+import { useTranslation } from "../../contexts/LanguageContext";
 import dashboardService, { IdeaDifficultyData } from "../../services/dashboard.service";
 
 type ChartSeries = {
@@ -9,6 +10,7 @@ type ChartSeries = {
 }[];
 
 export default function FeedbackDifficultyChart() {
+  const { t } = useTranslation();
   const [data, setData] = useState<IdeaDifficultyData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +23,46 @@ export default function FeedbackDifficultyChart() {
         setData(response);
       } catch (err) {
         console.error('Failed to fetch idea difficulty:', err);
-        setError('Không thể tải dữ liệu');
+        setError(t('feedback_dashboard.error_loading', 'Không thể tải dữ liệu'));
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [t]);
+
+  // Helper to translate categories
+  const getTranslatedCategories = () => {
+    if (!data?.categories) {
+      return [
+        t('feedback_dashboard.difficulty.easy'),
+        t('feedback_dashboard.difficulty.medium'),
+        t('feedback_dashboard.difficulty.hard'),
+        t('feedback_dashboard.difficulty.very_hard')
+      ];
+    }
+    
+    // Try to map backend categories if they match keys
+    return data.categories.map(cat => {
+      const keyMap: Record<string, string> = {
+        'easy': 'easy',
+        'medium': 'medium',
+        'hard': 'hard',
+        'very_hard': 'very_hard',
+        'Dễ': 'easy',
+        'Trung bình': 'medium',
+        'Khó': 'hard',
+        'Rất khó': 'very_hard'
+      };
+      
+      const key = keyMap[cat] || cat;
+      // Check if it's one of our keys
+      if (['easy', 'medium', 'hard', 'very_hard'].includes(key)) {
+        return t(`feedback_dashboard.difficulty.${key}`);
+      }
+      return cat;
+    });
+  };
 
   const options: ApexOptions = {
     colors: ["#e5386d"],
@@ -81,7 +116,7 @@ export default function FeedbackDifficultyChart() {
       },
     },
     xaxis: {
-      categories: data?.categories || ["Dễ", "Trung bình", "Khó", "Rất khó"],
+      categories: getTranslatedCategories(),
       labels: {
         style: {
           colors: "#6B7280",
@@ -90,7 +125,7 @@ export default function FeedbackDifficultyChart() {
     },
     yaxis: {
       title: {
-        text: "Số lượng ý kiến",
+        text: t('feedback_dashboard.difficulty_chart.y_axis'),
         style: {
           color: "#6B7280",
         },
@@ -105,7 +140,7 @@ export default function FeedbackDifficultyChart() {
       theme: "light",
       y: {
         formatter: function (val: number) {
-          return val + " ý kiến";
+          return val + " " + t('feedback_dashboard.difficulty_chart.tooltip_unit');
         },
       },
     },
@@ -113,7 +148,7 @@ export default function FeedbackDifficultyChart() {
 
   const series: ChartSeries = [
     {
-      name: "Số lượng",
+      name: t('feedback_dashboard.difficulty_chart.series_name'),
       data: data?.counts || [],
     },
   ];
@@ -122,7 +157,7 @@ export default function FeedbackDifficultyChart() {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Mức độ khó của ý kiến
+          {t('feedback_dashboard.difficulty_chart.title')}
         </h3>
         <div className="flex items-center justify-center h-[350px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
@@ -135,7 +170,7 @@ export default function FeedbackDifficultyChart() {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Mức độ khó của ý kiến
+          {t('feedback_dashboard.difficulty_chart.title')}
         </h3>
         <div className="flex items-center justify-center h-[350px] text-red-500">
           {error}
@@ -147,7 +182,7 @@ export default function FeedbackDifficultyChart() {
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-        Mức độ khó của ý kiến
+        {t('feedback_dashboard.difficulty_chart.title')}
       </h3>
       <div>
         <Chart options={options} series={series} type="bar" height={350} />

@@ -5,8 +5,10 @@ import FeedbackMetrics from "../../components/feadback-chart/FeedbackMetrics";
 import FeedbackTagChart from "../../components/feadback-chart/FeedbackTagChart";
 import FeedbackRatingChart from "../../components/feadback-chart/FeedbackRatingChart";
 import FeedbackDifficultyChart from "../../components/feadback-chart/FeedbackDifficultyChart";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function FeedbackDashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export default function FeedbackDashboard() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-rose-600">Đang tải thống kê...</div>
+        <div className="text-rose-600">{t('feedback_dashboard.loading')}</div>
       </div>
     );
   }
@@ -35,8 +37,8 @@ export default function FeedbackDashboard() {
   return (
     <>
       <PageMeta
-        title="Thống kê Ý kiến | SmartFactory CONNECT"
-        description="Trang tổng quan thống kê và phân tích các ý kiến đóng góp."
+        title={t('feedback_dashboard.title')}
+        description={t('feedback_dashboard.description')}
       />
 
       {/* Sử dụng flex-col và gap để tạo khoảng cách nhất quán giữa các hàng */}

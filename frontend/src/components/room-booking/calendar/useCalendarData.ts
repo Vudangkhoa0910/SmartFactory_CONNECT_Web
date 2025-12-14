@@ -6,6 +6,10 @@ import { toast } from 'react-toastify';
 import roomBookingService from '../../../services/room-booking.service';
 import { RoomBooking, Room, MEETING_TYPE_COLORS } from '../../../types/room-booking.types';
 import { CalendarEvent } from './constants';
+import { useTranslation } from "../../../contexts/LanguageContext";
+
+
+
 
 interface UseCalendarDataReturn {
   rooms: Room[];
@@ -23,6 +27,7 @@ export function useCalendarData(): UseCalendarDataReturn {
   const [loading, setLoading] = useState(true);
   const [currentDateRange, setCurrentDateRange] = useState<{ start: string; end: string } | null>(null);
   const isLoadingRef = useRef(false);
+  const { t } = useTranslation();
 
   const loadData = useCallback(async (startDate?: string, endDate?: string) => {
     console.log('🔄 loadData called with:', { startDate, endDate });
@@ -55,7 +60,7 @@ export function useCalendarData(): UseCalendarDataReturn {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Không thể tải dữ liệu đặt phòng');
+      toast.error(t('booking.no_calendar_bookings'));
     } finally {
       setLoading(false);
       isLoadingRef.current = false;

@@ -1,8 +1,9 @@
-import React, { useState, DragEvent, useEffect } from "react";
+import { useState, DragEvent, useEffect } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
 import { useLocation } from "react-router";
 import api from "../../services/api";
 import { toast } from "react-toastify";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface NewsItem {
   title: string;
@@ -14,6 +15,7 @@ interface NewsItem {
 }
 
 export default function NewsForm() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [news, setNews] = useState<NewsItem>({
     title: "",
@@ -50,11 +52,11 @@ export default function NewsForm() {
   ];
 
   const categories = [
-    { value: "company_announcement", label: "Thông báo công ty" },
-    { value: "safety_alert", label: "Cảnh báo an toàn" },
-    { value: "event", label: "Sự kiện" },
-    { value: "production_update", label: "Cập nhật sản xuất" },
-    { value: "maintenance", label: "Bảo trì" },
+    { value: "company_announcement", label: t('news.category_company_announcement') },
+    { value: "safety_alert", label: t('news.category_safety_alert') },
+    { value: "event", label: t('news.category_event') },
+    { value: "production_update", label: t('news.category_production_update') },
+    { value: "maintenance", label: t('news.category_maintenance') },
   ];
 
   const handleFiles = (files: FileList | null) => {
@@ -83,7 +85,7 @@ export default function NewsForm() {
 
   const handleSubmit = async () => {
     if (!news.title.trim() || !news.content.trim()) {
-      toast.warning("Vui lòng nhập tiêu đề và nội dung!");
+      toast.warning(t('news.validation_title_content'));
       return;
     }
 
@@ -109,7 +111,7 @@ export default function NewsForm() {
         },
       });
 
-      toast.success("Đăng tin thành công!");
+      toast.success(t('news.post_success'));
       // Reset form
       setNews({ 
         title: "", 
@@ -123,7 +125,7 @@ export default function NewsForm() {
       window.location.reload(); 
     } catch (error: any) {
       console.error("Failed to create news:", error);
-      toast.error(`Đăng tin thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('news.post_failed')}${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -131,7 +133,7 @@ export default function NewsForm() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-5 text-gray-900">Tạo Tin Tức</h2>
+      <h2 className="text-xl font-semibold mb-5 text-gray-900">{t('news.create_title')}</h2>
 
       {/* Category & Priority */}
       <div className="flex gap-4 mb-3">
@@ -159,7 +161,7 @@ export default function NewsForm() {
               disabled={loading}
             />
             <span className="ml-2 text-sm font-medium text-gray-700">
-              Tin quan trọng
+              {t('news.priority')}
             </span>
           </label>
         </div>
@@ -168,7 +170,7 @@ export default function NewsForm() {
       {/* Title */}
       <input
         type="text"
-        placeholder="Tiêu đề"
+        placeholder={t('news.title_placeholder')}
         className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.title}
         onChange={(e) => setNews({ ...news, title: e.target.value })}
@@ -178,7 +180,7 @@ export default function NewsForm() {
       {/* Excerpt */}
       <input
         type="text"
-        placeholder="Mô tả ngắn (hiển thị trên danh sách)"
+        placeholder={t('news.excerpt_placeholder')}
         className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.excerpt}
         onChange={(e) => setNews({ ...news, excerpt: e.target.value })}
@@ -187,7 +189,7 @@ export default function NewsForm() {
 
       {/* Content */}
       <textarea
-        placeholder="Nội dung"
+        placeholder={t('news.content_placeholder')}
         className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white h-32 mb-5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
         value={news.content}
         onChange={(e) => setNews({ ...news, content: e.target.value })}
@@ -203,9 +205,9 @@ export default function NewsForm() {
       >
         <UploadCloud className="w-10 h-10 mx-auto mb-3 text-gray-400" />
         <p className="text-gray-600 font-medium mb-1">
-          Kéo thả file vào đây
+          {t('news.drag_drop')}
         </p>
-        <p className="text-xs text-gray-400">PDF / DOC / DOCX / JPG / PNG</p>
+        <p className="text-xs text-gray-400">{t('news.allowed_types')}</p>
 
         <input
           type="file"
@@ -248,7 +250,7 @@ export default function NewsForm() {
         disabled={loading}
         className="mt-5 w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {loading ? "Đang xử lý..." : "Đăng Tin"}
+        {loading ? t('news.processing') : t('news.post_news')}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 // components/news/NewsDetailModal.tsx
 import { X, FileText } from "lucide-react";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface Props {
   item: any;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function NewsDetailModal({ item, onClose }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[999999]">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all scale-100 opacity-100">
@@ -22,12 +24,12 @@ export default function NewsDetailModal({ item, onClose }: Props) {
 
         <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
           <p className="text-gray-700 whitespace-pre-wrap">
-            {item.content || item.excerpt || "Không có nội dung chi tiết."}
+            {item.content || item.excerpt || t('news.no_content')}
           </p>
 
           {item.attachments?.length > 0 && (
             <div className="mt-6">
-              <h4 className="font-semibold mb-2 text-gray-900">Tệp đính kèm:</h4>
+              <h4 className="font-semibold mb-2 text-gray-900">{t('news.attachments')}</h4>
               <div className="flex flex-col gap-2">
                 {item.attachments.map((file: any, index: number) => {
                   const filePath = file.path || file;
@@ -55,7 +57,7 @@ export default function NewsDetailModal({ item, onClose }: Props) {
           )}
         </div>
         <div className="p-4 bg-gray-50 text-right text-xs text-gray-500 border-t border-gray-200 rounded-b-xl">
-          Ngày đăng: {item.publish_at}
+          {t('news.publish_date')}{item.publish_at}
         </div>
       </div>
     </div>

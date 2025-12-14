@@ -15,14 +15,17 @@ import {
   PlayCircle,
   XCircle,
 } from "lucide-react";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const columnIcons: Record<Status, React.ReactElement> = {
-  Mới: <Box size={16} className="text-gray-500" />,
-  "Đã tiếp nhận": <FileClock size={16} className="text-red-400" />,
-  "Đang xử lý": <PlayCircle size={16} className="text-red-500" />,
-  "Tạm dừng": <PauseCircle size={16} className="text-gray-500" />,
-  "Hoàn thành": <CheckCircle size={16} className="text-red-600" />,
-  "Đã đóng": <XCircle size={16} className="text-gray-400" />,
+  new: <Box size={16} className="text-gray-500" />,
+  assigned: <FileClock size={16} className="text-red-400" />,
+  in_progress: <PlayCircle size={16} className="text-red-500" />,
+  on_hold: <PauseCircle size={16} className="text-gray-500" />,
+  resolved: <CheckCircle size={16} className="text-red-600" />,
+  closed: <XCircle size={16} className="text-gray-400" />,
+  processed: <CheckCircle size={16} className="text-red-600" />,
+  pending: <Box size={16} className="text-gray-500" />,
 };
 
 export function KanbanColumn({
@@ -32,6 +35,7 @@ export function KanbanColumn({
   title: Status;
   incidents: Incident[];
 }) {
+  const { t } = useTranslation();
   const { setNodeRef } = useDroppable({
     id: title,
   });
@@ -45,7 +49,7 @@ export function KanbanColumn({
         <div className="flex items-center gap-2">
           {columnIcons[title]}
           <h3 className="font-semibold text-sm text-gray-800">
-            {title}
+            {t(`error_report.status.${title}`)}
           </h3>
         </div>
         <span className="text-xs font-bold text-gray-600 bg-gray-200 rounded-full px-2 py-0.5">

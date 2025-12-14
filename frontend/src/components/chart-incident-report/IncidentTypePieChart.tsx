@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import api from "../../services/api";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface IncidentTypeData {
   incident_type: string;
@@ -9,16 +10,8 @@ interface IncidentTypeData {
   percentage: number;
 }
 
-// Map incident types to Vietnamese labels
-const INCIDENT_TYPE_LABELS: Record<string, string> = {
-  machine: "Máy móc",
-  quality: "Chất lượng",
-  safety: "An toàn",
-  environment: "Môi trường",
-  other: "Khác"
-};
-
 export default function IncidentTypeModernRougeChart() {
+  const { t } = useTranslation();
   const [data, setData] = useState<IncidentTypeData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +31,13 @@ export default function IncidentTypeModernRougeChart() {
     fetchData();
   }, []);
 
-  const labels = data.map(item => INCIDENT_TYPE_LABELS[item.incident_type] || item.incident_type);
+  const getLabel = (type: string) => {
+    const key = `incident_report.type_analysis.types.${type}`;
+    const label = t(key);
+    return label !== key ? label : type;
+  };
+
+  const labels = data.map(item => getLabel(item.incident_type));
   const series = data.map(item => Number(item.count));
 
   // **1. Bảng màu mới: Đỏ -> Hồng -> Hồng Pastel**
@@ -113,10 +112,10 @@ export default function IncidentTypeModernRougeChart() {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Phân Tích Loại Sự Cố
+          {t('incident_report.type_analysis.title')}
         </h3>
         <div className="flex h-80 items-center justify-center">
-          <div className="text-gray-500 dark:text-gray-400">Đang tải...</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('incident_report.type_analysis.loading')}</div>
         </div>
       </div>
     );
@@ -126,13 +125,13 @@ export default function IncidentTypeModernRougeChart() {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Phân Tích Loại Sự Cố
+          {t('incident_report.type_analysis.title')}
         </h3>
         <div className="flex h-80 items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-400">Chưa có dữ liệu thiết bị lỗi</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('incident_report.type_analysis.no_data')}</p>
             <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-              Dữ liệu sẽ hiển thị khi có sự cố được báo cáo
+              {t('incident_report.type_analysis.no_data_desc')}
             </p>
           </div>
         </div>
@@ -144,7 +143,7 @@ export default function IncidentTypeModernRougeChart() {
     // **4. Container cao cấp**
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-        Phân Tích Loại Sự Cố
+        {t('incident_report.type_analysis.title')}
       </h3>
 
       <div className="relative flex items-center justify-center">
@@ -152,7 +151,7 @@ export default function IncidentTypeModernRougeChart() {
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {selectedSlice ? selectedSlice.label : "Tổng Sự Cố"}
+            {selectedSlice ? selectedSlice.label : t('incident_report.type_analysis.total')}
           </p>
 
           {/* **2. Gradient trung tâm đồng bộ với màu của biểu đồ** */}

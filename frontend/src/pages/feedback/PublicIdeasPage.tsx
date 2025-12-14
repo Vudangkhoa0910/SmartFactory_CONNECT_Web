@@ -49,25 +49,25 @@ export default function PublicIdeasPage() {
   // Helper to map backend status to frontend StatusType
   const mapStatus = useCallback((backendStatus: string): StatusType => {
     const map: Record<string, StatusType> = {
-      'pending': 'Mới',
-      'under_review': 'Đang xem xét',
-      'approved': 'Đã duyệt',
-      'rejected': 'Đã từ chối',
-      'implemented': 'Đã triển khai',
-      'on_hold': 'Đang xem xét' // Map on_hold to closest match
+      'pending': 'new',
+      'under_review': 'under_review',
+      'approved': 'approved',
+      'rejected': 'rejected',
+      'implemented': 'implemented',
+      'on_hold': 'under_review' // Map on_hold to closest match
     };
-    return map[backendStatus] || 'Mới';
+    return map[backendStatus] || 'new';
   }, []);
 
   // Helper to map frontend status to backend status
   const mapToBackendStatus = useCallback((status: string): string => {
     const map: Record<string, string> = {
-      'Mới': 'pending',
-      'Đang xem xét': 'under_review',
-      'Đã duyệt': 'approved',
-      'Đã từ chối': 'rejected',
-      'Đã triển khai': 'implemented',
-      'Đã hoàn tất': 'implemented'
+      'new': 'pending',
+      'under_review': 'under_review',
+      'approved': 'approved',
+      'rejected': 'rejected',
+      'implemented': 'implemented',
+      'completed': 'implemented'
     };
     return map[status] || 'under_review';
   }, []);
@@ -143,7 +143,7 @@ export default function PublicIdeasPage() {
         // Remove from list as it moves to next level (and out of current user's view scope)
         setIdeas((prev) => prev.filter((idea) => idea.id !== selectedIdea.id));
         setSelectedId(null);
-        toast.success("Đã chuyển tiếp thành công!");
+        toast.success(t('feedback.messages.forward_success'));
         return;
       }
 
@@ -182,10 +182,10 @@ export default function PublicIdeasPage() {
           )
         );
       }
-      toast.success("Cập nhật trạng thái thành công!");
+      toast.success(t('feedback.messages.update_status_success'));
     } catch (error: any) {
       console.error("Update status failed:", error);
-      toast.error(`Cập nhật thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('feedback.messages.update_status_fail')}: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -213,7 +213,7 @@ export default function PublicIdeasPage() {
       );
     } catch (error: any) {
       console.error("Send chat failed:", error);
-      toast.error(`Gửi tin nhắn thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('feedback.messages.send_chat_fail')}: ${error.response?.data?.message || error.message}`);
     }
   };
 

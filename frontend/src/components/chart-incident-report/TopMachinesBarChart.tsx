@@ -2,8 +2,10 @@ import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { useEffect, useState } from "react";
 import dashboardService, { TopMachineData } from "../../services/dashboard.service";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function TopMachinesRoseGoldChart() {
+  const { t } = useTranslation();
   const [machines, setMachines] = useState<TopMachineData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,7 +78,7 @@ export default function TopMachinesRoseGoldChart() {
         fontSize: "13px",
         fontWeight: 500,
       },
-      formatter: (val) => `${val} lỗi`,
+      formatter: (val) => `${val} ${t('incident_report.top_machines.error_count').toLowerCase().replace('số lần ', '')}`,
       offsetX: 10,
       dropShadow: { enabled: false },
     },
@@ -105,7 +107,7 @@ export default function TopMachinesRoseGoldChart() {
     tooltip: {
       theme: "light",
       style: { fontSize: "13px" },
-      y: { title: { formatter: () => "Số lần lỗi:" } },
+      y: { title: { formatter: () => `${t('incident_report.top_machines.error_count')}:` } },
     },
 
     states: {
@@ -118,13 +120,13 @@ export default function TopMachinesRoseGoldChart() {
     },
   };
 
-  const series = [{ name: "Số lần lỗi", data: seriesData }];
+  const series = [{ name: t('incident_report.top_machines.error_count'), data: seriesData }];
 
   if (isLoading) {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất
+          {t('incident_report.top_machines.title')}
         </h3>
         <div className="flex items-center justify-center h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
@@ -137,10 +139,10 @@ export default function TopMachinesRoseGoldChart() {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-          Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất
+          {t('incident_report.top_machines.title')}
         </h3>
         <div className="flex items-center justify-center h-[400px] text-gray-500">
-          Chưa có dữ liệu thiết bị
+          {t('incident_report.top_machines.no_data')}
         </div>
       </div>
     );
@@ -149,7 +151,7 @@ export default function TopMachinesRoseGoldChart() {
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
       <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
-        Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất
+        {t('incident_report.top_machines.title')}
       </h3>
       <Chart options={options} series={series} type="bar" height={400} />
     </div>

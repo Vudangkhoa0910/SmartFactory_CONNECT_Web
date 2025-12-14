@@ -55,16 +55,16 @@ const navItemsConfig: NavItem[] = [
     nameKey: "menu.news",
     path: "/news",
   },
-  {
-    icon: <CalenderIcon />,
-    nameKey: "menu.calendar",
-    path: "/calendar",
-  },
+  // {
+  //   icon: <CalenderIcon />,
+  //   nameKey: "menu.calendar",
+  //   path: "/calendar",
+  // },
   {
     icon: <CalenderIcon />,
     nameKey: "menu.booking",
     subItems: [
-      { nameKey: "booking.create", path: "/room-booking", pro: false },
+      { nameKey: "menu.create_booking", path: "/room-booking", pro: false },
       { nameKey: "menu.my_bookings", path: "/my-bookings", pro: false },
       { nameKey: "menu.admin_approval", path: "/admin/booking-approval", pro: false, new: true },
     ],

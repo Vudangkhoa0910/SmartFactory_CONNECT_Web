@@ -18,6 +18,7 @@
     "kaizen_bank": "改善バンク",
     "news": "ニュース",
     "calendar": "カレンダー",
+    "create_booking": "予約作成",
     "booking": "会議室予約",
     "my_bookings": "自分の予約",
     "admin_approval": "予約承認",
@@ -65,10 +66,12 @@
     "clear": "クリア",
     "apply": "適用",
     "select_all": "すべて選択",
-    "deselect_all": "選択解除"
+    "deselect_all": "選択解除",
+    "book": "予約する"
   },
 
   "status": {
+    "confirmed": "承認済み",
     "pending": "保留中",
     "assigned": "割り当て済み",
     "in_progress": "処理中",
@@ -134,38 +137,7 @@
     }
   },
 
-  "booking": {
-    "title": "会議室予約",
-    "create": "新規予約",
-    "my_bookings": "自分の予約",
-    "room": "会議室",
-    "date": "日付",
-    "time": "時間",
-    "start_time": "開始時刻",
-    "end_time": "終了時刻",
-    "attendees": "参加者",
-    "purpose": "目的",
-    "notes": "備考",
-    "approval": "予約承認",
-    "description": "柔軟な時間枠で会議室を予約",
-    "my_bookings_desc": "予約の閲覧・管理",
-    "load_error": "予約一覧の読み込みに失敗しました",
-    "meeting_type": {
-      "department_meeting": "部門会議",
-      "team_standup": "チームスタンドアップ",
-      "project_review": "プロジェクトレビュー",
-      "training_session": "研修",
-      "client_meeting": "顧客会議",
-      "interview": "面接",
-      "workshop": "ワークショップ",
-      "company_event": "会社イベント",
-      "celebration": "誕生日・記念日",
-      "technical_discussion": "技術討議",
-      "brainstorming": "ブレインストーミング",
-      "presentation": "プレゼンテーション",
-      "other": "その他"
-    }
-  },
+ 
 
   "news": {
     "title": "ニュース",
@@ -176,6 +148,30 @@
     "author": "作成者",
     "published_at": "公開日",
     "latest": "最新ニュース",
+    "recent_news": "最近のニュース",
+    "history": "履歴",
+    "no_news": "ニュースがありません",
+    "publish_date": "公開日: ",
+    "no_content": "詳細な内容がありません。",
+    "attachments": "添付ファイル:",
+    "create_title": "ニュース作成",
+    "priority": "重要なニュース",
+    "title_placeholder": "タイトル",
+    "excerpt_placeholder": "短い説明（リストに表示）",
+    "content_placeholder": "内容",
+    "drag_drop": "ファイルをここにドラッグ＆ドロップ",
+    "allowed_types": "PDF / DOC / DOCX / JPG / PNG",
+    "processing": "処理中...",
+    "post_news": "ニュース投稿",
+    "validation_title_content": "タイトルと内容を入力してください！",
+    "post_success": "ニュース投稿成功！",
+    "post_failed": "ニュース投稿失敗: ",
+    "category_company_announcement": "会社のお知らせ",
+    "category_safety_alert": "安全警告",
+    "category_event": "イベント",
+    "category_production_update": "生産更新",
+    "category_maintenance": "メンテナンス",
+    "published_history": "投稿済みニュース履歴",
     "description": "会社ニュース管理"
   },
 
@@ -470,5 +466,333 @@
     "form_elements": "フォーム要素",
     "line_chart": "折れ線グラフ",
     "bar_chart": "棒グラフ"
+  },
+  "booking": {
+    "title": "会議室予約",
+    "create_new": "会議室予約",
+        "create": "新規予約",
+    "my_bookings": "自分の予約",
+    "approval": "予約承認",
+    "approver": "承認者",
+    "handler": "担当者",
+    "reject_reason": "却下理由",
+    "reject_reason_placeholder": "却下理由を入力...",
+    "history": "変更履歴",
+    "cancel": "予約キャンセル",
+    "description": "柔軟な時間枠で会議室を予約",
+    "my_bookings_desc": "予約の閲覧・管理",
+    "load_error": "予約一覧の読み込みに失敗しました",
+      "room": "会議室",
+    "date": "日付",
+    "time": "時間",
+    "start_time": "開始時刻",
+    "end_time": "終了時刻",
+    "attendees": "参加者",
+    "purpose": "目的",
+    "notes": "備考",
+    "no_bookings": "予約なし",
+    "no_bookings_message": "会議室の予約がありません。すぐに予約してください！",
+    "no_calendar_bookings": "カレンダーに予約はありません",
+    "reason": "理由",
+    "created_at": "予約日時",
+    "create_new": "新規予約作成",
+    "create_subtitle": "予約の詳細を表示または編集",
+    "select_at_least_one": "少なくとも1つの予約を選択してください",
+    "confirm_bulk_approve": "選択したすべての予約を承認してもよろしいですか？",
+    "confirm_single_approve": "この予約を承認してもよろしいですか？",
+    "approval_description": "会議室予約リクエストの管理と承認",
+    "pending_count": "件の予約が承認待ちです",
+    "selected": "選択済み",
+    "bulk_approve": "一括承認",
+    "no_pending_approvals": "承認待ちの予約はありません",
+    "all_processed": "すべての予約が処理されました",
+    "booker": "予約者",
+    "info": {
+      "meeting_type": "会議の種類",
+      "attendees_count": "参加人数",
+      "attendees_unit": "人",
+      "time_label": "時間",
+      "description": "説明",
+      "description_placeholder": "会議の詳細な説明...",
+      "notes": "備考",
+      "notes_placeholder": "追加の備考（あれば）",
+      "booker": "予約者",
+      "booked_at": "予約日時:",
+      "at_time": "時間:",
+      "title": "会議タイトル",
+      "title_placeholder": "例：チームスプリント計画会議",
+      "date": "日付",
+      "start_time": "開始時刻",
+      "end_time": "終了時刻",
+      "capacity": "収容人数",
+      "room": "会議室",
+      "select_room": "会議室を選択"
+    },
+    "detail_title": "予約詳細",
+    "detail_subtitle": "予約情報の詳細表示または編集",
+    "validation": {
+      "title_required": "会議タイトルを入力してください",
+      "capacity_exceeded": "参加人数が会議室の収容人数を超えています",
+      "room_occupied": "この時間帯は既に予約されています",
+      "invalid_time_range": "終了時刻は開始時刻より後である必要があります",
+      "past_time": "過去の日時は予約できません",
+      "create_error": "予約を作成できませんでした",
+      "room_required": "会議室を選択してください",
+      "reject_reason_required": "却下理由を入力してください"
+    },
+    "status": {
+      "label": "ステータス",
+      "confirmed": "承認済み",
+      "pending": "承認待ち",
+      "rejected": "却下済み",
+      "completed": "完了",
+      "cancelled": "キャンセル済み",
+      "checking": "空き状況を確認中...",
+      "occupied_message": "この時間帯は既に予約されています。別の時間を選択してください。",
+      "available_message": "この時間帯は空いています",
+      "processing": "処理中..."
+    },
+    "success": {
+      "update": "予約を更新しました！",
+      "create": "予約しました！管理者の承認をお待ちください。",
+      "approve": "予約を承認しました",
+      "reject": "予約を却下しました",
+      "cancel": "予約をキャンセルしました"
+    },
+    "error": {
+      "save": "予約の保存中にエラーが発生しました",
+      "generic": "予約中にエラーが発生しました",
+      "approve": "承認できませんでした",
+      "reject": "却下できませんでした",
+      "cancel": "キャンセルできませんでした"
+    },
+    "confirm": {
+      "approve": "この予約を承認してもよろしいですか？",
+      "cancel": "この予約をキャンセルしてもよろしいですか？"
+    },
+    "history_action": {
+      "created": "が予約を作成しました",
+      "approved": "が承認しました",
+      "rejected": "が却下しました",
+      "cancelled": "がキャンセルしました",
+      "updated": "が更新しました"
+    },
+    "meeting_type": {
+      "department_meeting": "部門会議",
+      "team_standup": "チームスタンドアップ",
+      "project_review": "プロジェクトレビュー",
+      "training_session": "研修",
+      "client_meeting": "顧客会議",
+      "interview": "面接",
+      "workshop": "ワークショップ",
+      "company_event": "会社イベント",
+      "celebration": "誕生日・記念日",
+      "technical_discussion": "技術討議",
+      "brainstorming": "ブレインストーミング",
+      "presentation": "プレゼンテーション",
+      "other": "その他",
+      "training": "研修",
+      "project_meeting": "プロジェクト会議"
+    },
+    "no_bookings": "予約はありません",
+    "no_bookings_message": "まだ会議室を予約していません。今すぐ予約しましょう！",
+    "reason": "理由:",
+    "created_at": "予約日時:"
+  },
+  "incident_report": {
+    "title": "インシデント統計 | SmartFactory CONNECT",
+    "description": "工場インシデント統計ダッシュボード",
+    "overview": {
+      "title": "インシデント概要",
+      "total": "総インシデント数",
+      "pending": "処理待ち",
+      "resolved": "処理済み",
+      "sla_violations": "SLA違反"
+    },
+    "type_analysis": {
+      "title": "インシデント種類分析",
+      "total": "総インシデント",
+      "no_data": "エラー機器データなし",
+      "no_data_desc": "インシデントが報告されるとデータが表示されます",
+      "loading": "読み込み中...",
+      "types": {
+        "machine": "機械",
+        "quality": "品質",
+        "safety": "安全",
+        "environment": "環境",
+        "other": "その他"
+      }
+    },
+    "time_stats": {
+      "response_time": "平均応答時間",
+      "resolve_time": "平均処理時間",
+      "response_card_title": "応答時間",
+      "response_card_desc": "インシデント応答までの平均時間。",
+      "resolve_card_title": "処理時間",
+      "resolve_card_desc": "インシデント処理完了までの平均時間。"
+    },
+    "top_machines": {
+      "title": "エラー頻発機器トップ10",
+      "no_data": "機器データなし",
+      "error_count": "エラー回数"
+    },
+    "department_kpi": {
+      "title": "インシデント処理KPI – 部門別",
+      "y_axis": "処理KPI (%)"
+    }
+  },
+  "error_report": {
+    "title": "インシデント管理",
+    "description": "全インシデントの追跡、調整、検索。",
+    "page_title": "インシデント管理 | SmartFactory CONNECT",
+    "page_description": "工場内のインシデントの追跡と管理",
+    "search_placeholder": "インシデントを検索...",
+    "export_excel": "Excel出力",
+    "view": {
+      "kanban": "かんばん",
+      "list": "リスト"
+    },
+    "status": {
+      "new": "新規",
+      "assigned": "受付済み",
+      "in_progress": "処理中",
+      "on_hold": "保留",
+      "resolved": "完了",
+      "closed": "クローズ",
+      "pending": "受付待ち",
+      "processed": "処理済み"
+    },
+    "empty_queue": "キューは空です",
+    "select_incident": "リストからインシデントを選択して詳細を表示してください。",
+    "id": "ID",
+    "unassigned": "未割り当て",
+    "na": "N/A",
+    "update_status_failed": "ステータスの更新に失敗しました",
+    "export_success": "ファイルのエクスポートに成功しました！",
+    "export_failed": "ファイルのエクスポートに失敗しました",
+    "no_incidents": "インシデントはありません。",
+    "acknowledge_success": "インシデントを受け付けました",
+    "acknowledge_failed": "受付に失敗しました",
+    "resolve_success": "インシデントを処理しました",
+    "resolve_failed": "処理に失敗しました",
+    "resolved_via_command_room": "指令室経由で解決済み",
+    "location": "場所",
+    "table":{
+      "title": "タイトル",
+      "priority": "優先度",
+      "status": "ステータス",
+      "department": "部門",
+      "created_at": "作成日"
+    }
+  },
+  "feedback": {
+    "pink_box_title": "ピンクボックス",
+    "pink_box_desc": "機密性の高いフィードバックと意見の管理",
+    "anonymous": "匿名",
+    "forward_to": "転送先",
+    "replied": "返信済み",
+    "escalate": "エスカレーション",
+    "updated_status_to": "ステータスを更新しました",
+    "messages": {
+      "forward_success": "転送に成功しました！",
+      "forward_fail": "転送に失敗しました",
+      "reply_success": "返信を送信しました！",
+      "reply_fail": "返信の送信に失敗しました",
+      "update_status_success": "ステータスを更新しました！",
+      "update_status_fail": "更新に失敗しました",
+      "send_chat_fail": "メッセージの送信に失敗しました"
+    },
+    "status": {
+      "new": "新規",
+      "under_review": "検討中",
+      "processed": "処理済み",
+      "approved": "承認済み",
+      "rejected": "却下",
+      "implemented": "実施済み",
+      "on_hold": "保留"
+    },
+    "white_box_title": "ホワイトボックス",
+    "no_selection": "選択されたフィードバックはありません",
+    "reply_title": "フィードバックへの返信",
+    "reply_placeholder": "返信内容を入力...",
+    "history_title": "活動履歴",
+    "archive": "アーカイブ",
+    "forward": "転送",
+    "send_reply": "返信を送信"
+  },
+  "kaizen": {
+    "title": "改善バンク",
+    "description": "実施済みの改善提案ライブラリ。検索・学習・業務への適用。",
+    "page_title": "改善バンク | SmartFactory CONNECT",
+    "page_description": "承認済み改善提案のアーカイブ",
+    "search_placeholder": "キーワードで検索...",
+    "loading": "読み込み中...",
+    "id": "ID",
+    "difficulty": "難易度",
+    "desc": "説明",
+    "expected_benefit": "期待される効果",
+    "actual_savings": "実際の削減額",
+    "contributed_by": "提案者",
+    "anonymous": "匿名",
+    "no_ideas": "実施済みの提案はまだありません。",
+    "no_results": "結果が見つかりません。",
+    "tags": {
+      "quality": "品質",
+      "performance": "パフォーマンス",
+      "safety": "安全",
+      "energy_saving": "省エネ",
+      "5s": "5S",
+      "lean": "リーン"
+    }
+  },
+  "feedback_dashboard": {
+    "no_data": "フィードバックデータがありません",
+    "error_loading" : "データを読み込めません",
+    "title": "提案統計 | SmartFactory CONNECT",
+    "description": "提案の統計と分析の概要ページ。",
+    "loading": "統計を読み込み中...",
+    "metrics": {
+      "acceptance_rate": "採用率",
+      "rejection_rate": "却下率",
+      "avg_processing_time": "平均処理時間",
+      "ideas": "件",
+      "days": "日"
+    },
+    "tag_chart": {
+      "title": "タグ別分類",
+      "total": "総提案数"
+    },
+    "rating_chart": {
+      "title": "提案者評価",
+      "total": "総評価数",
+      "no_data": "評価データなし",
+      "very_satisfied": "非常に満足",
+      "satisfied": "満足",
+      "acceptable": "許容範囲",
+      "unsatisfied": "不満"
+    },
+    "difficulty_chart": {
+      "title": "提案の難易度",
+      "error": "データを読み込めませんでした",
+      "y_axis": "提案数",
+      "series_name": "数量",
+      "tooltip_suffix": "件",
+      "easy": "易しい",
+      "medium": "普通",
+      "hard": "難しい",
+      "very_hard": "非常に難しい"
+    },
+    "tags":{
+      "quality": "品質",
+      "performance": "パフォーマンス",
+      "safety": "安全",
+      "energy_saving": "省エネ",
+      "5s": "5S",
+      "lean": "リーン",
+      "other": "その他"
+    }
+  },
+  "header" : {
+    "search": "クイック検索..."
   }
 }

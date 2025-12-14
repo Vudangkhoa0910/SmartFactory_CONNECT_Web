@@ -11,6 +11,7 @@ import roomBookingService, {
   getTimeSlots, 
   validateBookingTime 
 } from '../../services/room-booking.service';
+import { useTranslation } from "../../contexts/LanguageContext";
 import { 
   Room, 
   CreateBookingDTO, 
@@ -32,6 +33,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   onClose,
   onSubmit
 }) => {
+  const { t } = useTranslation();
   const timeSlots = getTimeSlots(8, 18, 30);
   
   const [formData, setFormData] = useState<CreateBookingDTO>({
@@ -94,12 +96,12 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     
     // Validate
     if (!formData.title.trim()) {
-      toast.error('Vui lòng nhập tiêu đề cuộc họp');
+      toast.error(t('booking.validation.title_required'));
       return;
     }
 
     if (formData.attendees_count > room.capacity) {
-      toast.error(`Số người tham dự vượt quá sức chứa phòng (${room.capacity} người)`);
+      toast.error(`${t('booking.validation.capacity_exceeded')} (${room.capacity} ${t('booking.info.attendees_unit')})`);
       return;
     }
 
@@ -110,7 +112,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     }
 
     if (!isAvailable) {
-      toast.error('Phòng đã được đặt trong khung giờ này');
+      toast.error(t('booking.validation.room_occupied'));
       return;
     }
 
@@ -121,7 +123,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
     } catch (error: unknown) {
       console.error('Error creating booking:', error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Không thể tạo lịch đặt phòng');
+      toast.error(err.response?.data?.message || t('booking.validation.create_error'));
     } finally {
       setLoading(false);
     }
@@ -134,10 +136,10 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              Đặt Phòng Họp
+              {t('booking.create_new')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {room.room_name} - Sức chứa: {room.capacity} người
+              {room.room_name} - {t('booking.info.capacity')}: {room.capacity} {t('booking.info.attendees_unit')}
             </p>
           </div>
           <button
@@ -155,13 +157,13 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tiêu đề cuộc họp <span className="text-red-500">*</span>
+              {t('booking.info.title')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="VD: Họp Team Sprint Planning"
+              placeholder={t('booking.info.title_placeholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
               required
             />
@@ -170,7 +172,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           {/* Meeting Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Loại cuộc họp <span className="text-red-500">*</span>
+              {t('booking.info.meeting_type')} <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.meeting_type}
@@ -179,7 +181,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             >
               {MEETING_TYPE_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
-                  {option.icon} {option.label}
+                  {option.icon} {t(`booking.meeting_type.${option.value}`)}
                 </option>
               ))}
             </select>
@@ -189,7 +191,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Ngày <span className="text-red-500">*</span>
+                {t('booking.info.date')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -202,7 +204,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Số người tham dự <span className="text-red-500">*</span>
+                {t('booking.info.attendees_count')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -220,7 +222,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Giờ bắt đầu <span className="text-red-500">*</span>
+                {t('booking.info.start_time')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.start_time}
@@ -234,7 +236,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Giờ kết thúc <span className="text-red-500">*</span>
+                {t('booking.info.end_time')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.end_time}
@@ -251,27 +253,27 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           {/* Availability Status */}
           {checking ? (
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Đang kiểm tra trạng thái phòng...
+              {t('booking.status.checking')}
             </div>
           ) : !isAvailable ? (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> Phòng đã được đặt trong khung giờ này. Vui lòng chọn thời gian khác.
+              <AlertTriangle className="w-4 h-4" /> {t('booking.status.occupied_message')}
             </div>
           ) : (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
-              <CheckCircle className="w-4 h-4" /> Phòng còn trống trong khung giờ này
+              <CheckCircle className="w-4 h-4" /> {t('booking.status.available_message')}
             </div>
           )}
 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mô tả cuộc họp
+              {t('booking.info.description')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Mô tả chi tiết về cuộc họp..."
+              placeholder={t('booking.info.description_placeholder')}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             />
@@ -280,13 +282,13 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Ghi chú
+              {t('booking.info.notes')}
             </label>
             <input
               type="text"
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Ghi chú thêm (nếu có)"
+              placeholder={t('booking.info.notes_placeholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
@@ -298,14 +300,14 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
             >
-              Hủy
+              {t('button.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || !isAvailable || checking}
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Đang xử lý...' : 'Đặt phòng'}
+              {loading ? t('status.processing') : t('button.book')}
             </button>
           </div>
         </form>

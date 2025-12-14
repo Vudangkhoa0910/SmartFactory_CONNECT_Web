@@ -24,6 +24,8 @@ import { KanbanCard } from "../../components/ErrorReport/KanbanCard";
 import { ListView } from "../../components/ErrorReport/ListView";
 import api from "../../services/api";
 
+import { useTranslation } from "../../contexts/LanguageContext";
+
 interface BackendIncident {
   id: string;
   title: string;
@@ -35,6 +37,7 @@ interface BackendIncident {
 }
 
 export default function AllIncidentsPage() {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,25 +56,26 @@ export default function AllIncidentsPage() {
   // Helper mappings
   const mapStatus = (backendStatus: string): Status => {
     const map: Record<string, Status> = {
-      'pending': 'Mới',
-      'assigned': 'Đã tiếp nhận',
-      'in_progress': 'Đang xử lý',
-      'on_hold': 'Tạm dừng',
-      'resolved': 'Hoàn thành',
-      'closed': 'Đã đóng'
+      'pending': 'new',
+      'assigned': 'assigned',
+      'in_progress': 'in_progress',
+      'on_hold': 'on_hold',
+      'resolved': 'resolved',
+      'closed': 'closed'
     };
-    return map[backendStatus] || 'Mới';
+    return map[backendStatus] || 'new';
   };
 
   const mapToBackendStatus = (frontendStatus: Status): string => {
     const map: Record<Status, string> = {
-      'Mới': 'pending',
-      'Đã tiếp nhận': 'assigned',
-      'Đang xử lý': 'in_progress',
-      'Tạm dừng': 'on_hold',
-      'Hoàn thành': 'resolved',
-      'Đã đóng': 'closed',
-      'Đã xử lý': 'resolved'
+      'new': 'pending',
+      'assigned': 'assigned',
+      'in_progress': 'in_progress',
+      'on_hold': 'on_hold',
+      'resolved': 'resolved',
+      'closed': 'closed',
+      'processed': 'resolved',
+      'pending': 'pending'
     };
     return map[frontendStatus] || 'pending';
   };
@@ -104,8 +108,8 @@ export default function AllIncidentsPage() {
             title: item.title,
             priority: mapPriority(item.priority),
             status: mapStatus(item.status),
-            assignedTo: item.assigned_to_name || "Unassigned",
-            location: item.location || "N/A",
+            assignedTo: item.assigned_to_name || t('error_report.unassigned'),
+            location: item.location || t('error_report.na'),
             createdAt: new Date(item.created_at)
           });
         });
@@ -176,7 +180,7 @@ export default function AllIncidentsPage() {
         setIncidents((prev) =>
           prev.map((i) => (i.id === active.id ? { ...i, status: oldStatus } : i))
         );
-        toast.error("Cập nhật trạng thái thất bại");
+        toast.error(t('error_report.update_status_failed'));
       }
     }
     // Nếu kéo trong cùng một cột -> Sắp xếp lại vị trí
@@ -211,18 +215,18 @@ export default function AllIncidentsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success("Xuất file thành công!");
+      toast.success(t('error_report.export_success'));
     } catch (error) {
       console.error("Failed to export incidents:", error);
-      toast.error("Xuất file thất bại");
+      toast.error(t('error_report.export_failed'));
     }
   };
 
   return (
     <>
       <PageMeta
-        title="Quản lý Sự cố | SmartFactory CONNECT"
-        description="Theo dõi và quản lý các sự cố trong nhà máy"
+        title={t('error_report.page_title')}
+        description={t('error_report.page_description')}
       />
       <div className="p-4 h-[calc(100vh-4rem)] flex flex-col font-sans overflow-hidden gap-4">
         {/* Header Section */}

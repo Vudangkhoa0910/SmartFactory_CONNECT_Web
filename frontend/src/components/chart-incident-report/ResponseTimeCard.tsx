@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import api from "../../services/api";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const ResponseTimeCard: React.FC = () => {
+  const { t } = useTranslation();
   const [avgTime, setAvgTime] = useState<string>("--");
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,7 @@ const ResponseTimeCard: React.FC = () => {
         const hours = parseFloat(response.data.data.avg_response_hours || 0);
         // Convert hours to minutes for display
         const minutes = Math.round(hours * 60);
-        setAvgTime(`${minutes} phút`);
+        setAvgTime(`${minutes} ${t('time.minutes_ago').replace('trước', '').replace('前', '')}`);
       } catch (error) {
         console.error("Failed to fetch response time:", error);
         setAvgTime("N/A");
@@ -23,15 +25,15 @@ const ResponseTimeCard: React.FC = () => {
     };
     
     fetchData();
-  }, []);
+  }, [t]);
 
   return (
     <div className="rounded-xl border p-4 shadow-sm bg-white dark:bg-neutral-900">
       <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
-        Thời gian phản hồi
+        {t('incident_report.time_stats.response_card_title')}
       </h2>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Thời gian trung bình để phản hồi sự cố.
+        {t('incident_report.time_stats.response_card_desc')}
       </p>
 
       <div className="mt-4 text-3xl font-bold text-gray-900 dark:text-white">

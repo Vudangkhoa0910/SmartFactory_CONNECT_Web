@@ -9,10 +9,10 @@ import { Inbox, Check } from 'lucide-react';
 import PageMeta from '../components/common/PageMeta';
 import roomBookingService, { formatDate, formatTime } from '../services/room-booking.service';
 import { 
-  RoomBooking, 
-  MEETING_TYPE_LABELS 
+  RoomBooking 
 } from '../types/room-booking.types';
 import BookingDetailModal from '../components/room-booking/BookingDetailModal';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const AdminApprovalPage: React.FC = () => {
   const [pendingBookings, setPendingBookings] = useState<RoomBooking[]>([]);
@@ -20,6 +20,7 @@ const AdminApprovalPage: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<RoomBooking | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const { t } = useTranslation();
 
   // Load pending bookings
   const loadPendingBookings = async () => {
@@ -29,7 +30,7 @@ const AdminApprovalPage: React.FC = () => {
       setPendingBookings(data);
     } catch (error) {
       console.error('Error loading pending bookings:', error);
-      toast.error('Không thể tải danh sách chờ duyệt');
+      toast.error(t('booking.load_error'));
     } finally {
       setLoading(false);
     }
@@ -66,11 +67,11 @@ const AdminApprovalPage: React.FC = () => {
   // Handle bulk approve
   const handleBulkApprove = async () => {
     if (selectedIds.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một lịch đặt phòng');
+      toast.error(t('booking.select_at_least_one'));
       return;
     }
 
-    if (!window.confirm(`Bạn có chắc muốn phê duyệt ${selectedIds.length} lịch đặt phòng?`)) {
+    if (!window.confirm(t('booking.confirm_bulk_approve'))) {
       return;
     }
 
@@ -88,7 +89,7 @@ const AdminApprovalPage: React.FC = () => {
 
   // Handle approve single
   const handleApprove = async (id: number) => {
-    if (!window.confirm('Bạn có chắc muốn phê duyệt lịch đặt phòng này?')) return;
+    if (!window.confirm(t('booking.confirm_single_approve'))) return;
 
     try {
       await roomBookingService.approveBooking(id);
@@ -112,38 +113,36 @@ const AdminApprovalPage: React.FC = () => {
   return (
     <>
       <PageMeta
-        title="Phê duyệt đặt phòng | SmartFactory CONNECT"
-        description="Quản lý và phê duyệt các yêu cầu đặt phòng họp"
+        title={`${t('menu.admin_approval')} | SmartFactory CONNECT`}
+        description={t('booking.approval_description')}
       />
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
-            <div>
+          <div>
               <h1 className="text-2xl font-bold text-gray-900">
-              Phê Duyệt Lịch Đặt Phòng
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {pendingBookings.length} lịch đặt phòng đang chờ phê duyệt
-            </p>
-          </div>
-
-          {selectedIds.length > 0 && (
+                {t('menu.admin_approval')}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {pendingBookings.length} {t('booking.pending_count')}
+              </p>
+            </div>          {selectedIds.length > 0 && (
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">
-                Đã chọn: {selectedIds.length}
+                {t('common.selected')}: {selectedIds.length}
               </span>
               <button
                 onClick={handleBulkApprove}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition-colors"
               >
-                <Check className="w-4 h-4" /> Phê duyệt hàng loạt
+                <Check className="w-4 h-4" /> {t('button.bulk_approve')}
               </button>
               <button
                 onClick={() => setSelectedIds([])}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                Hủy chọn
+                {t('button.deselect_all')}
               </button>
             </div>
           )}
@@ -155,10 +154,10 @@ const AdminApprovalPage: React.FC = () => {
         <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
           <Inbox className="w-16 h-16 mx-auto mb-4 text-gray-300" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Không có lịch đặt phòng nào chờ duyệt
+            {t('booking.no_pending_approvals')}
           </h3>
           <p className="text-gray-500">
-            Tất cả lịch đặt phòng đã được xử lý
+            {t('booking.all_processed')}
           </p>
         </div>
       ) : (
@@ -176,25 +175,25 @@ const AdminApprovalPage: React.FC = () => {
                     />
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Phòng
+                    {t('booking.room')}
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Tiêu đề
+                    {t('booking.title')}
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Loại
+                    {t('booking.meeting_type')}
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Thời gian
+                    {t('booking.time')}
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Người đặt
+                    {t('booking.booker')}
                   </th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-700">
-                    Chờ từ
+                    {t('booking.created_at')}
                   </th>
                   <th className="p-4 text-right text-sm font-semibold text-gray-700">
-                    Thao tác
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -225,7 +224,7 @@ const AdminApprovalPage: React.FC = () => {
                         {booking.title}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {booking.attendees_count} người
+                        {booking.attendees_count} {t('booking.attendees_unit')}
                       </div>
                     </td>
                     <td className="p-4">
@@ -235,7 +234,7 @@ const AdminApprovalPage: React.FC = () => {
                           style={{ backgroundColor: booking.color }}
                         ></span>
                         <span className="text-sm text-gray-700">
-                          {MEETING_TYPE_LABELS[booking.meeting_type]}
+                          {t(`booking.meeting_type.${booking.meeting_type}`)}
                         </span>
                       </div>
                     </td>
@@ -271,13 +270,13 @@ const AdminApprovalPage: React.FC = () => {
                           onClick={() => handleViewDetail(booking)}
                           className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                         >
-                          Chi tiết
+                          {t('button.view_details')}
                         </button>
                         <button
                           onClick={() => handleApprove(booking.id)}
                           className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                         >
-                          ✓ Duyệt
+                          ✓ {t('button.approve')}
                         </button>
                       </div>
                     </td>

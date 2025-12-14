@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import roomBookingService from '../../../services/room-booking.service';
 import { RoomBooking, BookingHistoryEntry } from '../../../types/room-booking.types';
+import { useTranslation } from "../../../contexts/LanguageContext";
 
 interface UseBookingDetailProps {
   booking: RoomBooking;
@@ -27,6 +28,7 @@ interface UseBookingDetailReturn {
 }
 
 export function useBookingDetail({ booking, onUpdate }: UseBookingDetailProps): UseBookingDetailReturn {
+  const { t } = useTranslation();
   const [currentBooking, setCurrentBooking] = useState<RoomBooking>(booking);
   const [history, setHistory] = useState<BookingHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,60 +58,60 @@ export function useBookingDetail({ booking, onUpdate }: UseBookingDetailProps): 
 
   // Handle approve
   const handleApprove = useCallback(async () => {
-    if (!window.confirm('Bạn có chắc muốn phê duyệt lịch đặt phòng này?')) return;
+    if (!window.confirm(t('booking.confirm.approve'))) return;
 
     setLoading(true);
     try {
       await roomBookingService.approveBooking(currentBooking.id);
-      toast.success('Đã phê duyệt lịch đặt phòng');
+      toast.success(t('booking.success.approve'));
       onUpdate();
     } catch (error: unknown) {
       console.error('Error approving booking:', error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Không thể phê duyệt');
+      toast.error(err.response?.data?.message || t('booking.error.approve'));
     } finally {
       setLoading(false);
     }
-  }, [currentBooking.id, onUpdate]);
+  }, [currentBooking.id, onUpdate, t]);
 
   // Handle reject
   const handleReject = useCallback(async () => {
     if (!rejectionReason.trim()) {
-      toast.error('Vui lòng nhập lý do từ chối');
+      toast.error(t('booking.validation.reject_reason_required'));
       return;
     }
 
     setLoading(true);
     try {
       await roomBookingService.rejectBooking(currentBooking.id, rejectionReason);
-      toast.success('Đã từ chối lịch đặt phòng');
+      toast.success(t('booking.success.reject'));
       onUpdate();
     } catch (error: unknown) {
       console.error('Error rejecting booking:', error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Không thể từ chối');
+      toast.error(err.response?.data?.message || t('booking.error.reject'));
     } finally {
       setLoading(false);
     }
-  }, [currentBooking.id, rejectionReason, onUpdate]);
+  }, [currentBooking.id, rejectionReason, onUpdate, t]);
 
   // Handle cancel (for owner)
   const handleCancel = useCallback(async () => {
-    if (!window.confirm('Bạn có chắc muốn hủy lịch đặt phòng này?')) return;
+    if (!window.confirm(t('booking.confirm.cancel'))) return;
 
     setLoading(true);
     try {
       await roomBookingService.cancelBooking(currentBooking.id);
-      toast.success('Đã hủy lịch đặt phòng');
+      toast.success(t('booking.success.cancel'));
       onUpdate();
     } catch (error: unknown) {
       console.error('Error cancelling booking:', error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Không thể hủy');
+      toast.error(err.response?.data?.message || t('booking.error.cancel'));
     } finally {
       setLoading(false);
     }
-  }, [currentBooking.id, onUpdate]);
+  }, [currentBooking.id, onUpdate, t]);
 
   return {
     currentBooking,
