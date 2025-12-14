@@ -1,15 +1,14 @@
 // src/pages/SensitiveInbox/index.tsx
 import { useState, useEffect } from "react";
+import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { useDepartments } from "../../hooks/useDepartments";
 import { toast } from "react-toastify";
 import {
   CURRENT_USER,
-  HistoryEntry,
-  Reply,
   SensitiveMessage,
   MessageStatus,
-} from "../../components/feedback/data";
+} from "../../components/feedback/types";
 import { MessageList } from "../../components/feedback/MessageList";
 import { MessageDetailView } from "../../components/feedback/MessageDetailView";
 
@@ -204,26 +203,32 @@ export default function SensitiveInboxPage() {
 
   if (loading && messages.length === 0) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-rose-600">Đang tải dữ liệu...</div>
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
-      <MessageList
-        messages={messages}
-        selectedMessageId={selectedMessageId}
-        onSelectMessage={setSelectedMessageId}
+    <>
+      <PageMeta
+        title="Hộp thư nhạy cảm | SmartFactory CONNECT"
+        description="Quản lý các phản hồi nhạy cảm và ý kiến đóng góp"
       />
-      <MessageDetailView
-        message={selectedMessage}
-        departments={departments}
-        loading={deptLoading}
-        onForward={handleForward}
-        onReply={handleReply}
-      />
-    </div>
+      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white text-gray-900">
+        <MessageList
+          messages={messages}
+          selectedMessageId={selectedMessageId}
+          onSelectMessage={setSelectedMessageId}
+        />
+        <MessageDetailView
+          message={selectedMessage}
+          departments={departments}
+          loading={deptLoading}
+          onForward={handleForward}
+          onReply={handleReply}
+        />
+      </div>
+    </>
   );
 }
