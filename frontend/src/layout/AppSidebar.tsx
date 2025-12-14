@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router";
 
 import {
@@ -15,87 +15,103 @@ import {
   BoxIcon,
   FolderIcon,
 } from "../icons";
-import { useSidebar } from "../context/SidebarContext";
+import { useSidebar } from "../contexts/SidebarContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "../contexts/LanguageContext";
+import dashboardService from "../services/dashboard.service";
 // import SidebarWidget from "./SidebarWidget";
 
-// ... (phần type và các mảng navItems, othersItems1, othersItems2 không đổi)
+// Type với i18n key
 type NavItem = {
-  name: string;
+  nameKey: string; // i18n key
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
-  requiredPermission?: string; // Admin only, Pink box access, etc.
+  badgeKey?: string;
+  subItems?: { nameKey: string; path: string; pro?: boolean; new?: boolean; badgeKey?: string }[];
+  requiredPermission?: string;
 };
 
-const navItems: NavItem[] = [
+// Badge counts interface
+interface BadgeCounts {
+  pendingIncidents: number;
+  pendingIdeas: number;
+  pendingBookings: number;
+  unreadNews: number;
+}
+
+// Navigation items with i18n keys
+const navItemsConfig: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
+    nameKey: "menu.dashboard",
     subItems: [
-      { name: "Tổng quan", path: "/", pro: false },
-      { name: "Báo cáo sự cố", path: "/incident-report-page", pro: false },
-      { name: "Góp ý", path: "/feadback-dashboard", pro: false },
+      { nameKey: "menu.overview", path: "/", pro: false },
+      { nameKey: "menu.incidents", path: "/incident-report-page", pro: false },
+      { nameKey: "menu.ideas", path: "/feadback-dashboard", pro: false },
     ],
   },
   {
     icon: <TaskIcon />,
-    name: "Tin tức",
+    nameKey: "menu.news",
     path: "/news",
   },
   {
     icon: <CalenderIcon />,
-    name: "Lịch",
+    nameKey: "menu.calendar",
     path: "/calendar",
   },
   {
     icon: <CalenderIcon />,
-    name: "Đặt phòng họp",
+    nameKey: "menu.booking",
     subItems: [
-      { name: "Đặt phòng", path: "/room-booking", pro: false },
-      { name: "Lịch của tôi", path: "/my-bookings", pro: false },
-      { name: "Duyệt đặt phòng", path: "/admin/booking-approval", pro: false, new: true },
+      { nameKey: "booking.create", path: "/room-booking", pro: false },
+      { nameKey: "menu.my_bookings", path: "/my-bookings", pro: false },
+      { nameKey: "menu.admin_approval", path: "/admin/booking-approval", pro: false, new: true },
     ],
   },
 ];
 
-const othersItems1: NavItem[] = [
+const othersItems1Config: NavItem[] = [
   {
-    name: "Danh sách sự cố",
+    nameKey: "menu.incident_list",
     icon: <ListIcon />,
     path: "/all-incidents-page",
+    badgeKey: "pendingIncidents",
   },
   {
-    name: "Hàng đợi",
+    nameKey: "menu.queue",
     icon: <TableIcon />,
     path: "/incident-queue",
+    badgeKey: "pendingIncidents",
   },
 ];
 
-const othersItems2: NavItem[] = [
+const othersItems2Config: NavItem[] = [
   {
     icon: <BoxIcon />,
-    name: "Hòm trắng",
+    nameKey: "menu.public_ideas",
     path: "/public-ideas-page",
+    badgeKey: "pendingIdeas",
   },
   {
     icon: <BoxCubeIcon />,
-    name: "Hòm hồng",
+    nameKey: "menu.admin_inbox",
     path: "/admin-inbox-pink",
-    requiredPermission: "pink_box", // Only Admin can see
+    requiredPermission: "pink_box",
+    badgeKey: "pendingIdeas",
   },
   {
     icon: <FolderIcon />,
-    name: "Lưu trữ",
+    nameKey: "menu.kaizen_bank",
     path: "/kaizen-bank-page",
   },
   {
     icon: <PlugInIcon />,
-    name: "Quản lý",
-    requiredPermission: "manage_users", // Only Admin can see
+    nameKey: "menu.management",
+    requiredPermission: "manage_users",
     subItems: [
-      { name: "Người dùng", path: "/users", pro: false },
-      { name: "Phòng ban", path: "/departments", pro: false },
+      { nameKey: "menu.user_list", path: "/users", pro: false },
+      { nameKey: "menu.departments", path: "/departments", pro: false },
     ],
   },
 ];
@@ -103,7 +119,21 @@ const othersItems2: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { canManageUsers, canViewPinkBox } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
+
+  // Badge counts state
+  const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({
+    pendingIncidents: 0,
+    pendingIdeas: 0,
+    pendingBookings: 0,
+    unreadNews: 0,
+  });
+
+  // Translate nav items
+  const navItems = useMemo(() => navItemsConfig, []);
+  const othersItems1 = useMemo(() => othersItems1Config, []);
+  const othersItems2 = useMemo(() => othersItems2Config, []);
 
   // <<< THAY ĐỔI 1: Cập nhật kiểu (type) của state để chấp nhận các loại menu mới
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -120,6 +150,34 @@ const AppSidebar: React.FC = () => {
     (path: string) => location.pathname === path,
     [location.pathname]
   );
+
+  // Fetch badge counts from API
+  useEffect(() => {
+    const fetchBadgeCounts = async () => {
+      try {
+        const summary = await dashboardService.getDashboardSummary();
+        setBadgeCounts({
+          pendingIncidents: summary.pending_incidents || 0,
+          pendingIdeas: summary.pending_ideas || 0,
+          pendingBookings: 0, // TODO: Add booking stats to API
+          unreadNews: 0, // TODO: Add news stats to API
+        });
+      } catch (error) {
+        console.error('Failed to fetch badge counts:', error);
+      }
+    };
+
+    fetchBadgeCounts();
+    // Refresh every 2 minutes
+    const interval = setInterval(fetchBadgeCounts, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Get badge count for an item
+  const getBadgeCount = (badgeKey?: string): number => {
+    if (!badgeKey) return 0;
+    return badgeCounts[badgeKey as keyof BadgeCounts] || 0;
+  };
 
   // <<< THAY ĐỔI 2: Cấu trúc lại useEffect để trở nên linh hoạt hơn
   useEffect(() => {
@@ -212,7 +270,7 @@ const AppSidebar: React.FC = () => {
     return (
     <ul className="flex flex-col gap-4">
       {filteredItems.map((nav, index) => (
-        <li key={nav.name}>
+        <li key={nav.nameKey}>
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
@@ -227,16 +285,28 @@ const AppSidebar: React.FC = () => {
               }`}
             >
               <span
-                className={`menu-item-icon-size  ${
+                className={`menu-item-icon-size relative ${
                   openSubmenu?.type === menuType && openSubmenu?.index === index
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
                 }`}
               >
                 {nav.icon}
+                {/* Badge for collapsed state */}
+                {!isExpanded && !isHovered && !isMobileOpen && getBadgeCount(nav.badgeKey) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">
+                    {getBadgeCount(nav.badgeKey) > 9 ? '9+' : getBadgeCount(nav.badgeKey)}
+                  </span>
+                )}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
+                <span className="menu-item-text">{t(nav.nameKey)}</span>
+              )}
+              {/* Badge for expanded state */}
+              {(isExpanded || isHovered || isMobileOpen) && getBadgeCount(nav.badgeKey) > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                  {getBadgeCount(nav.badgeKey) > 99 ? '99+' : getBadgeCount(nav.badgeKey)}
+                </span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -258,16 +328,28 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 <span
-                  className={`menu-item-icon-size ${
+                  className={`menu-item-icon-size relative ${
                     isActive(nav.path)
                       ? "menu-item-icon-active"
                       : "menu-item-icon-inactive"
                   }`}
                 >
                   {nav.icon}
+                  {/* Badge for collapsed state */}
+                  {!isExpanded && !isHovered && !isMobileOpen && getBadgeCount(nav.badgeKey) > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">
+                      {getBadgeCount(nav.badgeKey) > 9 ? '9+' : getBadgeCount(nav.badgeKey)}
+                    </span>
+                  )}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
+                  <span className="menu-item-text">{t(nav.nameKey)}</span>
+                )}
+                {/* Badge for expanded state */}
+                {(isExpanded || isHovered || isMobileOpen) && getBadgeCount(nav.badgeKey) > 0 && (
+                  <span className="ml-auto px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {getBadgeCount(nav.badgeKey) > 99 ? '99+' : getBadgeCount(nav.badgeKey)}
+                  </span>
                 )}
               </Link>
             )
@@ -287,7 +369,7 @@ const AppSidebar: React.FC = () => {
             >
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
+                  <li key={subItem.nameKey}>
                     <Link
                       to={subItem.path}
                       className={`menu-dropdown-item ${
@@ -296,7 +378,7 @@ const AppSidebar: React.FC = () => {
                           : "menu-dropdown-item-inactive"
                       }`}
                     >
-                      {subItem.name}
+                      {t(subItem.nameKey)}
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
