@@ -1,5 +1,6 @@
 // src/pages/AllIncidentsPage.tsx
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import PageMeta from "../../components/common/PageMeta";
 import {
   DndContext,
   closestCenter,
@@ -69,7 +70,8 @@ export default function AllIncidentsPage() {
       'Đang xử lý': 'in_progress',
       'Tạm dừng': 'on_hold',
       'Hoàn thành': 'resolved',
-      'Đã đóng': 'closed'
+      'Đã đóng': 'closed',
+      'Đã xử lý': 'resolved'
     };
     return map[frontendStatus] || 'pending';
   };
@@ -217,21 +219,28 @@ export default function AllIncidentsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col font-sans overflow-hidden gap-4">
-      {/* Header Section */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
-        <PageHeader
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onSearchChange={setSearchTerm}
-          onExport={handleExport}
-        />
-      </div>
+    <>
+      <PageMeta
+        title="Quản lý Sự cố | SmartFactory CONNECT"
+        description="Theo dõi và quản lý các sự cố trong nhà máy"
+      />
+      <div className="p-4 h-[calc(100vh-4rem)] flex flex-col font-sans overflow-hidden gap-4">
+        {/* Header Section */}
+        <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm shrink-0">
+          <PageHeader
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onSearchChange={setSearchTerm}
+            onExport={handleExport}
+          />
+        </div>
 
-      {/* Content Section */}
-      <main className="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
-        {loading ? (
-          <div className="text-center py-10">Đang tải dữ liệu...</div>
+        {/* Content Section */}
+        <main className="flex-1 overflow-hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
+            </div>
         ) : viewMode === "kanban" ? (
           <DndContext
             sensors={sensors}
@@ -261,7 +270,8 @@ export default function AllIncidentsPage() {
             <ListView data={filteredIncidents} />
           </div>
         )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

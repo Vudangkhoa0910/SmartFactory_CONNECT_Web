@@ -1,16 +1,23 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { BellRing } from "lucide-react";
+import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { toast } from "react-toastify";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 import { Incident, Priority } from "../../components/ErrorReport/index";
-import { DEPARTMENTS } from "../../components/ErrorReport/data";
+import { useDepartments } from "../../hooks/useDepartments";
 import IncidentListItem from "../../components/ErrorReport/IncidentListItem";
 import IncidentDetailView from "../../components/ErrorReport/IncidentDetailView";
 
 const IncidentWorkspace: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(false);
+  const { departments } = useDepartments();
+  const { t } = useTranslation();
+  
+  // Get department names for UI
+  const departmentNames = departments.map(d => d.name);
 
   // Fetch queue data
   useEffect(() => {
@@ -76,7 +83,10 @@ const IncidentWorkspace: React.FC = () => {
         const priorityDiff =
           priorityWeight[b.priority] - priorityWeight[a.priority];
         if (priorityDiff !== 0) return priorityDiff;
-        return b.timestamp.getTime() - a.timestamp.getTime(); // Mới nhất lên đầu
+        // Use timestamp if available, otherwise use createdAt
+        const aTime = (a.timestamp || a.createdAt).getTime();
+        const bTime = (b.timestamp || b.createdAt).getTime();
+        return bTime - aTime; // Mới nhất lên đầu
       });
   }, [incidents]);
 
@@ -176,34 +186,36 @@ const IncidentWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <PageMeta
+        title={`${t('menu.queue')} | SmartFactory CONNECT`}
+        description={t('incident.queue_description')}
+      />
+      <div className="p-4">
         {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-              Hàng đợi Sự cố
-            </h1>
-            <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 px-3 py-1 rounded-full">
-              <BellRing size={16} />
-              <span>{activeIncidents.length} sự cố đang chờ</span>
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{t('menu.queue')}</h1>
+            <p className="text-gray-500 mt-1 text-sm">{t('incident.select_to_process')}</p>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Chọn một sự cố để xem chi tiết và xử lý.
-          </p>
-        </header>
+          <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 px-3 py-1.5 rounded-full">
+            <BellRing size={16} />
+            <span>{activeIncidents.length} {t('incident.waiting')}</span>
+          </div>
+        </div>
 
         {/* Main Layout: 2 Columns */}
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* LEFT PANE: LIST */}
-          <div className="lg:col-span-1 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-4">
-            <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2 px-2">
-              Danh sách sự cố
+          <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3 px-2">
+              {t('incident.list')}
             </h2>
             <div className="space-y-2">
               {loading ? (
-                <p className="text-center py-4">Đang tải...</p>
+                <div className="flex justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
               ) : activeIncidents.length > 0 ? (
                 activeIncidents.map((incident) => (
                   <IncidentListItem
@@ -218,7 +230,7 @@ const IncidentWorkspace: React.FC = () => {
                   />
                 ))
               ) : (
-                <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">
+                <p className="text-center text-sm text-gray-500 py-8">
                   Không có sự cố nào.
                 </p>
               )}
@@ -228,16 +240,16 @@ const IncidentWorkspace: React.FC = () => {
           {/* RIGHT PANE: DETAIL */}
           <div className="lg:col-span-2">
             <IncidentDetailView
-              incident={incidents.find((i) => i.id === selectedIncident?.id)}
-              departments={DEPARTMENTS}
+              incident={incidents.find((i) => i.id === selectedIncident?.id) || null}
+              departments={departmentNames}
               onAcknowledge={handleAcknowledge}
               onAssign={handleAssign}
               onResolve={handleResolve}
             />
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
