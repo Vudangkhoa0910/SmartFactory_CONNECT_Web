@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { Copy } from 'lucide-react';
 import api from '../services/api';
 import PageMeta from '../components/common/PageMeta';
 
@@ -105,18 +106,18 @@ export default function TranslationTest() {
         description="Test Gemini API translation between Vietnamese and Japanese"
       />
 
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="p-4 mx-auto max-w-7xl">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             🌐 Translation Test - Gemini API
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Test tính năng dịch thuật Việt - Nhật sử dụng Google Gemini API
           </p>
         </div>
 
         {/* Main Translation Interface */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Input Section */}
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div className="mb-4 flex items-center justify-between">
@@ -244,9 +245,9 @@ export default function TranslationTest() {
                       navigator.clipboard.writeText(translatedText);
                       toast.success('Đã copy vào clipboard!');
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
                   >
-                    📋 Copy
+                    <Copy className="w-4 h-4" /> Copy
                   </button>
                 </>
               )}
