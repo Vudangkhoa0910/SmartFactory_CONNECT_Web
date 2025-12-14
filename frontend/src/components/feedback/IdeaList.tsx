@@ -1,7 +1,6 @@
 // src/components/IdeaList.tsx
 
 import React from "react";
-// CẢI TIẾN: Thêm icon từ thư viện lucide-react (hoặc thư viện icon bạn dùng)
 import { Inbox, Mail } from "lucide-react";
 import { PublicIdea } from "./types";
 
@@ -16,72 +15,68 @@ export const IdeaList: React.FC<IdeaListProps> = ({
   selectedId,
   onSelect,
 }) => {
-  // CẢI TIẾN: Hiển thị trạng thái rỗng khi không có dữ liệu
+  // Empty state
   if (ideas.length === 0) {
     return (
-      <aside className="w-[360px] bg-white dark:bg-slate-900 border-r dark:border-slate-800 flex flex-col">
-        <header className="p-4 border-b dark:border-slate-800 flex items-center gap-3 shrink-0">
+      <aside className="w-[360px] bg-white border-r border-gray-200 flex flex-col h-full">
+        <header className="p-4 border-b border-gray-200 flex items-center gap-3 shrink-0">
           <Mail size={20} className="text-red-600" />
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+          <h2 className="text-lg font-bold text-gray-900">
             Hòm thư Trắng
           </h2>
         </header>
-        <div className="flex-grow flex flex-col items-center justify-center text-center p-6 text-slate-500 dark:text-slate-400">
-          <Inbox size={48} className="mb-4 text-slate-400" />
-          <h3 className="font-semibold text-slate-700 dark:text-slate-200">
+        <div className="flex-grow flex flex-col items-center justify-center text-center p-6">
+          <Inbox size={48} className="mb-4 text-gray-300" />
+          <h3 className="font-semibold text-gray-700">
             Hòm thư trống
           </h3>
-          <p className="text-sm mt-1">Chưa có ý kiến đóng góp nào được gửi.</p>
+          <p className="text-sm mt-1 text-gray-500">Chưa có ý kiến đóng góp nào được gửi.</p>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="w-[360px] bg-white dark:bg-slate-900 border-r dark:border-slate-800 flex flex-col h-full">
-      {/* CẢI TIẾN: Header được làm nổi bật hơn */}
-      <header className="p-4 border-b dark:border-slate-800 flex items-center gap-3 flex-shrink-0">
-        <Mail size={20} className="text-red-500" />
-        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+    <aside className="w-[360px] bg-white border-r border-gray-200 flex flex-col h-full">
+      {/* Header */}
+      <header className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
+        <Mail size={20} className="text-red-600" />
+        <h2 className="text-lg font-bold text-gray-900">
           Hòm thư Trắng
         </h2>
       </header>
 
-      {/* CẢI TIẾN: Thêm overflow-y-auto để cuộn danh sách */}
+      {/* List */}
       <div className="overflow-y-auto flex-1">
         {ideas.map((idea) => (
           <div
             key={idea.id}
             onClick={() => onSelect(idea.id)}
-            // CẢI TIẾN: Class được cấu trúc lại để dễ đọc và đẹp hơn
             className={`
-              px-4 py-3 border-b dark:border-slate-800 cursor-pointer transition-colors duration-150
+              px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors
               ${
                 selectedId === idea.id
-                  ? "bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500"
-                  : "border-l-4 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800"
+                  ? "bg-red-50 border-l-4 border-l-red-600"
+                  : "border-l-4 border-l-transparent hover:bg-gray-50"
               }
             `}
           >
             <div className="flex justify-between items-start">
-              {/* CẢI TIẾN: Tiêu đề in đậm nếu chưa đọc */}
               <p
-                className={`text-sm pr-2 ${
+                className={`text-sm pr-2 truncate ${
                   !idea.isRead
-                    ? "font-bold text-slate-800 dark:text-slate-100"
-                    : "font-semibold text-slate-700 dark:text-slate-300"
+                    ? "font-bold text-gray-900"
+                    : "font-semibold text-gray-700"
                 }`}
               >
                 {idea.title}
               </p>
-              {/* CẢI TIẾN: Thêm chấm đỏ cho thư chưa đọc */}
               {!idea.isRead && (
-                <div className="w-2 h-2 bg-red-500 rounded-full shrink-0 mt-1.5"></div>
+                <div className="w-2 h-2 bg-red-600 rounded-full shrink-0 mt-1.5"></div>
               )}
             </div>
 
-            {/* CẢI TIẾN: Layout cho thông tin phụ */}
-            <div className="flex justify-between items-center mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
               <p className="truncate pr-2">
                 {idea.senderName} • {idea.group}
               </p>
