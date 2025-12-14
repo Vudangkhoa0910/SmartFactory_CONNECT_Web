@@ -1,0 +1,474 @@
+{
+  "app": {
+    "name": "SmartFactory CONNECT",
+    "tagline": "スマートファクトリー管理システム",
+    "platform": "SmartFactory CONNECT Web Platform"
+  },
+  
+  "menu": {
+    "dashboard": "ダッシュボード",
+    "overview": "概要",
+    "incidents": "インシデント報告",
+    "incident_queue": "インシデントキュー",
+    "all_incidents": "全インシデント",
+    "incident_list": "インシデント一覧",
+    "ideas": "提案",
+    "public_ideas": "ホワイトボックス",
+    "admin_inbox": "ピンクボックス",
+    "kaizen_bank": "改善バンク",
+    "news": "ニュース",
+    "calendar": "カレンダー",
+    "booking": "会議室予約",
+    "my_bookings": "自分の予約",
+    "admin_approval": "予約承認",
+    "users": "ユーザー管理",
+    "user_list": "ユーザー一覧",
+    "departments": "部門管理",
+    "management": "管理",
+    "profile": "プロフィール",
+    "settings": "設定",
+    "logout": "ログアウト",
+    "queue": "キュー"
+  },
+
+  "button": {
+    "submit": "送信",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "edit": "編集",
+    "delete": "削除",
+    "search": "検索",
+    "filter": "フィルター",
+    "export": "エクスポート",
+    "import": "インポート",
+    "close": "閉じる",
+    "back": "戻る",
+    "back_to_home": "ホームに戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "confirm": "確認",
+    "create": "新規作成",
+    "update": "更新",
+    "refresh": "更新",
+    "retry": "再試行",
+    "view": "表示",
+    "view_all": "すべて表示",
+    "view_details": "詳細表示",
+    "approve": "承認",
+    "reject": "却下",
+    "print": "印刷",
+    "download": "ダウンロード",
+    "upload": "アップロード",
+    "add": "追加",
+    "remove": "削除",
+    "reset": "リセット",
+    "clear": "クリア",
+    "apply": "適用",
+    "select_all": "すべて選択",
+    "deselect_all": "選択解除"
+  },
+
+  "status": {
+    "pending": "保留中",
+    "assigned": "割り当て済み",
+    "in_progress": "処理中",
+    "on_hold": "一時停止",
+    "resolved": "解決済み",
+    "closed": "終了",
+    "cancelled": "キャンセル済み",
+    "approved": "承認済み",
+    "rejected": "却下済み",
+    "draft": "下書き",
+    "published": "公開済み",
+    "active": "有効",
+    "inactive": "無効",
+    "new": "新規",
+    "completed": "完了"
+  },
+
+  "priority": {
+    "low": "低",
+    "normal": "通常",
+    "medium": "中",
+    "high": "高",
+    "critical": "緊急"
+  },
+
+  "incident": {
+    "title": "インシデント管理",
+    "create": "新規インシデント作成",
+    "list": "インシデント一覧",
+    "details": "インシデント詳細",
+    "total": "総インシデント数",
+    "report": "インシデント報告",
+    "pending": "保留中インシデント",
+    "resolved": "解決済みインシデント",
+    "incidents": "インシデント",
+    "queue_description": "システム内の待機中インシデントを処理",
+    "select_to_process": "詳細を確認して処理するインシデントを選択",
+    "waiting": "件が待機中",
+    "type": {
+      "safety": "安全",
+      "quality": "品質",
+      "equipment": "設備",
+      "environment": "環境",
+      "other": "その他"
+    }
+  },
+
+  "idea": {
+    "title": "提案管理",
+    "create": "提案を作成",
+    "list": "提案一覧",
+    "details": "提案詳細",
+    "total": "総提案数",
+    "white_box": "ホワイトボックス",
+    "pink_box": "ピンクボックス",
+    "description": "改善提案の閲覧・管理",
+    "category": {
+      "safety": "安全",
+      "quality": "品質",
+      "productivity": "生産性",
+      "cost_saving": "コスト削減",
+      "other": "その他"
+    }
+  },
+
+  "booking": {
+    "title": "会議室予約",
+    "create": "新規予約",
+    "my_bookings": "自分の予約",
+    "room": "会議室",
+    "date": "日付",
+    "time": "時間",
+    "start_time": "開始時刻",
+    "end_time": "終了時刻",
+    "attendees": "参加者",
+    "purpose": "目的",
+    "notes": "備考",
+    "approval": "予約承認",
+    "description": "柔軟な時間枠で会議室を予約",
+    "my_bookings_desc": "予約の閲覧・管理",
+    "load_error": "予約一覧の読み込みに失敗しました",
+    "meeting_type": {
+      "department_meeting": "部門会議",
+      "team_standup": "チームスタンドアップ",
+      "project_review": "プロジェクトレビュー",
+      "training_session": "研修",
+      "client_meeting": "顧客会議",
+      "interview": "面接",
+      "workshop": "ワークショップ",
+      "company_event": "会社イベント",
+      "celebration": "誕生日・記念日",
+      "technical_discussion": "技術討議",
+      "brainstorming": "ブレインストーミング",
+      "presentation": "プレゼンテーション",
+      "other": "その他"
+    }
+  },
+
+  "news": {
+    "title": "ニュース",
+    "create": "ニュース作成",
+    "list": "ニュース一覧",
+    "details": "ニュース詳細",
+    "category": "カテゴリー",
+    "author": "作成者",
+    "published_at": "公開日",
+    "latest": "最新ニュース",
+    "description": "会社ニュース管理"
+  },
+
+  "user": {
+    "title": "ユーザー管理",
+    "list": "ユーザー一覧",
+    "create": "ユーザー追加",
+    "edit": "情報編集",
+    "profile": "プロフィール",
+    "name": "氏名",
+    "email": "メールアドレス",
+    "phone": "電話番号",
+    "role": "役割",
+    "department": "部門",
+    "employee_id": "社員番号"
+  },
+
+  "label": {
+    "title": "タイトル",
+    "description": "説明",
+    "location": "場所",
+    "department": "部門",
+    "reporter": "報告者",
+    "assigned_to": "担当者",
+    "priority": "優先度",
+    "status": "ステータス",
+    "category": "カテゴリー",
+    "type": "種類",
+    "date": "日付",
+    "time": "時間",
+    "created_at": "作成日",
+    "updated_at": "更新日",
+    "created_by": "作成者",
+    "updated_by": "更新者",
+    "attachments": "添付ファイル",
+    "comments": "コメント",
+    "actions": "操作",
+    "select": "選択",
+    "all": "すべて",
+    "none": "なし",
+    "details": "詳細",
+    "summary": "概要",
+    "image": "画像"
+  },
+
+  "message": {
+    "success": "成功",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報",
+    "loading": "読み込み中...",
+    "saving": "保存中...",
+    "deleting": "削除中...",
+    "no_data": "データなし",
+    "no_results": "結果が見つかりません",
+    "confirm_delete": "削除してもよろしいですか？",
+    "confirm_action": "実行してもよろしいですか？",
+    "save_success": "保存しました",
+    "save_error": "保存に失敗しました",
+    "delete_success": "削除しました",
+    "delete_error": "削除に失敗しました",
+    "update_success": "更新しました",
+    "update_error": "更新に失敗しました",
+    "create_success": "作成しました",
+    "create_error": "作成に失敗しました",
+    "required_field": "必須項目",
+    "invalid_email": "無効なメールアドレス",
+    "invalid_phone": "無効な電話番号",
+    "welcome": "ようこそ"
+  },
+
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "register": "登録",
+    "forgot_password": "パスワードを忘れた？",
+    "reset_password": "パスワードリセット",
+    "change_password": "パスワード変更",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirm_password": "パスワード確認",
+    "remember_me": "ログイン状態を保持",
+    "login_success": "ログインしました",
+    "logout_success": "ログアウトしました",
+    "login_error": "ログインに失敗しました",
+    "signing_in": "ログイン中...",
+    "sign_in": "ログイン",
+    "sign_in_subtitle": "ダッシュボードにアクセスするにはログインしてください",
+    "email_or_employee_code": "メールアドレスまたは社員番号",
+    "enter_password": "パスワードを入力してください",
+    "no_web_access": "このアカウントにはWebアクセス権限がありません",
+    "login_failed": "ログインに失敗しました。認証情報を確認してください。"
+  },
+
+  "dashboard": {
+    "title": "ダッシュボード",
+    "welcome": "ようこそ",
+    "total_incidents": "総インシデント",
+    "total_ideas": "総提案",
+    "pending_incidents": "保留中インシデント",
+    "resolved_incidents": "解決済みインシデント",
+    "safety_score": "安全スコア",
+    "recent_activities": "最近のアクティビティ",
+    "quick_actions": "クイックアクション",
+    "statistics": "統計",
+    "overview": "工場運営の概要",
+    "monthly_target": "月間目標",
+    "need_action": "今すぐ対応が必要",
+    "completion_rate": "完了率",
+    "contributions": "提案・意見",
+    "pending_review": "レビュー待ち",
+    "online_employees": "オンライン社員",
+    "active": "アクティブ",
+    "priority_distribution": "優先度分布",
+    "department_performance": "部門パフォーマンス（Top 5）",
+    "resolved": "解決済み",
+    "feedback_ideas": "フィードバック・提案",
+    "departments": "部門",
+    "report_incident": "インシデント報告",
+    "submit_feedback": "フィードバック送信",
+    "book_room": "会議室予約",
+    "view_news": "ニュース表示"
+  },
+
+  "table": {
+    "showing": "表示",
+    "of": "/",
+    "entries": "件",
+    "per_page": "件/ページ",
+    "first": "最初",
+    "last": "最後",
+    "no_data": "データなし",
+    "page": "ページ",
+    "rows_per_page": "表示件数"
+  },
+
+  "search": {
+    "placeholder": "検索...",
+    "no_results": "結果が見つかりません",
+    "results_for": "検索結果：",
+    "search_incidents": "インシデントを検索...",
+    "search_ideas": "提案を検索...",
+    "search_users": "ユーザーを検索..."
+  },
+
+  "notification": {
+    "title": "通知",
+    "mark_all_read": "すべて既読にする",
+    "no_notifications": "通知はありません",
+    "view_all": "すべての通知を表示",
+    "new": "新しい通知"
+  },
+
+  "error": {
+    "page_not_found": "ページが見つかりません",
+    "access_denied": "アクセスが拒否されました",
+    "server_error": "サーバーエラー",
+    "network_error": "ネットワークエラー",
+    "go_back": "戻る",
+    "go_home": "ホームへ",
+    "404_message": "お探しのページが見つかりませんでした！",
+    "occurred": "エラーが発生しました"
+  },
+
+  "date": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "tomorrow": "明日",
+    "this_week": "今週",
+    "this_month": "今月",
+    "this_year": "今年",
+    "last_week": "先週",
+    "last_month": "先月"
+  },
+
+  "time": {
+    "hours_ago": "時間前",
+    "minutes_ago": "分前",
+    "seconds_ago": "秒前",
+    "just_now": "たった今",
+    "days_ago": "日前"
+  },
+
+  "common": {
+    "yes": "はい",
+    "no": "いいえ",
+    "or": "または",
+    "and": "と",
+    "required": "必須",
+    "optional": "任意",
+    "total": "合計",
+    "action": "操作",
+    "no_activities": "アクティビティがありません",
+    "no_department_data": "部門データがありません"
+  },
+
+  "sidebar": {
+    "error_report": "エラー報告",
+    "feedback": "フィードバック",
+    "storage": "ストレージ"
+  },
+
+  "footer": {
+    "copyright": "© 2025 - SmartFactory CONNECT"
+  },
+
+  "role": {
+    "admin": "管理者",
+    "factory_manager": "工場長",
+    "production_manager": "生産管理者",
+    "supervisor": "監督者",
+    "team_leader": "チームリーダー",
+    "operator": "オペレーター",
+    "technician": "技術者",
+    "qc_inspector": "QC検査員",
+    "maintenance_manager": "保全管理者",
+    "maintenance_staff": "保全スタッフ",
+    "viewer": "閲覧者"
+  },
+
+  "department": {
+    "title": "部門管理",
+    "list": "部門一覧",
+    "create": "部門追加",
+    "edit": "部門編集",
+    "code": "部門コード",
+    "name": "部門名",
+    "description": "説明",
+    "manager": "部門長",
+    "parent": "親部門",
+    "employee_count": "従業員数",
+    "all_departments": "全部門"
+  },
+
+  "calendar": {
+    "title": "カレンダー",
+    "event": "イベント",
+    "add_event": "イベント追加",
+    "edit_event": "イベント編集",
+    "delete_event": "イベント削除",
+    "event_title": "イベントタイトル",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "level": {
+      "high": "高優先度",
+      "medium": "中優先度",
+      "low": "低優先度"
+    },
+    "events": {
+      "conference": "会議イベント",
+      "meeting": "ミーティング",
+      "workshop": "ワークショップ",
+      "interview": "面接",
+      "celebration": "誕生日・記念日",
+      "brainstorming": "ブレインストーミング",
+      "presentation": "プレゼンテーション",
+      "other": "その他"
+    }
+  },
+
+  "profile": {
+    "title": "プロフィール",
+    "user_profile": "ユーザープロフィール",
+    "edit_profile": "プロフィール編集",
+    "personal_info": "個人情報",
+    "contact_info": "連絡先情報",
+    "address": "住所",
+    "change_avatar": "アバター変更",
+    "full_name": "氏名",
+    "employee_code": "社員番号",
+    "last_login": "最終ログイン",
+    "created_at": "作成日",
+    "never": "未ログイン"
+  },
+
+  "filter": {
+    "all_roles": "全役割",
+    "all_departments": "全部門",
+    "all_statuses": "全ステータス",
+    "all_priorities": "全優先度",
+    "search_placeholder": "氏名、メールアドレス、社員番号で検索..."
+  },
+
+  "page": {
+    "user_management": "ユーザー管理",
+    "department_management": "部門管理",
+    "profile": "プロフィール",
+    "calendar": "カレンダー",
+    "images": "画像",
+    "videos": "動画",
+    "forms": "フォーム",
+    "form_elements": "フォーム要素",
+    "line_chart": "折れ線グラフ",
+    "bar_chart": "棒グラフ"
+  }
+}
