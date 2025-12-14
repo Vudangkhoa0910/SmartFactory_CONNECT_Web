@@ -1,15 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { Loader2 } from "lucide-react";
+import api from "../../services/api";
 
 export default function FeedbackRatingChart() {
-  const labels: string[] = [
-    "Rất thoả mãn",
-    "Thoả mãn",
-    "Chấp nhận",
-    "Chưa được",
-  ];
-  const series: number[] = [60, 25, 10, 5];
+  const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<{labels: string[], series: number[]}>({
+    labels: ["Rất thoả mãn", "Thoả mãn", "Chấp nhận", "Chưa được"],
+    series: [0, 0, 0, 0]
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get('/dashboard/ideas/stats');
+        const satisfactionData = response.data.data.satisfaction;
+        
+        if (satisfactionData && Array.isArray(satisfactionData)) {
+          const labelMap: Record<string, string> = {
+            'very_satisfied': 'Rất thoả mãn',
+            'satisfied': 'Thoả mãn',
+            'acceptable': 'Chấp nhận',
+            'unsatisfied': 'Chưa được'
+          };
+          
+          const labels = satisfactionData.map((item: any) => labelMap[item.satisfaction_level] || item.satisfaction_level);
+          const series = satisfactionData.map((item: any) => parseInt(item.count) || 0);
+          
+          setChartData({ labels, series });
+        }
+      } catch (error) {
+        console.error("Failed to fetch rating data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
   const colors: string[] = [
     "#e5386d",
     "#ff4d6d",
@@ -17,7 +47,7 @@ export default function FeedbackRatingChart() {
     "#ffb3c1",
     "#ffccd5",
   ];
-  const totalRatings = series.reduce((a, b) => a + b, 0);
+  const totalRatings = chartData.series.reduce((a, b) => a + b, 0);
 
   const [selectedSlice, setSelectedSlice] = useState<{
     index: number;
@@ -26,7 +56,7 @@ export default function FeedbackRatingChart() {
   } | null>(null);
 
   const options: ApexOptions = {
-    labels,
+    labels: chartData.labels,
     colors,
     chart: {
       type: "donut",
@@ -41,8 +71,8 @@ export default function FeedbackRatingChart() {
             if (current && current.index === clickedIndex) return null;
             return {
               index: clickedIndex,
-              label: labels[clickedIndex],
-              value: series[clickedIndex],
+              label: chartData.labels[clickedIndex],
+              value: chartData.series[clickedIndex],
             };
           });
         },
@@ -56,7 +86,7 @@ export default function FeedbackRatingChart() {
     },
     dataLabels: {
       enabled: true,
-      formatter: (val) => `${val.toFixed(0)}%`,
+      formatter: (val) => `${Number(val).toFixed(0)}%`,
       style: {
         colors: ["#ffffff"],
         fontSize: "14px",
@@ -80,6 +110,27 @@ export default function FeedbackRatingChart() {
     },
   };
 
+  if (loading) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 h-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+      </div>
+    );
+  }
+
+  if (totalRatings === 0) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 h-full">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Đánh giá người ý kiến
+        </h3>
+        <div className="flex items-center justify-center min-h-[300px] text-gray-500 dark:text-gray-400">
+          Chưa có dữ liệu đánh giá
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 h-full">
       <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
@@ -87,17 +138,15 @@ export default function FeedbackRatingChart() {
       </h3>
 
       <div className="relative flex items-center justify-center">
-        <Chart options={options} series={series} type="donut" height={320} />
+        <Chart options={options} series={chartData.series} type="donut" height={320} />
 
         <div
-          className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center -translate-y-8
-        "
+          className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center -translate-y-8"
         >
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             {selectedSlice ? selectedSlice.label : "Tổng Đánh Giá"}
           </p>
 
-          {/* ✨ ĐÃ SỬA: Đồng bộ lại màu gradient đỏ/hồng */}
           <h2 className="bg-gradient-to-r from-[#c9184a] to-[#ff4d6d] bg-clip-text text-4xl font-extrabold text-transparent">
             {selectedSlice ? selectedSlice.value : totalRatings}
           </h2>
