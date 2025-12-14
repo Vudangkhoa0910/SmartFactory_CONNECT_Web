@@ -5,10 +5,10 @@ import PageMeta from "../../components/common/PageMeta";
 
 export default function BarChart() {
   return (
-    <div>
+    <div className="p-4">
       <PageMeta
-        title="React.js Chart Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Chart Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Biểu đồ cột | SmartFactory CONNECT"
+        description="Trang biểu đồ cột cho SmartFactory CONNECT"
       />
       <PageBreadcrumb pageTitle="Bar Chart" />
       <div className="space-y-6">
