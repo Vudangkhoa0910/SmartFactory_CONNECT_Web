@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -10,6 +11,7 @@ const http = require('http');
 // Import middlewares
 const { errorHandler, notFound } = require('./src/middlewares/error.middleware');
 const { sanitizeInput } = require('./src/middlewares/validation.middleware');
+const { generalLimiter } = require('./src/middlewares/rate-limit.middleware');
 
 // Import routes
 const authRoutes = require('./src/routes/auth.routes');
@@ -23,9 +25,15 @@ const dashboardRoutes = require('./src/routes/dashboard.routes');
 const chatRoutes = require('./src/routes/chat.routes');
 const roomBookingRoutes = require('./src/routes/room-booking.routes');
 
-// Import Socket.io and Notification Service
+// Import Socket.io and Services
 const initializeSocket = require('./src/config/socket');
 const NotificationService = require('./src/services/notification.service');
+const cacheService = require('./src/services/cache.service');
+const { healthCheck: dbHealthCheck, getPoolStats } = require('./src/config/database');
+const { connectMongoDB, checkMongoDBHealth, closeMongoDB } = require('./src/config/mongodb');
+
+// Import Swagger
+const swaggerConfig = require('./src/config/swagger');
 
 // Initialize express app
 const app = express();
@@ -33,14 +41,50 @@ const app = express();
 // Create HTTP server
 const server = http.createServer(app);
 
+// Trust proxy for correct IP detection behind load balancer
+app.set('trust proxy', 1);
+
 // Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production',
+  crossOriginEmbedderPolicy: false,
 }));
 
-// Body parser middleware
+// CORS configuration
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost',
+      'http://localhost:80',
+      'http://localhost:3000',
+    ];
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Be permissive in development
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+app.use(cors(corsOptions));
+
+// Compression middleware - compress responses > 1kb
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+}));
+
+// Body parser middleware with larger limits for file uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -62,6 +106,11 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined', { stream: accessLogStream }));
 }
 
+// Apply rate limiting to all API routes
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
+  app.use('/api/', generalLimiter);
+}
+
 // Sanitize input
 app.use(sanitizeInput);
 
@@ -69,13 +118,71 @@ app.use(sanitizeInput);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await dbHealthCheck();
+    const mongoHealth = await checkMongoDBHealth();
+    
+    res.json({
+      success: true,
+      message: 'SmartFactory CONNECT API is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      databases: {
+        postgresql: dbHealth,
+        mongodb: mongoHealth,
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      message: 'Service degraded',
+      error: error.message,
+    });
+  }
+});
+
+// Metrics endpoint for monitoring
+app.get('/metrics', (req, res) => {
+  const memoryUsage = process.memoryUsage();
   res.json({
-    success: true,
-    message: 'SmartFactory CONNECT API is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    uptime: process.uptime(),
+    memory: {
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
+      rss: Math.round(memoryUsage.rss / 1024 / 1024) + 'MB',
+    },
+    database: getPoolStats(),
+    cache: cacheService.getStats(),
   });
+});
+
+// Readiness probe for Kubernetes/Docker
+app.get('/ready', async (req, res) => {
+  try {
+    const dbHealth = await dbHealthCheck();
+    if (dbHealth.status === 'healthy') {
+      res.json({ status: 'ready' });
+    } else {
+      res.status(503).json({ status: 'not ready', reason: 'database unhealthy' });
+    }
+  } catch (error) {
+    res.status(503).json({ status: 'not ready', error: error.message });
+  }
+});
+
+// Liveness probe
+app.get('/live', (req, res) => {
+  res.json({ status: 'alive' });
+});
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerConfig.serve, swaggerConfig.setup);
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerConfig.specs);
 });
 
 // API routes
@@ -110,45 +217,97 @@ const io = initializeSocket(server);
 // Initialize Notification Service
 const notificationService = new NotificationService(io);
 
-// Make notificationService and io available globally
+// Make services available globally
 app.set('io', io);
 app.set('notificationService', notificationService);
+app.set('cacheService', cacheService);
+
+// Initialize databases
+async function initializeDatabases() {
+  try {
+    // Connect to MongoDB
+    await connectMongoDB();
+    console.log('✅ MongoDB initialized');
+  } catch (error) {
+    console.error('⚠️ MongoDB initialization failed:', error.message);
+    console.log('⚠️ Server will continue without MongoDB features');
+  }
+}
 
 // Start server
-server.listen(PORT, HOST, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   🏭 SmartFactory CONNECT API Server                     ║
-║                                                           ║
-║   Environment: ${process.env.NODE_ENV || 'development'}                                  ║
-║   Server: http://${HOST}:${PORT}                           ║
-║   Health Check: http://${HOST}:${PORT}/health             ║
-║                                                           ║
-║   Database: PostgreSQL                                    ║
-║   WebSocket: Socket.io                                    ║
-║   Status: Ready ✓                                         ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-  `);
+async function startServer() {
+  // Initialize databases first
+  await initializeDatabases();
+  
+  server.listen(PORT, HOST, () => {
+    console.log(`
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   🏭 SmartFactory CONNECT API Server                          ║
+║                                                               ║
+║   Environment: ${(process.env.NODE_ENV || 'development').padEnd(40)}  ║
+║   Server: http://${HOST}:${PORT}                                ║
+║   Health: http://${HOST}:${PORT}/health                         ║
+║   Metrics: http://${HOST}:${PORT}/metrics                       ║
+║                                                               ║
+║   Features:                                                   ║
+║   ├── PostgreSQL: Pool ${process.env.DB_POOL_MAX || 50} connections                   ║
+║   ├── MongoDB: GridFS Media Storage                           ║
+║   ├── WebSocket: Socket.io                                    ║
+║   ├── Caching: In-memory (Node-Cache)                         ║
+║   ├── Compression: Enabled                                    ║
+║   └── Rate Limiting: ${process.env.NODE_ENV === 'production' ? 'Enabled' : 'Disabled'}                              ║
+║                                                               ║
+║   Status: Ready ✓                                             ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+    `);
+  });
+}
+
+// Start the server
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} signal received: starting graceful shutdown`);
+  
+  // Close HTTP server first (stop accepting new connections)
   server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
+    console.log('✅ HTTP server closed');
   });
-});
+  
+  // Close Socket.io connections
+  if (io) {
+    io.close(() => {
+      console.log('✅ Socket.io server closed');
+    });
+  }
+  
+  // Close MongoDB connection
+  try {
+    await closeMongoDB();
+  } catch (error) {
+    console.error('⚠️ Error closing MongoDB:', error.message);
+  }
+  
+  // Flush cache statistics
+  console.log('📊 Final cache stats:', cacheService.getStats());
+  
+  // Database pool will close automatically via its own shutdown handler
+  
+  // Force exit after timeout
+  setTimeout(() => {
+    console.error('⚠️ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
 
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Unhandled rejection handler
 process.on('unhandledRejection', (err) => {
