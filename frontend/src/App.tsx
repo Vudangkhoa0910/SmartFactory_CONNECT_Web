@@ -20,6 +20,7 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import EnterpriseDashboard from "./pages/Dashboard/EnterpriseDashboard";
 import IncidentReportPage from "./pages/Dashboard/IncidentReportPage";
 import IncidentQueue from "./pages/ErrorReport/IncidentQueue";
 import AllIncidentsPage from "./pages/ErrorReport/AllIncidentsPage";
@@ -46,7 +47,8 @@ export default function App() {
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+            <Route index path="/" element={<EnterpriseDashboard />} />
+            <Route path="/dashboard-legacy" element={<Home />} />
 
             {/* Translation Test Page */}
             <Route path="/translation-test" element={<TranslationTest />} />
