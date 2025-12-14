@@ -73,7 +73,7 @@ export async function handleRoomBooking(
     return false;
   }
 
-  setMessages(prev => [...prev, { role: 'model', text: '📅 Đang xử lý yêu cầu đặt phòng...' }]);
+  setMessages(prev => [...prev, { role: 'model', text: 'Đang xử lý yêu cầu đặt phòng...' }]);
 
   try {
     // Parse booking request
@@ -85,7 +85,7 @@ export async function handleRoomBooking(
     if (rooms.length === 0) {
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: '❌ **Không có phòng họp nào khả dụng**\n\nVui lòng liên hệ quản trị viên để thêm phòng họp.' 
+        text: '**Không có phòng họp nào khả dụng**\n\nVui lòng liên hệ quản trị viên để thêm phòng họp.' 
       }]);
       return true;
     }
@@ -103,21 +103,21 @@ export async function handleRoomBooking(
       
       setMessages(prev => [...prev, {
         role: 'model',
-        text: `⚠️ **Thiếu thông tin**\n\n${exampleText}`
+        text: `**Thiếu thông tin**\n\n${exampleText}`
       }]);
       return true;
     }
 
     // Show available rooms and conflicts
-    let responseText = `📋 **THÔNG TIN ĐẶT PHÒNG**\n\n`;
-    responseText += `📅 **Ngày:** ${formatDate(request.date!)}\n`;
-    responseText += `⏰ **Thời gian:** ${request.startTime} - ${request.endTime}\n`;
-    responseText += `👥 **Số người:** ${request.attendees || 'Chưa xác định'}\n`;
-    responseText += `📝 **Tiêu đề:** ${request.title}\n`;
-    responseText += `🏷️ **Loại:** ${MEETING_TYPE_LABELS[request.meetingType || 'other']}\n\n`;
+    let responseText = `**THÔNG TIN ĐẶT PHÒNG**\n\n`;
+    responseText += `**Ngày:** ${formatDate(request.date!)}\n`;
+    responseText += `**Thời gian:** ${request.startTime} - ${request.endTime}\n`;
+    responseText += `**Số người:** ${request.attendees || 'Chưa xác định'}\n`;
+    responseText += `**Tiêu đề:** ${request.title}\n`;
+    responseText += `**Loại:** ${MEETING_TYPE_LABELS[request.meetingType || 'other']}\n\n`;
 
     // Check conflicts for each room
-    responseText += `🏢 **DANH SÁCH PHÒNG:**\n\n`;
+    responseText += `**DANH SÁCH PHÒNG:**\n\n`;
     
     const conflicts = await Promise.all(
       rooms.map(async (room) => {
@@ -151,9 +151,9 @@ export async function handleRoomBooking(
     );
 
     conflicts.forEach(({ room, hasConflict, bookings }) => {
-      const status = hasConflict ? '🔴 **Đã có người đặt**' : '🟢 **Còn trống**';
+      const status = hasConflict ? '**Đã có người đặt**' : '**Còn trống**';
       const suitableCapacity = !request.attendees || room.capacity >= request.attendees;
-      const capacityNote = suitableCapacity ? '' : ` ⚠️ (Không đủ chỗ)`;
+      const capacityNote = suitableCapacity ? '' : ` (Không đủ chỗ)`;
       
       responseText += `${status} - **${room.room_name}** (${room.capacity} người)${capacityNote}\n`;
       
@@ -172,7 +172,7 @@ export async function handleRoomBooking(
     );
 
     if (availableRoom) {
-      responseText += `\n✅ **GỢI Ý:** Phòng **${availableRoom.room.room_name}** phù hợp nhất!\n\n`;
+      responseText += `\n**GỢI Ý:** Phòng **${availableRoom.room.room_name}** phù hợp nhất!\n\n`;
       responseText += `Bạn có muốn đặt phòng **${availableRoom.room.room_name}** không?`;
       
       setMessages(prev => [...prev, {
@@ -180,7 +180,7 @@ export async function handleRoomBooking(
         text: responseText,
         actions: [
           {
-            label: `✅ Đặt phòng ${availableRoom.room.room_name}`,
+            label: `Đặt phòng ${availableRoom.room.room_name}`,
             onClick: async () => {
               try {
                 await roomBookingService.createBooking({
@@ -197,10 +197,10 @@ export async function handleRoomBooking(
                 
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `🎉 **Đặt phòng thành công!**\n\nPhòng **${availableRoom.room.room_name}** đã được đặt vào ${formatDate(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\n⏳ Vui lòng đợi admin phê duyệt.`,
+                  text: `**Đặt phòng thành công!**\n\nPhòng **${availableRoom.room.room_name}** đã được đặt vào ${formatDate(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
                   actions: [
                     {
-                      label: '📅 Xem lịch đặt phòng',
+                      label: 'Xem lịch đặt phòng',
                       onClick: () => window.location.href = '/room-booking',
                       className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
                     }
@@ -216,7 +216,7 @@ export async function handleRoomBooking(
                 }
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `❌ **Đặt phòng thất bại**\n\n${errorMsg}`
+                  text: `**Đặt phòng thất bại**\n\n${errorMsg}`
                 }]);
                 toast.error(errorMsg);
               }
@@ -224,7 +224,7 @@ export async function handleRoomBooking(
             className: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400'
           },
           {
-            label: '❌ Hủy',
+            label: 'Hủy',
             onClick: () => {
               setMessages(prev => [...prev, {
                 role: 'model',
@@ -236,14 +236,14 @@ export async function handleRoomBooking(
         ]
       }]);
     } else {
-      responseText += `\n⚠️ **Không có phòng trống phù hợp**\n\nVui lòng chọn thời gian khác hoặc liên hệ quản trị viên.`;
+      responseText += `\n**Không có phòng trống phù hợp**\n\nVui lòng chọn thời gian khác hoặc liên hệ quản trị viên.`;
       
       setMessages(prev => [...prev, {
         role: 'model',
         text: responseText,
         actions: [
           {
-            label: '📅 Xem lịch đặt phòng',
+            label: 'Xem lịch đặt phòng',
             onClick: () => window.location.href = '/room-booking',
             className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
           }

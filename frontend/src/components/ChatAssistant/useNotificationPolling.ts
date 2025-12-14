@@ -37,7 +37,7 @@ export const useNotificationPolling = (
           if (recentNotifications.length > 0) {
             setMessages(prev => [...prev, {
               role: 'model',
-              text: `🔔 **Thông báo chưa đọc trong tháng qua** (${recentNotifications.length})`,
+              text: `**Thông báo chưa đọc trong tháng qua** (${recentNotifications.length})`,
               notificationCards: recentNotifications,
             }]);
           }
@@ -51,16 +51,16 @@ export const useNotificationPolling = (
           if (lastCheckedNotificationId && latest.id !== lastCheckedNotificationId) {
             const newNotificationMessage: UIMessage = {
               role: 'model',
-              text: `🔔 **Thông báo mới:** ${latest.title}`,
+              text: `**Thông báo mới:** ${latest.title}`,
               actions: [{
                 label: 'Xem chi tiết',
-                onClick: () => setMessages(prev => [...prev, { role: 'model', text: `📄 **Chi tiết thông báo:**\n\n**${latest.title}**\n${latest.message || latest.content || ''}` }]),
+                onClick: () => setMessages(prev => [...prev, { role: 'model', text: `**Chi tiết thông báo:**\n\n**${latest.title}**\n${latest.message || latest.content || ''}` }]),
               }],
             };
             setMessages(prev => [...prev, newNotificationMessage]);
 
             if (!isOpen) {
-              toast.info(`🔔 Thông báo mới: ${latest.title}`);
+              toast.info(`Thông báo mới: ${latest.title}`);
             }
           }
           setLastCheckedNotificationId(latest.id);
