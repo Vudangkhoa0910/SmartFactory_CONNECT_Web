@@ -423,6 +423,50 @@ const getUserStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Update current user preferences
+ * PUT /api/users/preferences
+ */
+const updatePreferences = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { preferred_language } = req.body;
+  
+  // Build update query
+  const updates = [];
+  const params = [];
+  let paramIndex = 1;
+  
+  if (preferred_language !== undefined) {
+    updates.push(`preferred_language = $${paramIndex}`);
+    params.push(preferred_language);
+    paramIndex++;
+  }
+  
+  if (updates.length === 0) {
+    return res.json({
+      success: true,
+      message: 'No preferences to update'
+    });
+  }
+  
+  params.push(userId);
+  
+  const query = `
+    UPDATE users 
+    SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $${paramIndex}
+    RETURNING id, preferred_language
+  `;
+  
+  const result = await db.query(query, params);
+  
+  res.json({
+    success: true,
+    message: 'Preferences updated successfully',
+    data: result.rows[0]
+  });
+});
+
 module.exports = {
   getUsers,
   getUserById,
@@ -430,5 +474,6 @@ module.exports = {
   updateUser,
   deleteUser,
   resetUserPassword,
-  getUserStats
+  getUserStats,
+  updatePreferences
 };
