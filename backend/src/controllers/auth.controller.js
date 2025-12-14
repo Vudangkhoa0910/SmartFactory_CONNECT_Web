@@ -108,6 +108,8 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, employee_code, password } = req.body;
   
+  console.log('🔐 Login attempt:', { email, employee_code, hasPassword: !!password });
+  
   // Check if either email or employee_code is provided
   if (!email && !employee_code) {
     throw new AppError('Email or employee code is required', 400);
@@ -125,6 +127,8 @@ const login = asyncHandler(async (req, res) => {
     [email || '', employee_code || '']
   );
   
+  console.log('👤 User found:', result.rows.length > 0, result.rows[0]?.email);
+  
   if (result.rows.length === 0) {
     throw new AppError('Invalid credentials', 401);
   }
@@ -132,7 +136,9 @@ const login = asyncHandler(async (req, res) => {
   const user = result.rows[0];
   
   // Verify password
+  console.log('🔑 Comparing password...');
   const isPasswordValid = await bcrypt.compare(password, user.password);
+  console.log('✅ Password valid:', isPasswordValid);
   
   if (!isPasswordValid) {
     throw new AppError('Invalid credentials', 401);
