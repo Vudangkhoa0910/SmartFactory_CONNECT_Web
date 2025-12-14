@@ -11,6 +11,7 @@ interface User {
   avatar_url?: string;
   role: string;
   level: number;
+  preferred_language?: 'vi' | 'ja';
   department?: {
     id: string;
     name: string;
