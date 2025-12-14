@@ -1,12 +1,33 @@
 import React from 'react';
-import { useLanguage, Language } from '../../contexts/LanguageContext';
+import { useTranslation, Language } from '../../contexts/LanguageContext';
 
-export const LanguageSwitcher: React.FC = () => {
-  const { language, setLanguage } = useLanguage();
+interface LanguageSwitcherProps {
+  variant?: 'default' | 'compact';
+}
+
+export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'default' }) => {
+  const { language, setLanguage } = useTranslation();
 
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang);
   };
+
+  // Compact variant - single button that toggles
+  if (variant === 'compact') {
+    const nextLang = language === 'vi' ? 'ja' : 'vi';
+    return (
+      <button
+        onClick={() => handleLanguageChange(nextLang)}
+        className="flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium 
+          text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 
+          transition-all duration-200"
+        title={language === 'vi' ? '日本語に切り替え' : 'Chuyển sang Tiếng Việt'}
+      >
+        <span>{language === 'vi' ? '🇻🇳' : '🇯🇵'}</span>
+        <span>{language.toUpperCase()}</span>
+      </button>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
