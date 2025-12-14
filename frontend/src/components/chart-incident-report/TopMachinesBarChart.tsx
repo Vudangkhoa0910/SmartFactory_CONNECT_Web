@@ -1,9 +1,35 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import { useEffect, useState } from "react";
+import dashboardService, { TopMachineData } from "../../services/dashboard.service";
 
 export default function TopMachinesRoseGoldChart() {
-  const seriesData = [24, 20, 18, 15, 13, 12, 10, 9, 7, 6];
-  const maxValue = Math.max(...seriesData);
+  const [machines, setMachines] = useState<TopMachineData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await dashboardService.getTopMachinesWithErrors();
+        setMachines(response);
+      } catch (err) {
+        console.error('Failed to fetch top machines:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Prepare data from API or use default empty state
+  const seriesData = machines.length > 0 
+    ? machines.map(m => m.error_count)
+    : [];
+  const categories = machines.length > 0
+    ? machines.map(m => m.machine_name || m.machine_code)
+    : [];
+  const maxValue = Math.max(...seriesData, 1);
 
   const options: ApexOptions = {
     chart: {
@@ -13,13 +39,11 @@ export default function TopMachinesRoseGoldChart() {
       fontFamily: "Outfit, sans-serif",
     },
 
-    // **Điểm thay đổi chính: Bảng màu Đỏ - Hồng**
     colors: [
       function ({ value }) {
-        // Tạo gradient từ màu Đỏ Ruby (giá trị cao) đến Hồng Nhạt (giá trị thấp)
         const intensity = value / maxValue;
-        const startColor = [201, 24, 74]; // Màu Đỏ Ruby #c9184a
-        const endColor = [255, 204, 213]; // Màu Hồng Nhạt #ffccd5
+        const startColor = [201, 24, 74];
+        const endColor = [255, 204, 213];
 
         const r = Math.round(
           startColor[0] + (endColor[0] - startColor[0]) * (1 - intensity)
@@ -40,7 +64,7 @@ export default function TopMachinesRoseGoldChart() {
         horizontal: true,
         barHeight: "65%",
         borderRadius: 8,
-        distributed: true, // Áp dụng màu cho từng thanh
+        distributed: true,
       },
     },
 
@@ -48,7 +72,7 @@ export default function TopMachinesRoseGoldChart() {
       enabled: true,
       textAnchor: "start",
       style: {
-        colors: ["#374151"], // Giữ màu chữ tối để đảm bảo độ tương phản
+        colors: ["#374151"],
         fontSize: "13px",
         fontWeight: 500,
       },
@@ -65,18 +89,7 @@ export default function TopMachinesRoseGoldChart() {
       yaxis: { lines: { show: false } },
     },
     xaxis: {
-      categories: [
-        "Robot A1",
-        "Máy ép B2",
-        "Lò sấy C3",
-        "Line 01",
-        "Khuôn E5",
-        "Van F6",
-        "Sensor G7",
-        "PLC H8",
-        "Motor I9",
-        "Line 02",
-      ],
+      categories: categories,
       labels: { style: { colors: "#6b7280", fontSize: "14px" } },
       axisBorder: { show: false },
       axisTicks: { show: false },
@@ -106,6 +119,32 @@ export default function TopMachinesRoseGoldChart() {
   };
 
   const series = [{ name: "Số lần lỗi", data: seriesData }];
+
+  if (isLoading) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất
+        </h3>
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (machines.length === 0) {
+    return (
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+        <h3 className="mb-4 text-xl font-bold text-gray-800 dark:text-white">
+          Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất
+        </h3>
+        <div className="flex items-center justify-center h-[400px] text-gray-500">
+          Chưa có dữ liệu thiết bị
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
