@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { Calendar, Clock, User, Building2 } from 'lucide-react';
 import roomBookingService, { formatDate, formatTime } from '../../services/room-booking.service';
 import { 
   RoomBooking, 
@@ -180,11 +181,11 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           {/* Date & Time */}
           <div>
             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Thời gian</label>
-            <p className="text-gray-900 dark:text-white mt-1">
-              📅 {formatDate(currentBooking.booking_date)}
+            <p className="text-gray-900 dark:text-white mt-1 flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> {formatDate(currentBooking.booking_date)}
             </p>
-            <p className="text-gray-900 dark:text-white mt-1">
-              🕐 {formatTime(currentBooking.start_time)} - {formatTime(currentBooking.end_time)}
+            <p className="text-gray-900 dark:text-white mt-1 flex items-center gap-2">
+              <Clock className="w-4 h-4" /> {formatTime(currentBooking.start_time)} - {formatTime(currentBooking.end_time)}
             </p>
           </div>
 
@@ -211,12 +212,12 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           {/* Booker Info */}
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Người đặt</label>
-            <p className="text-gray-900 dark:text-white mt-1">
-              👤 {currentBooking.booked_by_name}
+            <p className="text-gray-900 dark:text-white mt-1 flex items-center gap-2">
+              <User className="w-4 h-4" /> {currentBooking.booked_by_name}
             </p>
             {currentBooking.department_name && (
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                🏢 {currentBooking.department_name}
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 flex items-center gap-2">
+                <Building2 className="w-4 h-4" /> {currentBooking.department_name}
               </p>
             )}
             <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
@@ -230,8 +231,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {currentBooking.status === 'confirmed' ? 'Người phê duyệt' : 'Người xử lý'}
               </label>
-              <p className="text-gray-900 dark:text-white mt-1">
-                👤 {currentBooking.approved_by_name}
+              <p className="text-gray-900 dark:text-white mt-1 flex items-center gap-2">
+                <User className="w-4 h-4" /> {currentBooking.approved_by_name}
               </p>
               <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
                 Lúc: {currentBooking.approved_at ? new Date(currentBooking.approved_at).toLocaleString('vi-VN') : 'N/A'}

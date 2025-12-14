@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import roomBookingService, { 
   formatDateForInput, 
   getTimeSlots, 
@@ -253,12 +254,12 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
               Đang kiểm tra trạng thái phòng...
             </div>
           ) : !isAvailable ? (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
-              ⚠️ Phòng đã được đặt trong khung giờ này. Vui lòng chọn thời gian khác.
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> Phòng đã được đặt trong khung giờ này. Vui lòng chọn thời gian khác.
             </div>
           ) : (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400">
-              ✓ Phòng còn trống trong khung giờ này
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Phòng còn trống trong khung giờ này
             </div>
           )}
 
