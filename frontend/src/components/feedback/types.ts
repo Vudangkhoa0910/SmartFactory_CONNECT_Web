@@ -13,6 +13,44 @@ export type StatusType =
   | "Đã triển khai"
   | "Đã hoàn tất";
 
+/** Trạng thái tin nhắn nhạy cảm (Pink Box) */
+export type MessageStatus = "Mới" | "Đang xem xét" | "Đã xử lý";
+export type HistoryAction = "CREATED" | "FORWARDED" | "REPLIED";
+
+/** Lịch sử hành động trên tin nhắn nhạy cảm */
+export interface HistoryEntry {
+  action: HistoryAction;
+  timestamp: Date;
+  details: string;
+  actor: string;
+}
+
+/** Phản hồi tin nhắn nhạy cảm */
+export interface Reply {
+  id: string;
+  author: string;
+  content: string;
+  timestamp: Date;
+}
+
+/** Tin nhắn nhạy cảm (Pink Box) */
+export interface SensitiveMessage {
+  id: string;
+  isAnonymous: boolean;
+  senderName?: string;
+  senderId?: string;
+  title: string;
+  fullContent: string;
+  imageUrl?: string;
+  timestamp: Date;
+  status: MessageStatus;
+  history: HistoryEntry[];
+  replies: Reply[];
+}
+
+/** Current user placeholder - should be replaced with auth context */
+export const CURRENT_USER = "Admin";
+
 /** Tin nhắn chat giữa user / manager */
 export interface ChatMessage {
   id: string;
