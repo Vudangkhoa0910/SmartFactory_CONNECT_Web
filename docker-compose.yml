@@ -1,0 +1,205 @@
+# ============================================
+# SmartFactory CONNECT - Multi-container
+# ============================================
+# Project: smartfactory_connect
+# Containers: database, backend, frontend
+# Optimized for 2000-3000 concurrent users
+# ============================================
+
+services:
+  # ========== POSTGRESQL DATABASE ==========
+  database:
+    image: postgres:15-alpine
+    container_name: smartfactory_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartfactory_db
+      POSTGRES_USER: smartfactory
+      POSTGRES_PASSWORD: smartfactory123
+      # PostgreSQL optimization for scale
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/schema_complete.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/src/database/migrations/003_fix_schema_issues.sql:/docker-entrypoint-initdb.d/02-fix-schema.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartfactory -d smartfactory_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # PostgreSQL performance tuning via command
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=6553kB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+
+  # ========== MONGODB (Media Storage) ==========
+  mongodb:
+    image: mongo:7.0
+    container_name: smartfactory_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: smartfactory
+      MONGO_INITDB_ROOT_PASSWORD: smartfactory123
+      MONGO_INITDB_DATABASE: smartfactory_media
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    ports:
+      - "27017:27017"
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: >
+      mongod
+      --auth
+      --bind_ip_all
+      --wiredTigerCacheSizeGB 0.5
+
+  # ========== BACKEND ==========
+  backend:
+    build: ./backend
+    container_name: smartfactory_backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      FRONTEND_URL: http://localhost
+      # PostgreSQL Database configuration
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: smartfactory_db
+      DB_USER: smartfactory
+      DB_PASSWORD: smartfactory123
+      # Pool optimization for scale
+      DB_POOL_MAX: 50
+      DB_POOL_MIN: 10
+      DB_STATEMENT_TIMEOUT: 30000
+      # MongoDB configuration
+      MONGODB_URI: mongodb://smartfactory:smartfactory123@mongodb:27017/smartfactory_media?authSource=admin
+      MONGODB_DB_NAME: smartfactory_media
+      # Authentication
+      JWT_SECRET: smartfactory-jwt-secret-2024
+      JWT_EXPIRES_IN: 7d
+      # Performance settings
+      ENABLE_RATE_LIMIT: 'true'
+      SLOW_QUERY_THRESHOLD: 1000
+      # Node.js memory optimization
+      NODE_OPTIONS: "--max-old-space-size=1024"
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    ports:
+      - "3000:3000"
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ========== FRONTEND ==========
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: smartfactory_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+# ========== NETWORK ==========
+networks:
+  smartfactory_network:
+    name: smartfactory_network
+    driver: bridge
+
+# ========== VOLUMES ==========
+volumes:
+  postgres_data:
+    name: smartfactory_postgres_data
+  mongodb_data:
+    name: smartfactory_mongodb_data
+  mongodb_config:
+    name: smartfactory_mongodb_config
+  uploads_data:
+    name: smartfactory_uploads
+  logs_data:
+    name: smartfactory_logs
