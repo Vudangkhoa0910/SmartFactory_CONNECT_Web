@@ -422,6 +422,388 @@ const getComprehensiveDashboard = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Get dashboard summary
+ * GET /api/dashboard/summary
+ */
+const getSummary = asyncHandler(async (req, res) => {
+  // Note: idea_status enum values: pending, under_review, approved, rejected, implemented, on_hold
+  const query = `
+    SELECT 
+      (SELECT COUNT(*) FROM incidents) as total_incidents,
+      (SELECT COUNT(*) FROM incidents WHERE status IN ('pending', 'assigned', 'in_progress', 'escalated')) as pending_incidents,
+      (SELECT COUNT(*) FROM incidents WHERE status IN ('resolved', 'closed')) as resolved_incidents,
+      (SELECT COUNT(*) FROM ideas) as total_ideas,
+      (SELECT COUNT(*) FROM ideas WHERE status IN ('pending', 'under_review')) as pending_ideas,
+      (SELECT COUNT(*) FROM ideas WHERE status = 'implemented') as implemented_ideas,
+      (SELECT COUNT(*) FROM users WHERE is_active = true) as active_users,
+      (SELECT COUNT(*) FROM departments WHERE is_active = true) as departments_count
+  `;
+  
+  const result = await db.query(query);
+  
+  res.json({
+    success: true,
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Get incident trend data for charts
+ * GET /api/dashboard/incident-trend
+ */
+const getIncidentTrend = asyncHandler(async (req, res) => {
+  const { period = 'year' } = req.query;
+  
+  let months = 12;
+  if (period === 'half') months = 6;
+  if (period === 'month') months = 1;
+  
+  // Generate month labels
+  const categories = [];
+  const now = new Date();
+  
+  for (let i = months - 1; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    if (period === 'month') {
+      // Daily for last month
+      for (let d = 1; d <= 30; d++) {
+        categories.push(`${d}`);
+      }
+      break;
+    } else {
+      categories.push(`T${date.getMonth() + 1}`);
+    }
+  }
+  
+  // Get monthly data
+  const query = `
+    WITH months AS (
+      SELECT generate_series(
+        date_trunc('month', NOW() - interval '${months - 1} months'),
+        date_trunc('month', NOW()),
+        '1 month'
+      )::date as month
+    )
+    SELECT 
+      to_char(m.month, 'YYYY-MM') as month,
+      COALESCE(reported.count, 0) as reported,
+      COALESCE(resolved.count, 0) as resolved
+    FROM months m
+    LEFT JOIN (
+      SELECT date_trunc('month', created_at)::date as month, COUNT(*) as count
+      FROM incidents
+      WHERE created_at >= NOW() - interval '${months} months'
+      GROUP BY date_trunc('month', created_at)
+    ) reported ON m.month = reported.month
+    LEFT JOIN (
+      SELECT date_trunc('month', resolved_at)::date as month, COUNT(*) as count
+      FROM incidents
+      WHERE resolved_at >= NOW() - interval '${months} months' AND status IN ('resolved', 'closed')
+      GROUP BY date_trunc('month', resolved_at)
+    ) resolved ON m.month = resolved.month
+    ORDER BY m.month
+  `;
+  
+  const result = await db.query(query);
+  
+  const reported = result.rows.map(r => parseInt(r.reported) || 0);
+  const resolved = result.rows.map(r => parseInt(r.resolved) || 0);
+  
+  res.json({
+    success: true,
+    data: {
+      categories: categories.slice(0, result.rows.length),
+      reported,
+      resolved
+    }
+  });
+});
+
+/**
+ * Get processing time by priority
+ * GET /api/dashboard/processing-time
+ */
+const getProcessingTime = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      priority,
+      ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600)::numeric, 1) as avg_hours
+    FROM incidents
+    WHERE resolved_at IS NOT NULL AND status IN ('resolved', 'closed')
+    GROUP BY priority
+    ORDER BY 
+      CASE priority 
+        WHEN 'critical' THEN 1 
+        WHEN 'high' THEN 2 
+        WHEN 'medium' THEN 3 
+        WHEN 'low' THEN 4 
+      END
+  `;
+  
+  const result = await db.query(query);
+  
+  // Map to expected format with defaults
+  const priorityMap = { critical: 0, high: 0, medium: 0, low: 0 };
+  result.rows.forEach(row => {
+    priorityMap[row.priority] = parseFloat(row.avg_hours) || 0;
+  });
+  
+  res.json({
+    success: true,
+    data: {
+      categories: ['Nghiêm trọng', 'Cao', 'Trung bình', 'Thấp'],
+      avgHours: [priorityMap.critical, priorityMap.high, priorityMap.medium, priorityMap.low]
+    }
+  });
+});
+
+/**
+ * Get department KPI data
+ * GET /api/dashboard/department-kpi
+ */
+const getDepartmentKPI = asyncHandler(async (req, res) => {
+  const { months = 6 } = req.query;
+  
+  const query = `
+    WITH months AS (
+      SELECT generate_series(
+        date_trunc('month', NOW() - interval '${months - 1} months'),
+        date_trunc('month', NOW()),
+        '1 month'
+      )::date as month
+    )
+    SELECT 
+      to_char(m.month, 'YYYY-MM') as month,
+      CASE 
+        WHEN COALESCE(total.count, 0) = 0 THEN 0
+        ELSE ROUND((COALESCE(resolved.count, 0)::numeric / COALESCE(total.count, 1)) * 100, 1)
+      END as kpi_percentage
+    FROM months m
+    LEFT JOIN (
+      SELECT date_trunc('month', created_at)::date as month, COUNT(*) as count
+      FROM incidents
+      WHERE created_at >= NOW() - interval '${months} months'
+      GROUP BY date_trunc('month', created_at)
+    ) total ON m.month = total.month
+    LEFT JOIN (
+      SELECT date_trunc('month', resolved_at)::date as month, COUNT(*) as count
+      FROM incidents
+      WHERE resolved_at >= NOW() - interval '${months} months' AND status IN ('resolved', 'closed')
+      GROUP BY date_trunc('month', resolved_at)
+    ) resolved ON m.month = resolved.month
+    ORDER BY m.month
+  `;
+  
+  const result = await db.query(query);
+  
+  const categories = result.rows.map(r => {
+    const [year, month] = r.month.split('-');
+    return `Tháng ${parseInt(month)}`;
+  });
+  
+  const kpiPercentages = result.rows.map(r => parseFloat(r.kpi_percentage) || 0);
+  
+  res.json({
+    success: true,
+    data: {
+      categories,
+      kpiPercentages
+    }
+  });
+});
+
+/**
+ * Get top machines with errors
+ * GET /api/dashboard/top-machines
+ */
+const getTopMachines = asyncHandler(async (req, res) => {
+  const { limit = 10 } = req.query;
+  
+  const query = `
+    SELECT 
+      machine_code,
+      COALESCE(machine_name, machine_code) as machine_name,
+      COUNT(*) as error_count,
+      d.name as department
+    FROM incidents i
+    LEFT JOIN departments d ON i.department_id = d.id
+    WHERE machine_code IS NOT NULL AND machine_code != ''
+    GROUP BY machine_code, machine_name, d.name
+    ORDER BY error_count DESC
+    LIMIT $1
+  `;
+  
+  const result = await db.query(query, [parseInt(limit)]);
+  
+  res.json({
+    success: true,
+    data: result.rows
+  });
+});
+
+/**
+ * Get priority distribution
+ * GET /api/dashboard/priority-distribution
+ */
+const getPriorityDistribution = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      priority,
+      COUNT(*) as count
+    FROM incidents
+    GROUP BY priority
+  `;
+  
+  const result = await db.query(query);
+  
+  const distribution = { critical: 0, high: 0, medium: 0, low: 0 };
+  result.rows.forEach(row => {
+    distribution[row.priority] = parseInt(row.count) || 0;
+  });
+  
+  res.json({
+    success: true,
+    data: distribution
+  });
+});
+
+/**
+ * Get department statistics
+ * GET /api/dashboard/department-stats
+ */
+const getDepartmentStats = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      d.id as department_id,
+      d.name as department_name,
+      COALESCE(total.count, 0) as total_incidents,
+      COALESCE(resolved.count, 0) as resolved_incidents,
+      COALESCE(avg_time.avg_hours, 0) as avg_resolution_time_hours,
+      CASE 
+        WHEN COALESCE(total.count, 0) = 0 THEN 0
+        ELSE ROUND((COALESCE(resolved.count, 0)::numeric / COALESCE(total.count, 1)) * 100, 1)
+      END as kpi_percentage
+    FROM departments d
+    LEFT JOIN (
+      SELECT department_id, COUNT(*) as count
+      FROM incidents
+      GROUP BY department_id
+    ) total ON d.id = total.department_id
+    LEFT JOIN (
+      SELECT department_id, COUNT(*) as count
+      FROM incidents
+      WHERE status IN ('resolved', 'closed')
+      GROUP BY department_id
+    ) resolved ON d.id = resolved.department_id
+    LEFT JOIN (
+      SELECT department_id, 
+        ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600)::numeric, 1) as avg_hours
+      FROM incidents
+      WHERE resolved_at IS NOT NULL
+      GROUP BY department_id
+    ) avg_time ON d.id = avg_time.department_id
+    WHERE d.is_active = true
+    ORDER BY total_incidents DESC
+  `;
+  
+  const result = await db.query(query);
+  
+  res.json({
+    success: true,
+    data: result.rows
+  });
+});
+
+/**
+ * Get realtime stats
+ * GET /api/dashboard/realtime
+ */
+const getRealTimeStats = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      (SELECT COUNT(*) FROM incidents WHERE priority = 'critical' AND status NOT IN ('resolved', 'closed')) as pending_critical,
+      (SELECT COUNT(*) FROM incidents WHERE status = 'in_progress') as processing_now,
+      (SELECT COUNT(*) FROM incidents WHERE DATE(resolved_at) = CURRENT_DATE) as resolved_today,
+      (SELECT COUNT(*) FROM ideas WHERE DATE(created_at) = CURRENT_DATE) as new_ideas_today
+  `;
+  
+  const result = await db.query(query);
+  
+  res.json({
+    success: true,
+    data: result.rows[0]
+  });
+});
+
+/**
+ * Get idea difficulty distribution
+ * GET /api/dashboard/idea-difficulty
+ */
+const getIdeaDifficulty = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT 
+      COALESCE(difficulty_level, 'B') as difficulty_level,
+      COUNT(*) as count
+    FROM ideas
+    GROUP BY difficulty_level
+    ORDER BY 
+      CASE difficulty_level 
+        WHEN 'A' THEN 1 
+        WHEN 'B' THEN 2 
+        WHEN 'C' THEN 3 
+        WHEN 'D' THEN 4 
+      END
+  `;
+  
+  const result = await db.query(query);
+  
+  const difficultyMap = { A: 0, B: 0, C: 0, D: 0 };
+  result.rows.forEach(row => {
+    if (row.difficulty_level) {
+      difficultyMap[row.difficulty_level] = parseInt(row.count) || 0;
+    }
+  });
+  
+  res.json({
+    success: true,
+    data: {
+      categories: ['Dễ', 'Trung bình', 'Khó', 'Rất khó'],
+      counts: [difficultyMap.A, difficultyMap.B, difficultyMap.C, difficultyMap.D]
+    }
+  });
+});
+
+/**
+ * Get idea status distribution
+ * GET /api/dashboard/idea-status
+ */
+const getIdeaStatus = asyncHandler(async (req, res) => {
+  const query = `
+    SELECT status, COUNT(*) as count
+    FROM ideas
+    GROUP BY status
+  `;
+  
+  const result = await db.query(query);
+  
+  // Note: idea_status enum values: pending, under_review, approved, rejected, implemented, on_hold
+  const statusMap = { 
+    pending: 0, under_review: 0, approved: 0, 
+    rejected: 0, implemented: 0, on_hold: 0 
+  };
+  result.rows.forEach(row => {
+    if (statusMap.hasOwnProperty(row.status)) {
+      statusMap[row.status] = parseInt(row.count) || 0;
+    }
+  });
+  
+  res.json({
+    success: true,
+    data: statusMap
+  });
+});
+
 // Helper functions
 async function getOverviewData(userId) {
   const countsQuery = `
@@ -451,5 +833,16 @@ module.exports = {
   getOverview,
   getIncidentStats,
   getIdeaStats,
-  getComprehensiveDashboard
+  getComprehensiveDashboard,
+  // New APIs for frontend charts
+  getSummary,
+  getIncidentTrend,
+  getProcessingTime,
+  getDepartmentKPI,
+  getTopMachines,
+  getPriorityDistribution,
+  getDepartmentStats,
+  getRealTimeStats,
+  getIdeaDifficulty,
+  getIdeaStatus
 };
