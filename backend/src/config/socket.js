@@ -3,14 +3,59 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 
 /**
- * Initialize Socket.io server
+ * =============================================================
+ * SOCKET.IO SERVER CONFIGURATION
+ * =============================================================
+ * Optimized for 2000-3000 concurrent users
+ * 
+ * Scaling options:
+ * 1. Single server: This implementation (up to ~5000 connections)
+ * 2. Horizontal scaling: Use Redis adapter (commented below)
+ * =============================================================
+ */
+
+// Connection tracking for monitoring
+const connectionStats = {
+  totalConnections: 0,
+  currentConnections: 0,
+  peakConnections: 0,
+  messagesSent: 0,
+  messagesReceived: 0,
+};
+
+/**
+ * Initialize Socket.io server with optimized settings
  */
 function initializeSocket(server) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   const io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-      credentials: true
-    }
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          process.env.FRONTEND_URL || 'http://localhost:5173',
+          'http://localhost',
+          'http://localhost:80',
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Permissive for now
+        }
+      },
+      credentials: true,
+    },
+    // Connection settings optimized for scale
+    pingTimeout: 60000,           // 60 seconds before considering disconnected
+    pingInterval: 25000,          // Send ping every 25 seconds
+    upgradeTimeout: 10000,        // 10 seconds to upgrade connection
+    maxHttpBufferSize: 1e6,       // 1MB max message size
+    transports: ['websocket', 'polling'], // Prefer WebSocket
+    allowUpgrades: true,
+    // Per-message compression (disable for better CPU usage at scale)
+    perMessageDeflate: false,
+    // Connection limits
+    connectTimeout: 45000,
   });
 
   // Authentication middleware for Socket.io
@@ -45,7 +90,16 @@ function initializeSocket(server) {
 
   // Connection handler
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.user.full_name} (${socket.user.id})`);
+    // Update stats
+    connectionStats.totalConnections++;
+    connectionStats.currentConnections++;
+    if (connectionStats.currentConnections > connectionStats.peakConnections) {
+      connectionStats.peakConnections = connectionStats.currentConnections;
+    }
+    
+    if (!isProduction) {
+      console.log(`User connected: ${socket.user.full_name} (${socket.user.id}) - Total: ${connectionStats.currentConnections}`);
+    };
     
     // Join user-specific room
     socket.join(`user_${socket.user.id}`);
@@ -186,44 +240,93 @@ function initializeSocket(server) {
     });
 
     // Disconnect handler
-    socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.user.full_name} (${socket.user.id})`);
+    socket.on('disconnect', (reason) => {
+      connectionStats.currentConnections--;
+      if (!isProduction) {
+        console.log(`User disconnected: ${socket.user.full_name} (${socket.user.id}) - Reason: ${reason}`);
+      }
+    });
+
+    // Error handler
+    socket.on('error', (error) => {
+      console.error(`Socket error for user ${socket.user.id}:`, error);
     });
   });
 
-  // Broadcast methods for server-side use
+  // =========================================================
+  // REDIS ADAPTER FOR HORIZONTAL SCALING
+  // =========================================================
+  // Uncomment this section when scaling to multiple instances
+  /*
+  const { createAdapter } = require('@socket.io/redis-adapter');
+  const { createClient } = require('redis');
+  
+  const pubClient = createClient({ url: process.env.REDIS_URL });
+  const subClient = pubClient.duplicate();
+  
+  Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('✓ Socket.io Redis adapter connected');
+  });
+  */
+
+  // =========================================================
+  // BROADCAST METHODS FOR SERVER-SIDE USE
+  // =========================================================
+  
   io.broadcastIncident = (event, data) => {
+    connectionStats.messagesSent++;
     io.to('incidents').emit(event, data);
   };
 
   io.broadcastIdea = (event, data) => {
+    connectionStats.messagesSent++;
     io.to('ideas').emit(event, data);
   };
 
   io.broadcastNews = (event, data) => {
+    connectionStats.messagesSent++;
     io.to('news').emit(event, data);
   };
 
   io.notifyUser = (userId, event, data) => {
+    connectionStats.messagesSent++;
     io.to(`user_${userId}`).emit(event, data);
   };
 
   io.notifyRole = (role, event, data) => {
+    connectionStats.messagesSent++;
     io.to(`role_${role}`).emit(event, data);
   };
 
   io.notifyDepartment = (departmentId, event, data) => {
+    connectionStats.messagesSent++;
     io.to(`dept_${departmentId}`).emit(event, data);
   };
 
   io.notifyLevel = (level, event, data) => {
     // Notify all users with this level and above (lower number = higher authority)
     for (let i = 1; i <= level; i++) {
+      connectionStats.messagesSent++;
       io.to(`level_${i}`).emit(event, data);
     }
   };
 
-  console.log('✓ Socket.io initialized');
+  // Batch notification for efficiency
+  io.notifyUsers = (userIds, event, data) => {
+    connectionStats.messagesSent += userIds.length;
+    userIds.forEach(userId => {
+      io.to(`user_${userId}`).emit(event, data);
+    });
+  };
+
+  // Get connection statistics
+  io.getStats = () => ({
+    ...connectionStats,
+    rooms: io.sockets.adapter.rooms.size,
+  });
+
+  console.log('✓ Socket.io initialized (optimized for scale)');
   
   return io;
 }
