@@ -18,11 +18,11 @@ import {
 
 const columnIcons: Record<Status, React.ReactElement> = {
   Mới: <Box size={16} className="text-gray-500" />,
-  "Đã tiếp nhận": <FileClock size={16} className="text-yellow-500" />,
-  "Đang xử lý": <PlayCircle size={16} className="text-blue-500" />, // Đổi màu icon
-  "Tạm dừng": <PauseCircle size={16} className="text-purple-500" />,
-  "Hoàn thành": <CheckCircle size={16} className="text-green-500" />,
-  "Đã đóng": <XCircle size={16} className="text-slate-500" />,
+  "Đã tiếp nhận": <FileClock size={16} className="text-red-400" />,
+  "Đang xử lý": <PlayCircle size={16} className="text-red-500" />,
+  "Tạm dừng": <PauseCircle size={16} className="text-gray-500" />,
+  "Hoàn thành": <CheckCircle size={16} className="text-red-600" />,
+  "Đã đóng": <XCircle size={16} className="text-gray-400" />,
 };
 
 export function KanbanColumn({
@@ -39,16 +39,16 @@ export function KanbanColumn({
   return (
     <div 
       ref={setNodeRef}
-      className="flex-shrink-0 w-72 bg-slate-100 dark:bg-slate-900 rounded-lg flex flex-col h-full"
+      className="flex-shrink-0 w-72 bg-gray-50 rounded-xl flex flex-col h-full border border-gray-200"
     >
-      <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
+      <div className="p-3 border-b border-gray-200 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-2">
           {columnIcons[title]}
-          <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-200">
+          <h3 className="font-semibold text-sm text-gray-800">
             {title}
           </h3>
         </div>
-        <span className="text-xs font-bold text-slate-500 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">
+        <span className="text-xs font-bold text-gray-600 bg-gray-200 rounded-full px-2 py-0.5">
           {incidents.length}
         </span>
       </div>

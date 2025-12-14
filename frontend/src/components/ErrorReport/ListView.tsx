@@ -23,9 +23,9 @@ export function ListView({ data }: { data: Incident[] }) {
   });
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm">
-      <table className="w-full text-sm text-left text-slate-600 dark:text-slate-300">
-        <thead className="text-xs text-slate-700 dark:text-slate-200 uppercase bg-slate-50 dark:bg-slate-800">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <table className="w-full text-sm text-left text-gray-600">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -40,10 +40,9 @@ export function ListView({ data }: { data: Incident[] }) {
                       header.column.columnDef.header,
                       header.getContext()
                     )}
-                    {/* Cải tiến: Bỏ màu đỏ ở icon sort */}
                     {{
-                      asc: <ChevronsUpDown size={14} />,
-                      desc: <ChevronsUpDown size={14} />,
+                      asc: <ChevronsUpDown size={14} className="text-red-600" />,
+                      desc: <ChevronsUpDown size={14} className="text-red-600" />,
                     }[header.column.getIsSorted() as string] ??
                       (header.column.getCanSort() ? (
                         <ChevronsUpDown size={14} className="opacity-30" />
@@ -58,7 +57,7 @@ export function ListView({ data }: { data: Incident[] }) {
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="bg-white dark:bg-slate-900 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors"
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="p-4 align-middle">
