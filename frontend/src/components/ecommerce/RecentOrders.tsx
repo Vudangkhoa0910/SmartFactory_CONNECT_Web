@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,56 +7,69 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
+import incidentService, { Incident } from "../../services/incident.service";
 
-// Define the TypeScript interface for the table rows
-interface Incident {
-  id: number;
-  title: string;
-  department: string;
-  priority: "Nghiêm trọng" | "Cao" | "Trung bình" | "Thấp";
-  status: "Đã xử lý" | "Chờ xử lý" | "Đang xử lý";
-}
+// Priority and status mapping for display
+const priorityLabels: Record<string, string> = {
+  critical: "Nghiêm trọng",
+  high: "Cao",
+  medium: "Trung bình",
+  low: "Thấp"
+};
 
-// Define the table data using the interface
-const tableData: Incident[] = [
-  {
-    id: 1,
-    title: "Hỏng máy dây chuyền 1",
-    department: "Sản xuất",
-    priority: "Nghiêm trọng",
-    status: "Đang xử lý",
-  },
-  {
-    id: 2,
-    title: "Nguy cơ an toàn kho",
-    department: "Kho vận",
-    priority: "Cao",
-    status: "Chờ xử lý",
-  },
-  {
-    id: 3,
-    title: "Lỗi kiểm tra chất lượng",
-    department: "QC",
-    priority: "Trung bình",
-    status: "Đã xử lý",
-  },
-  {
-    id: 4,
-    title: "Sự cố hệ thống IT",
-    department: "IT",
-    priority: "Cao",
-    status: "Đã xử lý",
-  },
-  {
-    id: 5,
-    title: "Rò rỉ nhỏ",
-    department: "Bảo trì",
-    priority: "Thấp",
-    status: "Đã xử lý",
-  },
-];
+const statusLabels: Record<string, string> = {
+  pending: "Chờ xử lý",
+  assigned: "Đã phân công",
+  in_progress: "Đang xử lý",
+  resolved: "Đã xử lý",
+  closed: "Đã đóng",
+  cancelled: "Đã hủy",
+  escalated: "Đã leo thang"
+};
+
+const statusColors: Record<string, "success" | "warning" | "error" | "info"> = {
+  pending: "warning",
+  assigned: "info",
+  in_progress: "error",
+  resolved: "success",
+  closed: "success",
+  cancelled: "warning",
+  escalated: "error"
+};
 
 export default function RecentOrders() {
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIncidents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await incidentService.getIncidents({ limit: 5 });
+        setIncidents(response.data);
+      } catch (err) {
+        console.error('Failed to fetch recent incidents:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchIncidents();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-gray-900 sm:px-6">
+        <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Sự cố gần đây
+          </h3>
+        </div>
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-gray-900 sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -144,42 +158,44 @@ export default function RecentOrders() {
           {/* Table Body */}
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {tableData.map((incident) => (
-              <TableRow key={incident.id} className="">
-                <TableCell className="py-3">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {incident.title}
-                      </p>
-                      <span className="text-gray-500 text-theme-xs dark:text-gray-400">
-                        #{incident.id}
-                      </span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {incident.department}
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {incident.priority}
-                </TableCell>
-                <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  <Badge
-                    size="sm"
-                    color={
-                      incident.status === "Đã xử lý"
-                        ? "success"
-                        : incident.status === "Chờ xử lý"
-                        ? "warning"
-                        : "error"
-                    }
-                  >
-                    {incident.status}
-                  </Badge>
+            {incidents.length === 0 ? (
+              <TableRow>
+                <TableCell className="py-8 text-center text-gray-500">
+                  Chưa có sự cố nào
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              incidents.map((incident) => (
+                <TableRow key={incident.id} className="">
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                          {incident.title}
+                        </p>
+                        <span className="text-gray-500 text-theme-xs dark:text-gray-400">
+                          #{incident.id.substring(0, 8)}
+                        </span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                    {incident.department_name || 'N/A'}
+                  </TableCell>
+                  <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                    {priorityLabels[incident.priority] || incident.priority}
+                  </TableCell>
+                  <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                    <Badge
+                      size="sm"
+                      color={statusColors[incident.status] || "warning"}
+                    >
+                      {statusLabels[incident.status] || incident.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

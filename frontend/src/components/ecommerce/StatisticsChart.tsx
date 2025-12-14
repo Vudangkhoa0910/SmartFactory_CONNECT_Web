@@ -1,28 +1,58 @@
+import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import ChartTab from "../common/ChartTab";
+import { getIncidentTrend, IncidentTrendData } from "../../services/dashboard.service";
 
 export default function StatisticsChart() {
+  const [trendData, setTrendData] = useState<IncidentTrendData | null>(null);
+  const [period, setPeriod] = useState<string>("year");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await getIncidentTrend(period);
+        setTrendData(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching incident trend:", err);
+        setError("Không thể tải dữ liệu");
+        // Fallback data
+        setTrendData({
+          categories: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+          reported: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          resolved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [period]);
+
   const options: ApexOptions = {
     legend: {
-      show: false, // Hide legend
+      show: false,
       position: "top",
       horizontalAlign: "left",
     },
-    colors: ["#dc2626", "#ef4444"], // Define line colors
+    colors: ["#dc2626", "#ef4444"],
     chart: {
       fontFamily: "Outfit, sans-serif",
       height: 310,
-      type: "line", // Set the chart type to 'line'
+      type: "line",
       toolbar: {
-        show: false, // Hide chart toolbar
+        show: false,
       },
     },
     stroke: {
-      curve: "straight", // Define the line style (straight, smooth, or step)
-      width: [2, 2], // Line width for each dataset
+      curve: "straight",
+      width: [2, 2],
     },
-
     fill: {
       type: "gradient",
       gradient: {
@@ -31,69 +61,56 @@ export default function StatisticsChart() {
       },
     },
     markers: {
-      size: 0, // Size of the marker points
-      strokeColors: "#fff", // Marker border color
+      size: 0,
+      strokeColors: "#fff",
       strokeWidth: 2,
       hover: {
-        size: 6, // Marker size on hover
+        size: 6,
       },
     },
     grid: {
       xaxis: {
         lines: {
-          show: false, // Hide grid lines on x-axis
+          show: false,
         },
       },
       yaxis: {
         lines: {
-          show: true, // Show grid lines on y-axis
+          show: true,
         },
       },
     },
     dataLabels: {
-      enabled: false, // Disable data labels
+      enabled: false,
     },
     tooltip: {
-      enabled: true, // Enable tooltip
+      enabled: true,
       x: {
-        format: "dd MMM yyyy", // Format for x-axis tooltip
+        format: "dd MMM yyyy",
       },
     },
     xaxis: {
-      type: "category", // Category-based x-axis
-      categories: [
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "T6",
-        "T7",
-        "T8",
-        "T9",
-        "T10",
-        "T11",
-        "T12",
-      ],
+      type: "category",
+      categories: trendData?.categories || [],
       axisBorder: {
-        show: false, // Hide x-axis border
+        show: false,
       },
       axisTicks: {
-        show: false, // Hide x-axis ticks
+        show: false,
       },
       tooltip: {
-        enabled: false, // Disable tooltip for x-axis points
+        enabled: false,
       },
     },
     yaxis: {
       labels: {
         style: {
-          fontSize: "12px", // Adjust font size for y-axis labels
-          colors: ["#6B7280"], // Color of the labels
+          fontSize: "12px",
+          colors: ["#6B7280"],
         },
       },
       title: {
-        text: "", // Remove y-axis title
+        text: "",
         style: {
           fontSize: "0px",
         },
@@ -104,13 +121,23 @@ export default function StatisticsChart() {
   const series = [
     {
       name: "Đã xử lý",
-      data: [12, 18, 15, 10, 20, 15, 12, 18, 14, 25, 20, 12],
+      data: trendData?.resolved || [],
     },
     {
       name: "Đã báo cáo",
-      data: [15, 22, 18, 12, 25, 19, 14, 20, 16, 28, 22, 15],
+      data: trendData?.reported || [],
     },
   ];
+
+  const handleTabChange = (tab: string) => {
+    const periodMap: Record<string, string> = {
+      "12 tháng": "year",
+      "6 tháng": "half",
+      "30 ngày": "month",
+    };
+    setPeriod(periodMap[tab] || "year");
+  };
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:pt-6">
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
@@ -123,15 +150,25 @@ export default function StatisticsChart() {
           </p>
         </div>
         <div className="flex items-start w-full gap-3 sm:justify-end">
-          <ChartTab />
+          <ChartTab onTabChange={handleTabChange} />
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto custom-scrollbar">
-        <div className="min-w-[1000px] xl:min-w-full">
-          <Chart options={options} series={series} type="area" height={310} />
+      {loading ? (
+        <div className="flex items-center justify-center h-[310px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
         </div>
-      </div>
+      ) : error ? (
+        <div className="flex items-center justify-center h-[310px] text-gray-500">
+          {error}
+        </div>
+      ) : (
+        <div className="max-w-full overflow-x-auto custom-scrollbar">
+          <div className="min-w-[1000px] xl:min-w-full">
+            <Chart options={options} series={series} type="area" height={310} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
