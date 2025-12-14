@@ -793,5 +793,11 @@
   },
   "header":{
     "search":"Tìm kiếm nhanh ..."
+  },
+  "sidebart":{
+    "menu":"Menu",
+    "error_report":"Báo cáo sự cố",
+    "feedback":"Hòm thư góp ý"
   }
+
 }

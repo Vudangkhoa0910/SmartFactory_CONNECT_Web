@@ -794,5 +794,10 @@
   },
   "header" : {
     "search": "クイック検索..."
+  },
+  "sidebart":{
+    "menu":"メニュー",
+    "error_report":"インシデント報告",
+    "feedback":"フィードバックボックス"
   }
 }

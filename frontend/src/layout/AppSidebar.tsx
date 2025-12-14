@@ -21,6 +21,7 @@ import { useTranslation } from "../contexts/LanguageContext";
 import dashboardService from "../services/dashboard.service";
 // import SidebarWidget from "./SidebarWidget";
 
+
 // Type với i18n key
 type NavItem = {
   nameKey: string; // i18n key
@@ -466,7 +467,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  t('sidebart.menu')
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}
@@ -483,7 +484,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Báo cáo sự cố"
+                  t('sidebart.error_report')
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}
@@ -500,7 +501,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Hòm thư góp ý"
+                  t('sidebart.feedback')
                 ) : (
                   <HorizontaLDots />
                 )}
