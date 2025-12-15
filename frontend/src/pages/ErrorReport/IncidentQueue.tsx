@@ -15,7 +15,7 @@ const IncidentWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { departments } = useDepartments();
   const { t } = useTranslation();
-  
+
   // Get department names for UI
   const departmentNames = departments.map(d => d.name);
 
@@ -25,19 +25,36 @@ const IncidentWorkspace: React.FC = () => {
       try {
         setLoading(true);
         const res = await api.get('/incidents/queue');
-        const mappedIncidents = (res.data.data || []).map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          location: item.location,
-          timestamp: new Date(item.created_at),
-          priority: mapPriority(item.priority),
-          status: mapStatus(item.status),
-          reporter: item.reporter_name || 'Unknown',
-          department: item.department_name || 'General',
-          history: [], // History will be fetched when viewing detail if needed, or we can fetch it here
-          images: item.attachments ? JSON.parse(item.attachments).map((a: any) => a.path) : []
-        }));
+        const mappedIncidents = (res.data.data || []).map((item: any) => {
+          // Safely parse attachments - handle invalid JSON
+          let images: string[] = [];
+          if (item.attachments) {
+            try {
+              const parsed = typeof item.attachments === 'string'
+                ? JSON.parse(item.attachments)
+                : item.attachments;
+              if (Array.isArray(parsed)) {
+                images = parsed.map((a: any) => a.path).filter(Boolean);
+              }
+            } catch (e) {
+              console.warn('Could not parse attachments for incident:', item.id);
+            }
+          }
+
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            location: item.location,
+            timestamp: new Date(item.created_at),
+            priority: mapPriority(item.priority),
+            status: mapStatus(item.status),
+            reporter: item.reporter_name || 'Unknown',
+            department: item.department_name || 'General',
+            history: [],
+            images
+          };
+        });
         setIncidents(mappedIncidents);
       } catch (error) {
         console.error("Failed to fetch incident queue:", error);
@@ -106,28 +123,28 @@ const IncidentWorkspace: React.FC = () => {
       // For now, we'll use quick-assign endpoint which accepts department_id.
       // Assuming we can't map name to ID easily without fetching departments.
       // Let's assume we just update status for now or use a mock ID if needed.
-      
+
       // Actually, let's use the quick-assign endpoint
       // We need department ID. 
       // Let's just simulate success for UI and call API if we had IDs.
       // Since we don't have department IDs readily available in DEPARTMENTS constant (it's likely just strings),
       // we might need to fetch departments first.
-      
+
       // For this implementation, I'll assume we just acknowledge/assign to current user or similar.
       // But the UI asks for Department.
-      
+
       console.log(`[PHÂN CÔNG] Sự cố ${id} đã được gán cho ${department}`);
-      
+
       // Optimistic update
       setIncidents((prev) =>
         prev.map((inc) =>
           inc.id === id ? { ...inc, status: "in_progress" } : inc
         )
       );
-      
+
       // Call API (mocking department ID or using a specific endpoint)
       // await api.post(`/incidents/${id}/quick-assign`, { department_id: '...' });
-      
+
     } catch (error) {
       console.error("Assign failed", error);
     }
@@ -136,13 +153,13 @@ const IncidentWorkspace: React.FC = () => {
   const handleAcknowledge = async (id: string, feedback: string) => {
     try {
       await api.post(`/incidents/${id}/acknowledge`);
-      
+
       setIncidents((prev) =>
         prev.map((inc) =>
           inc.id === id ? { ...inc, status: "in_progress" } : inc
         )
       );
-      
+
       // If feedback provided, add comment
       if (feedback) {
         await api.post(`/incidents/${id}/comments`, { comment: feedback });
