@@ -196,19 +196,23 @@ const IncidentWorkspace: React.FC = () => {
 
   // Helper functions for multi-select
   const togglePriority = (priority: Priority) => {
-    setFilterPriorities(prev => 
-      prev.includes(priority) 
+    setFilterPriorities(prev => {
+      const newFilters = prev.includes(priority) 
         ? prev.filter(p => p !== priority)
-        : [...prev, priority]
-    );
+        : [...prev, priority];
+      console.log('Toggle priority:', priority, 'New filters:', newFilters);
+      return newFilters;
+    });
   };
 
   const toggleDepartment = (department: string) => {
-    setFilterDepartments(prev => 
-      prev.includes(department) 
+    setFilterDepartments(prev => {
+      const newFilters = prev.includes(department) 
         ? prev.filter(d => d !== department)
-        : [...prev, department]
-    );
+        : [...prev, department];
+      console.log('Toggle department:', department, 'New filters:', newFilters);
+      return newFilters;
+    });
   };
 
   const clearAllFilters = () => {
