@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "react-toastify";
-import { Filter, ChevronDown, X, Search } from "lucide-react";
+import { Filter, ChevronDown, X, Search, ArrowUpDown } from "lucide-react";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -46,6 +46,7 @@ export default function AllIncidentsPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
@@ -192,8 +193,13 @@ export default function AllIncidentsPage() {
         if (filterStatuses.length > 0 && !filterStatuses.includes(incident.status)) return false;
         
         return true;
+      })
+      .sort((a, b) => {
+        const aTime = a.createdAt.getTime();
+        const bTime = b.createdAt.getTime();
+        return sortOrder === 'newest' ? bTime - aTime : aTime - bTime;
       }),
-    [incidents, searchTerm, filterPriorities, filterStatuses]
+    [incidents, searchTerm, filterPriorities, filterStatuses, sortOrder]
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -400,6 +406,16 @@ export default function AllIncidentsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Sort Button */}
+              <button
+                onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                title={sortOrder === 'newest' ? 'Mới nhất trước' : 'Cũ nhất trước'}
+              >
+                <ArrowUpDown size={16} />
+                {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
+              </button>
 
               {/* Clear Filters Button */}
               <button

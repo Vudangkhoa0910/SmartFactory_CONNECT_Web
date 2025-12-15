@@ -14,14 +14,31 @@ export function KanbanCard({ incident }: { incident: Incident }) {
   // Format timestamp
   const formatTime = (date: Date) => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const incidentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today.getTime() - incidentDate.getTime()) / 86400000);
     
-    if (minutes < 60) return `${minutes} phút trước`;
-    if (hours < 24) return `${hours} giờ trước`;
-    return `${days} ngày trước`;
+    // Nếu trong ngày hôm nay, hiển thị giờ
+    if (diffDays === 0) {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    
+    // Nếu hôm qua
+    if (diffDays === 1) {
+      return 'Hôm qua';
+    }
+    
+    // Nếu trong tuần này (dưới 7 ngày)
+    if (diffDays < 7) {
+      return `${diffDays} ngày trước`;
+    }
+    
+    // Nếu lâu hơn, hiển thị ngày tháng
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
   };
 
   return (

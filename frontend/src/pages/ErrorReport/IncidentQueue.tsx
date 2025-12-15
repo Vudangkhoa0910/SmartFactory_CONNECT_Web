@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { BellRing, Search, Filter, X, ChevronDown } from "lucide-react";
+import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { toast } from "react-toastify";
@@ -19,6 +19,7 @@ const IncidentWorkspace: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
   const [filterDepartments, setFilterDepartments] = useState<string[]>([]);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
@@ -188,9 +189,9 @@ const IncidentWorkspace: React.FC = () => {
         // Use timestamp if available, otherwise use createdAt
         const aTime = (a.timestamp || a.createdAt).getTime();
         const bTime = (b.timestamp || b.createdAt).getTime();
-        return bTime - aTime; // Mới nhất lên đầu
+        return sortOrder === 'newest' ? bTime - aTime : aTime - bTime;
       });
-  }, [incidents, searchTerm, filterPriorities, filterDepartments]);
+  }, [incidents, searchTerm, filterPriorities, filterDepartments, sortOrder]);
 
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
@@ -469,7 +470,15 @@ const IncidentWorkspace: React.FC = () => {
                 </div>
               )}
             </div>
-
+              {/* Sort Button */}
+              <button
+                onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                title={sortOrder === 'newest' ? 'Mới nhất trước' : 'Cũ nhất trước'}
+              >
+                <ArrowUpDown size={16} />
+                {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
+              </button>
             {/* Clear Filters Button */}
             <button
               onClick={clearAllFilters}
