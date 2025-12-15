@@ -3,6 +3,7 @@ const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
 const { getLanguageFromRequest } = require('../utils/i18n.helper');
+const { uploadFilesToGridFS, updateFilesRelatedId } = require('../utils/media-upload.helper');
 
 /**
  * Create new idea
@@ -20,21 +21,22 @@ const createIdea = asyncHandler(async (req, res) => {
     expected_benefit_ja,
     department_id
   } = req.body;
-  
+
   const submitter_id = req.user.id;
-  
-  // Handle file attachments
-  const attachments = req.files ? req.files.map(file => ({
-    filename: file.filename,
-    original_name: file.originalname,
-    mime_type: file.mimetype,
-    size: file.size,
-    path: file.path
-  })) : [];
-  
+
+  // Upload files to MongoDB GridFS
+  let attachments = [];
+  if (req.files && req.files.length > 0) {
+    attachments = await uploadFilesToGridFS(req.files, {
+      type: 'idea',
+      relatedType: 'idea',
+      uploadedBy: submitter_id,
+    });
+  }
+
   // For Pink Box (anonymous), we still store submitter_id but mark as anonymous
   const is_anonymous = ideabox_type === 'pink';
-  
+
   // Set initial handler level as INTEGER
   // White Box: Starts at Supervisor (level 1)
   // Pink Box: Starts at Admin/GM (level 3)
@@ -61,7 +63,7 @@ const createIdea = asyncHandler(async (req, res) => {
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12, 'B', 'medium')
     RETURNING *
   `;
-  
+
   const values = [
     ideabox_type,
     category,
@@ -77,28 +79,36 @@ const createIdea = asyncHandler(async (req, res) => {
     JSON.stringify(attachments),
     handler_level
   ];
-  
+
   const result = await db.query(query, values);
   const idea = result.rows[0];
-  
+
+  // Update files with idea ID (for linking)
+  if (attachments.length > 0) {
+    const fileIds = attachments.map(a => a.file_id);
+    setImmediate(() => {
+      updateFilesRelatedId(fileIds, idea.id, 'idea');
+    });
+  }
+
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'submitted', $2, $3)`,
     [idea.id, submitter_id, JSON.stringify({ status: 'pending', ideabox_type })]
   );
-  
+
   // If Pink Box, assign to Admin
   // If White Box, assign to Supervisor
   let assignedRole = ideabox_type === 'pink' ? 'admin' : 'supervisor';
-  
+
   // TODO: Send notification to assigned role
-  
+
   // Hide submitter info if anonymous
   if (is_anonymous && req.user.level > 1) {
     delete idea.submitter_id;
   }
-  
+
   res.status(201).json({
     success: true,
     message: 'Idea submitted successfully',
@@ -116,19 +126,19 @@ const getIdeas = asyncHandler(async (req, res) => {
   const userLevel = req.user.level;
   const userRole = req.user.role;
   const lang = getLanguageFromRequest(req);
-  
+
   const conditions = [];
   const params = [];
   let paramIndex = 1;
-  
+
   // Check if this is a chat search request
   // Chat search will have 'from_chat' query param set by frontend
   const isChatSearch = req.query.from_chat === 'true';
-  
+
   // Access control based on ideabox_type
   // SPECIAL RULE FOR CHAT SEARCH: Admin (level 1) can see ALL ideas regardless of handler_level/status
   // In normal page view (Ideas List), apply strict visibility rules
-  
+
   if (isChatSearch && userLevel === 1) {
     // Admin in chat search: Can see ALL ideas without restrictions
     // Just apply ideabox_type filter if specified
@@ -141,7 +151,7 @@ const getIdeas = asyncHandler(async (req, res) => {
     conditions.push(`i.ideabox_type = $${paramIndex}`);
     params.push(filters.ideabox_type);
     paramIndex++;
-    
+
     if (userLevel > 1) {
       // Non-admin can only see their own pink box ideas
       conditions.push(`i.submitter_id = $${paramIndex}`);
@@ -153,14 +163,14 @@ const getIdeas = asyncHandler(async (req, res) => {
     conditions.push(`i.ideabox_type = $${paramIndex}`);
     params.push(filters.ideabox_type);
     paramIndex++;
-    
+
     // White Box / General Logic
     // 1. Approved/Implemented ideas are visible to EVERYONE
     // 2. Submitter can always see their own ideas
     // 3. Supervisors (Level 3) see 'supervisor' level ideas
     // 4. Managers (Level 2) see 'manager' level ideas
     // 5. Admins (Level 1) see 'general_manager' level ideas
-    
+
     let visibilityClause = `(
       i.status IN ('approved', 'implemented') 
       OR i.submitter_id = $${paramIndex}
@@ -173,9 +183,9 @@ const getIdeas = asyncHandler(async (req, res) => {
     } else if (userLevel === 2) { // Manager
       visibilityClause += ` OR i.handler_level = 'manager'`;
     } else if (userLevel <= 4) { // Supervisor (Level 3/4)
-      visibilityClause += ` OR i.handler_level = 'supervisor'`; 
+      visibilityClause += ` OR i.handler_level = 'supervisor'`;
     }
-    
+
     visibilityClause += `)`;
     conditions.push(visibilityClause);
   } else if (!isChatSearch || userLevel > 1) {
@@ -195,7 +205,7 @@ const getIdeas = asyncHandler(async (req, res) => {
     const searchTerm = req.query.search.toLowerCase().trim();
     // Keep words >= 2 chars (was 3, now more flexible for Vietnamese)
     const keywords = searchTerm.split(/\s+/).filter(k => k.length >= 2);
-    
+
     if (keywords.length > 0) {
       // Normalize Vietnamese accents for better matching
       const normalizeVietnamese = (text) => {
@@ -206,7 +216,7 @@ const getIdeas = asyncHandler(async (req, res) => {
           .replace(/khoá/g, 'khóa')
           .replace(/toá/g, 'tóa');
       };
-      
+
       // Build normalized field expressions
       const normalizedTitle = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.title, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
       const normalizedDesc = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.description, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
@@ -214,7 +224,7 @@ const getIdeas = asyncHandler(async (req, res) => {
       const titleJa = `LOWER(COALESCE(i.title_ja, ''))`;
       const descJa = `LOWER(COALESCE(i.description_ja, ''))`;
       const benefitJa = `LOWER(COALESCE(i.expected_benefit_ja, ''))`;
-      
+
       // Each keyword must appear in at least one field (AND logic for all keywords)
       const keywordConditions = keywords.map((keyword) => {
         const normalizedKeyword = normalizeVietnamese(keyword);
@@ -231,7 +241,7 @@ const getIdeas = asyncHandler(async (req, res) => {
         paramIndex++;
         return condition;
       });
-      
+
       // All keywords must match (AND logic)
       conditions.push(`(${keywordConditions.join(' AND ')})`);
     }
@@ -242,44 +252,44 @@ const getIdeas = asyncHandler(async (req, res) => {
     params.push(filters.status);
     paramIndex++;
   }
-  
+
   if (filters.category) {
     conditions.push(`i.category = $${paramIndex}`);
     params.push(filters.category);
     paramIndex++;
   }
-  
+
   if (filters.department_id) {
     conditions.push(`i.department_id = $${paramIndex}`);
     params.push(filters.department_id);
     paramIndex++;
   }
-  
+
   if (filters.assigned_to) {
     conditions.push(`i.assigned_to = $${paramIndex}`);
     params.push(filters.assigned_to);
     paramIndex++;
   }
-  
+
   if (filters.date_from) {
     conditions.push(`i.created_at >= $${paramIndex}`);
     params.push(filters.date_from);
     paramIndex++;
   }
-  
+
   if (filters.date_to) {
     conditions.push(`i.created_at <= $${paramIndex}`);
     params.push(filters.date_to);
     paramIndex++;
   }
-  
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
   // Get total count (need alias 'i' to match WHERE conditions)
   const countQuery = `SELECT COUNT(*) FROM ideas i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
-  
+
   // Get ideas with pagination
   const query = `
     SELECT 
@@ -310,18 +320,18 @@ const getIdeas = asyncHandler(async (req, res) => {
     ORDER BY ${sort.sortBy} ${sort.sortOrder}
     LIMIT $${paramIndex + 2} OFFSET $${paramIndex + 3}
   `;
-  
+
   params.push(userId, userLevel, pagination.limit, pagination.offset);
-  
+
   const result = await db.query(query, params);
-  
+
   // Hide submitter_id for anonymous ideas
   result.rows.forEach(idea => {
     if (idea.is_anonymous && idea.submitter_id !== userId && userLevel > 1) {
       delete idea.submitter_id;
     }
   });
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -343,7 +353,7 @@ const getIdeaById = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userLevel = req.user.level;
   const lang = getLanguageFromRequest(req);
-  
+
   const query = `
     SELECT 
       i.*,
@@ -376,25 +386,25 @@ const getIdeaById = asyncHandler(async (req, res) => {
     LEFT JOIN users r ON i.reviewed_by = r.id
     WHERE i.id = $1
   `;
-  
+
   const result = await db.query(query, [id, userId, userLevel]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   const idea = result.rows[0];
-  
+
   // Check access permissions for Pink Box
   if (idea.ideabox_type === 'pink' && userLevel > 1 && idea.submitter_id !== userId) {
     throw new AppError('You do not have permission to view this idea', 403);
   }
-  
+
   // Hide submitter_id for anonymous ideas
   if (idea.is_anonymous && idea.submitter_id !== userId && userLevel > 1) {
     delete idea.submitter_id;
   }
-  
+
   // Get responses
   const responsesQuery = `
     SELECT 
@@ -408,10 +418,10 @@ const getIdeaById = asyncHandler(async (req, res) => {
     WHERE r.idea_id = $1
     ORDER BY r.created_at ASC
   `;
-  
+
   const responsesResult = await db.query(responsesQuery, [id]);
   idea.responses = responsesResult.rows;
-  
+
   // Get history (only for authorized users)
   if (userLevel <= 4 || idea.submitter_id === userId) {
     const historyQuery = `
@@ -424,11 +434,11 @@ const getIdeaById = asyncHandler(async (req, res) => {
       WHERE h.idea_id = $1
       ORDER BY h.created_at DESC
     `;
-    
+
     const historyResult = await db.query(historyQuery, [id]);
     idea.history = historyResult.rows;
   }
-  
+
   res.json({
     success: true,
     data: idea
@@ -443,20 +453,20 @@ const assignIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { assigned_to, department_id } = req.body;
   const userId = req.user.id;
-  
+
   // Get idea
   const idea = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
-  
+
   if (idea.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   // Pink Box: Only Admin can assign
   // White Box: Supervisor and above can assign
   if (idea.rows[0].ideabox_type === 'pink' && req.user.level > 1) {
     throw new AppError('Only Admin can assign Pink Box ideas', 403);
   }
-  
+
   // Verify assignee if provided
   if (assigned_to) {
     const assignee = await db.query('SELECT * FROM users WHERE id = $1', [assigned_to]);
@@ -464,7 +474,7 @@ const assignIdea = asyncHandler(async (req, res) => {
       throw new AppError('Assignee not found', 404);
     }
   }
-  
+
   // Update idea
   const query = `
     UPDATE ideas
@@ -479,18 +489,18 @@ const assignIdea = asyncHandler(async (req, res) => {
     WHERE id = $3
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [assigned_to, department_id, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'assigned', $2, $3)`,
     [id, userId, JSON.stringify({ assigned_to, department_id })]
   );
-  
+
   // TODO: Send notification to assigned user
-  
+
   res.json({
     success: true,
     message: 'Idea assigned successfully',
@@ -507,23 +517,23 @@ const addResponse = asyncHandler(async (req, res) => {
   const { response, response_ja } = req.body;
   const userId = req.user.id;
   const lang = getLanguageFromRequest(req);
-  
+
   // Check if idea exists
   const idea = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
-  
+
   if (idea.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   // Check permission: assigned user, department manager, or supervisor+
-  const canRespond = 
+  const canRespond =
     idea.rows[0].assigned_to === userId ||
     req.user.level <= 4;
-  
+
   if (!canRespond) {
     throw new AppError('You do not have permission to respond to this idea', 403);
   }
-  
+
   // Handle attachments
   const attachments = req.files ? req.files.map(file => ({
     filename: file.filename,
@@ -532,15 +542,15 @@ const addResponse = asyncHandler(async (req, res) => {
     size: file.size,
     path: file.path
   })) : [];
-  
+
   const query = `
     INSERT INTO idea_responses (idea_id, user_id, response, response_ja, attachments)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [id, userId, response, response_ja || null, JSON.stringify(attachments)]);
-  
+
   // Get user info for response
   const responseWithUser = await db.query(`
     SELECT 
@@ -553,7 +563,7 @@ const addResponse = asyncHandler(async (req, res) => {
     LEFT JOIN users u ON r.user_id = u.id
     WHERE r.id = $1
   `, [result.rows[0].id]);
-  
+
   // Update idea status to under_review if pending
   await db.query(
     `UPDATE ideas 
@@ -561,9 +571,23 @@ const addResponse = asyncHandler(async (req, res) => {
      WHERE id = $1`,
     [id]
   );
-  
-  // TODO: Send notification to submitter
-  
+
+  // Send FCM push notification to submitter
+  const pushNotificationService = req.app.get('pushNotificationService');
+  if (pushNotificationService && idea.rows[0].submitter_id) {
+    setImmediate(async () => {
+      try {
+        await pushNotificationService.sendIdeaResponseNotification(
+          idea.rows[0],
+          result.rows[0],
+          userId
+        );
+      } catch (err) {
+        console.error('[Idea] Error sending push notification:', err.message);
+      }
+    });
+  }
+
   res.status(201).json({
     success: true,
     message: 'Response added successfully',
@@ -579,20 +603,20 @@ const reviewIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, review_notes, feasibility_score, impact_score } = req.body;
   const userId = req.user.id;
-  
+
   // Get idea
   const idea = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
-  
+
   if (idea.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   const oldStatus = idea.rows[0].status;
-  
+
   // If status is rejected, delete the idea (as per requirement for White Box)
   if (status === 'rejected') {
     await db.query('DELETE FROM ideas WHERE id = $1', [id]);
-    
+
     return res.json({
       success: true,
       message: 'Idea rejected and deleted successfully',
@@ -614,7 +638,7 @@ const reviewIdea = asyncHandler(async (req, res) => {
     WHERE id = $6
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [
     status,
     review_notes,
@@ -623,16 +647,16 @@ const reviewIdea = asyncHandler(async (req, res) => {
     userId,
     id
   ]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'reviewed', $2, $3)`,
     [id, userId, JSON.stringify({ old_status: oldStatus, new_status: status, review_notes })]
   );
-  
+
   // TODO: Send notification to submitter
-  
+
   res.json({
     success: true,
     message: 'Idea reviewed successfully',
@@ -648,14 +672,14 @@ const implementIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { implementation_notes, actual_benefit, actual_benefit_ja } = req.body;
   const userId = req.user.id;
-  
+
   // Get idea
   const idea = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
-  
+
   if (idea.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   // Update idea
   const query = `
     UPDATE ideas
@@ -669,18 +693,18 @@ const implementIdea = asyncHandler(async (req, res) => {
     WHERE id = $4
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [implementation_notes, actual_benefit, actual_benefit_ja || null, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'implemented', $2, $3)`,
     [id, userId, JSON.stringify({ implementation_notes, actual_benefit, actual_benefit_ja: actual_benefit_ja || null })]
   );
-  
+
   // TODO: Send notification to submitter with congratulations
-  
+
   res.json({
     success: true,
     message: 'Idea marked as implemented successfully',
@@ -694,31 +718,31 @@ const implementIdea = asyncHandler(async (req, res) => {
  */
 const getIdeaStats = asyncHandler(async (req, res) => {
   const { date_from, date_to, ideabox_type } = req.query;
-  
+
   const conditions = [];
   const params = [];
   let paramIndex = 1;
-  
+
   if (date_from) {
     conditions.push(`created_at >= $${paramIndex}`);
     params.push(date_from);
     paramIndex++;
   }
-  
+
   if (date_to) {
     conditions.push(`created_at <= $${paramIndex}`);
     params.push(date_to);
     paramIndex++;
   }
-  
+
   if (ideabox_type) {
     conditions.push(`ideabox_type = $${paramIndex}`);
     params.push(ideabox_type);
     paramIndex++;
   }
-  
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
   // Overall stats
   const statsQuery = `
     SELECT 
@@ -733,9 +757,9 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     FROM ideas
     ${whereClause}
   `;
-  
+
   const statsResult = await db.query(statsQuery, params);
-  
+
   // By category
   const byCategoryQuery = `
     SELECT 
@@ -745,9 +769,9 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ${whereClause}
     GROUP BY category
   `;
-  
+
   const byCategoryResult = await db.query(byCategoryQuery, params);
-  
+
   // By ideabox type
   const byTypeQuery = `
     SELECT 
@@ -758,9 +782,9 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ${whereClause}
     GROUP BY ideabox_type
   `;
-  
+
   const byTypeResult = await db.query(byTypeQuery, params);
-  
+
   res.json({
     success: true,
     data: {
@@ -780,16 +804,16 @@ const escalateIdea = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const userId = req.user.id;
   const userLevel = req.user.level;
-  
+
   // Get current idea
   const ideaResult = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
-  
+
   if (ideaResult.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   const idea = ideaResult.rows[0];
-  
+
   // Determine next level
   let nextLevel = '';
   if (userLevel >= 3) { // Supervisor (3, 4, 5?) - Assuming 3/4 is SV
@@ -799,7 +823,7 @@ const escalateIdea = asyncHandler(async (req, res) => {
   } else {
     throw new AppError('You do not have permission to escalate this idea', 403);
   }
-  
+
   // Update idea
   const updateQuery = `
     UPDATE ideas
@@ -809,25 +833,25 @@ const escalateIdea = asyncHandler(async (req, res) => {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const result = await db.query(updateQuery, [nextLevel, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'escalated', $2, $3)`,
     [id, userId, JSON.stringify({ from_level: idea.handler_level, to_level: nextLevel, reason })]
   );
-  
+
   // Add response about escalation
   await db.query(
     `INSERT INTO idea_responses (idea_id, user_id, response)
      VALUES ($1, $2, $3)`,
     [id, userId, `Escalated to ${nextLevel}. Reason: ${reason || 'No reason provided'}`]
   );
-  
+
   // TODO: Send notification to escalated_to user
-  
+
   res.json({
     success: true,
     message: `Idea escalated to ${nextLevel} successfully`,
@@ -843,11 +867,11 @@ const getKaizenBank = asyncHandler(async (req, res) => {
   const { pagination, filters } = req;
   const { search, category } = req.query;
   const lang = getLanguageFromRequest(req);
-  
+
   const conditions = ["i.status = 'implemented'"];
   const params = [];
   let paramIndex = 1;
-  
+
   if (search) {
     conditions.push(`(
       i.title ILIKE $${paramIndex}
@@ -858,26 +882,26 @@ const getKaizenBank = asyncHandler(async (req, res) => {
     params.push(`%${search}%`);
     paramIndex++;
   }
-  
+
   if (category) {
     conditions.push(`i.category = $${paramIndex}`);
     params.push(category);
     paramIndex++;
   }
-  
+
   if (filters && filters.ideabox_type) {
     conditions.push(`i.ideabox_type = $${paramIndex}`);
     params.push(filters.ideabox_type);
     paramIndex++;
   }
-  
+
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
-  
+
   // Get total count
   const countQuery = `SELECT COUNT(*) FROM ideas i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
-  
+
   // Get archived ideas
   const query = `
     SELECT 
@@ -901,11 +925,11 @@ const getKaizenBank = asyncHandler(async (req, res) => {
     ORDER BY COALESCE(i.implemented_at, i.updated_at) DESC
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;
-  
+
   params.push(pagination && pagination.limit ? pagination.limit : 20, pagination && pagination.offset ? pagination.offset : 0);
-  
+
   const result = await db.query(query, params);
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -925,35 +949,35 @@ const getKaizenBank = asyncHandler(async (req, res) => {
 const searchKaizenBank = asyncHandler(async (req, res) => {
   const { q, category, date_from, date_to } = req.query;
   const lang = getLanguageFromRequest(req);
-  
+
   if (!q || q.trim().length < 2) {
     throw new AppError('Search query must be at least 2 characters', 400);
   }
-  
+
   const conditions = ["status = 'implemented'"];
   const params = [`%${q}%`];
   let paramIndex = 2;
-  
+
   if (category) {
     conditions.push(`category = $${paramIndex}`);
     params.push(category);
     paramIndex++;
   }
-  
+
   if (date_from) {
     conditions.push(`implemented_at >= $${paramIndex}`);
     params.push(date_from);
     paramIndex++;
   }
-  
+
   if (date_to) {
     conditions.push(`implemented_at <= $${paramIndex}`);
     params.push(date_to);
     paramIndex++;
   }
-  
+
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
-  
+
   const query = `
     SELECT 
       i.*,
@@ -990,9 +1014,9 @@ const searchKaizenBank = asyncHandler(async (req, res) => {
     ORDER BY relevance DESC, i.implemented_at DESC
     LIMIT 50
   `;
-  
+
   const result = await db.query(query, params);
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -1026,9 +1050,9 @@ const getIdeaDifficulty = asyncHandler(async (req, res) => {
         WHEN 'very_hard' THEN 4
       END
   `;
-  
+
   const result = await db.query(query);
-  
+
   res.json({
     success: true,
     data: result.rows
@@ -1044,15 +1068,15 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userLevel = req.user.level;
   const lang = getLanguageFromRequest(req);
-  
+
   let typeFilter = '';
   const params = [];
-  
+
   if (ideabox_type) {
     typeFilter = 'AND ideabox_type = $1';
     params.push(ideabox_type);
   }
-  
+
   const statusColumns = [
     'pending',
     'under_review',
@@ -1061,9 +1085,9 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
     'implemented',
     'on_hold'
   ];
-  
+
   const kanbanData = {};
-  
+
   for (const status of statusColumns) {
     const query = `
       SELECT 
@@ -1086,11 +1110,11 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
       WHERE i.status = '${status}' ${typeFilter}
       ORDER BY i.created_at DESC
     `;
-    
+
     const result = await db.query(query, [...params, userLevel]);
     kanbanData[status] = result.rows;
   }
-  
+
   res.json({
     success: true,
     data: kanbanData
@@ -1104,30 +1128,30 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
 const getIdeaResponses = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const lang = getLanguageFromRequest(req);
-  
+
   // Check if idea exists
   const ideaQuery = `
     SELECT id, ideabox_type, submitter_id, department_id
     FROM ideas
     WHERE id = $1
   `;
-  
+
   const ideaResult = await db.query(ideaQuery, [id]);
-  
+
   if (ideaResult.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   const idea = ideaResult.rows[0];
   const userLevel = req.user.level;
   const userRole = req.user.role;
-  
+
   // Check access permission
   // Only admin can view responses history via chatbox
   if (userRole !== 'admin') {
     throw new AppError('Only administrators can view idea responses history', 403);
   }
-  
+
   // Get all responses with user information
   const responsesQuery = `
     SELECT 
@@ -1148,9 +1172,9 @@ const getIdeaResponses = asyncHandler(async (req, res) => {
     WHERE ir.idea_id = $1
     ORDER BY ir.created_at ASC
   `;
-  
+
   const responsesResult = await db.query(responsesQuery, [id]);
-  
+
   res.json({
     success: true,
     data: responsesResult.rows
@@ -1163,29 +1187,29 @@ const getIdeaResponses = asyncHandler(async (req, res) => {
  */
 const getIdeaHistory = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   // Check if idea exists
   const ideaQuery = `
     SELECT id, ideabox_type, submitter_id, department_id
     FROM ideas
     WHERE id = $1
   `;
-  
+
   const ideaResult = await db.query(ideaQuery, [id]);
-  
+
   if (ideaResult.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   const idea = ideaResult.rows[0];
   const userRole = req.user.role;
-  
+
   // Check access permission
   // Only admin can view action history via chatbox
   if (userRole !== 'admin') {
     throw new AppError('Only administrators can view idea action history', 403);
   }
-  
+
   // Get all history with user information
   const historyQuery = `
     SELECT 
@@ -1204,9 +1228,9 @@ const getIdeaHistory = asyncHandler(async (req, res) => {
     WHERE ih.idea_id = $1
     ORDER BY ih.created_at ASC
   `;
-  
+
   const historyResult = await db.query(historyQuery, [id]);
-  
+
   res.json({
     success: true,
     data: historyResult.rows
@@ -1221,9 +1245,9 @@ const escalateToNextLevel = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
   const userId = req.user.id;
-  
+
   const result = await escalationService.escalateIdea(id, userId, reason, false);
-  
+
   // Send notification
   const notificationService = req.app.get('notificationService');
   if (notificationService && result.newHandler) {
@@ -1236,7 +1260,7 @@ const escalateToNextLevel = asyncHandler(async (req, res) => {
       reference_id: id,
     });
   }
-  
+
   res.json({
     success: true,
     message: `Idea escalated to ${result.levelName}`,
@@ -1251,9 +1275,9 @@ const escalateToNextLevel = asyncHandler(async (req, res) => {
 const submitRating = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  
+
   const rating = await ratingService.rateIdea(id, userId, req.body);
-  
+
   res.json({
     success: true,
     message: 'Rating submitted successfully',
@@ -1267,9 +1291,9 @@ const submitRating = asyncHandler(async (req, res) => {
  */
 const getRating = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   const rating = await ratingService.getIdeaRating(id);
-  
+
   res.json({
     success: true,
     data: rating
@@ -1282,13 +1306,13 @@ const getRating = asyncHandler(async (req, res) => {
  */
 const getRatingStats = asyncHandler(async (req, res) => {
   const { department_id, start_date, end_date } = req.query;
-  
+
   const stats = await ratingService.getIdeaRatingStats({
     department_id,
     start_date,
     end_date
   });
-  
+
   res.json({
     success: true,
     data: stats
@@ -1303,28 +1327,28 @@ const updateDifficultyLevel = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { difficulty_level } = req.body;
   const userId = req.user.id;
-  
+
   if (!['A', 'B', 'C', 'D'].includes(difficulty_level)) {
     throw new AppError('Invalid difficulty level. Must be A, B, C, or D', 400);
   }
-  
+
   const result = await db.query(`
     UPDATE ideas 
     SET difficulty_level = $1, updated_at = CURRENT_TIMESTAMP
     WHERE id = $2
     RETURNING *
   `, [difficulty_level, id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Idea not found', 404);
   }
-  
+
   // Log history
   await db.query(`
     INSERT INTO idea_history (idea_id, action, performed_by, details)
     VALUES ($1, 'difficulty_updated', $2, $3)
   `, [id, userId, JSON.stringify({ difficulty_level })]);
-  
+
   res.json({
     success: true,
     message: 'Difficulty level updated',
