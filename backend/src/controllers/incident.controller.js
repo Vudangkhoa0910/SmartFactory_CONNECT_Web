@@ -7,6 +7,7 @@ const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
 const { isAutoAssignEnabled } = require('./settings.controller');
 const { getLanguageFromRequest } = require('../utils/i18n.helper');
+const { uploadFilesToGridFS, updateFilesRelatedId } = require('../utils/media-upload.helper');
 
 // RAG Service configuration
 const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'http://localhost:8001';
@@ -134,14 +135,15 @@ const createIncident = asyncHandler(async (req, res) => {
 
   const reporter_id = req.user.id;
 
-  // Handle file attachments
-  const attachments = req.files ? req.files.map(file => ({
-    filename: file.filename,
-    original_name: file.originalname,
-    mime_type: file.mimetype,
-    size: file.size,
-    path: file.path
-  })) : [];
+  // Upload files to MongoDB GridFS
+  let attachments = [];
+  if (req.files && req.files.length > 0) {
+    attachments = await uploadFilesToGridFS(req.files, {
+      type: 'incident',
+      relatedType: 'incident',
+      uploadedBy: reporter_id,
+    });
+  }
 
   // INSERT IMMEDIATELY - No waiting for RAG
   const query = `
@@ -178,6 +180,14 @@ const createIncident = asyncHandler(async (req, res) => {
   const result = await db.query(query, values);
   const incident = result.rows[0];
 
+  // Update files with incident ID (for linking)
+  if (attachments.length > 0) {
+    const fileIds = attachments.map(a => a.file_id);
+    setImmediate(() => {
+      updateFilesRelatedId(fileIds, incident.id, 'incident');
+    });
+  }
+
   // Log history - FAST, no RAG info yet
   const historyDetails = {
     status: 'pending',
@@ -208,6 +218,18 @@ const createIncident = asyncHandler(async (req, res) => {
       location: incident.location,
       priority: incident.priority,
       created_at: incident.created_at
+    });
+  }
+
+  // Send FCM push notifications to supervisors+ of the department
+  const pushNotificationService = req.app.get('pushNotificationService');
+  if (pushNotificationService) {
+    setImmediate(async () => {
+      try {
+        await pushNotificationService.sendIncidentCreatedNotification(incident);
+      } catch (err) {
+        console.error('[Incident] Error sending push notification:', err.message);
+      }
     });
   }
 

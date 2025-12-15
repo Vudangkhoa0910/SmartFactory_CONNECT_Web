@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const { getLanguageFromRequest } = require('../utils/i18n.helper');
+const { uploadFilesToGridFS, updateFilesRelatedId } = require('../utils/media-upload.helper');
 
 /**
  * Create new news article
@@ -23,14 +24,15 @@ const createNews = asyncHandler(async (req, res) => {
 
   const author_id = req.user.id;
 
-  // Handle file attachments
-  const attachments = req.files ? req.files.map(file => ({
-    filename: file.filename,
-    original_name: file.originalname,
-    mime_type: file.mimetype,
-    size: file.size,
-    path: file.path
-  })) : [];
+  // Upload files to MongoDB GridFS
+  let attachments = [];
+  if (req.files && req.files.length > 0) {
+    attachments = await uploadFilesToGridFS(req.files, {
+      type: 'news',
+      relatedType: 'news',
+      uploadedBy: author_id,
+    });
+  }
 
   // Determine status based on publish_at or request body
   let status = req.body.status || 'draft';
@@ -89,8 +91,15 @@ const createNews = asyncHandler(async (req, res) => {
   const result = await db.query(query, values);
   const news = result.rows[0];
 
-  // TODO: If published immediately, send notifications
+  // Update files with news ID (for linking)
+  if (attachments.length > 0) {
+    const fileIds = attachments.map(a => a.file_id);
+    setImmediate(() => {
+      updateFilesRelatedId(fileIds, news.id, 'news');
+    });
+  }
 
+  // Send response first
   res.status(201).json({
     success: true,
     message: 'News created successfully',
@@ -107,6 +116,24 @@ const createNews = asyncHandler(async (req, res) => {
       status: news.status,
       created_at: news.created_at
     });
+  }
+
+  // If published immediately, send FCM push notifications
+  if (status === 'published') {
+    const pushNotificationService = req.app.get('pushNotificationService');
+    if (pushNotificationService) {
+      setImmediate(async () => {
+        try {
+          await pushNotificationService.sendNewsPublishedNotification(
+            news,
+            target_audience,
+            target_departments
+          );
+        } catch (err) {
+          console.error('[News] Error sending push notification:', err.message);
+        }
+      });
+    }
   }
 });
 
@@ -445,14 +472,40 @@ const publishNews = asyncHandler(async (req, res) => {
   `;
 
   const result = await db.query(query, [publish_at, id]);
+  const publishedNews = result.rows[0];
 
-  // TODO: Send real-time notifications to target audience
-
+  // Send response first
   res.json({
     success: true,
     message: 'News published successfully',
-    data: result.rows[0]
+    data: publishedNews
   });
+
+  // Broadcast news_published for real-time updates
+  const io = req.app.get('io');
+  if (io && io.broadcastNews) {
+    io.broadcastNews('news_published', {
+      id: publishedNews.id,
+      title: publishedNews.title,
+      status: publishedNews.status
+    });
+  }
+
+  // Send FCM push notifications to target audience
+  const pushNotificationService = req.app.get('pushNotificationService');
+  if (pushNotificationService) {
+    setImmediate(async () => {
+      try {
+        await pushNotificationService.sendNewsPublishedNotification(
+          publishedNews,
+          publishedNews.target_audience,
+          publishedNews.target_departments
+        );
+      } catch (err) {
+        console.error('[News] Error sending push notification:', err.message);
+      }
+    });
+  }
 });
 
 /**

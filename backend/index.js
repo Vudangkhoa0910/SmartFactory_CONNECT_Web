@@ -24,10 +24,14 @@ const notificationRoutes = require('./src/routes/notification.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
 const chatRoutes = require('./src/routes/chat.routes');
 const roomBookingRoutes = require('./src/routes/room-booking.routes');
+const settingsRoutes = require('./src/routes/settings.routes');
+const anomalyRoutes = require('./src/routes/anomaly.routes');
+const mediaRoutes = require('./src/routes/media.routes');
 
 // Import Socket.io and Services
 const initializeSocket = require('./src/config/socket');
 const NotificationService = require('./src/services/notification.service');
+const PushNotificationService = require('./src/services/push-notification.service');
 const cacheService = require('./src/services/cache.service');
 const { healthCheck: dbHealthCheck, getPoolStats } = require('./src/config/database');
 const { connectMongoDB, checkMongoDBHealth, closeMongoDB } = require('./src/config/mongodb');
@@ -97,7 +101,7 @@ if (process.env.NODE_ENV === 'development') {
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
   }
-  
+
   // Create a write stream for access logs
   const accessLogStream = fs.createWriteStream(
     path.join(logDir, 'access.log'),
@@ -122,7 +126,7 @@ app.get('/health', async (req, res) => {
   try {
     const dbHealth = await dbHealthCheck();
     const mongoHealth = await checkMongoDBHealth();
-    
+
     res.json({
       success: true,
       message: 'SmartFactory CONNECT API is running',
@@ -196,6 +200,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/room-bookings', roomBookingRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/anomalies', anomalyRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Translation routes
 const translationRoutes = require('./src/routes/translation.routes');
@@ -217,9 +224,13 @@ const io = initializeSocket(server);
 // Initialize Notification Service
 const notificationService = new NotificationService(io);
 
+// Initialize Push Notification Service (for FCM + in-app notifications)
+const pushNotificationService = new PushNotificationService(io, notificationService);
+
 // Make services available globally
 app.set('io', io);
 app.set('notificationService', notificationService);
+app.set('pushNotificationService', pushNotificationService);
 app.set('cacheService', cacheService);
 
 // Initialize databases
@@ -238,7 +249,7 @@ async function initializeDatabases() {
 async function startServer() {
   // Initialize databases first
   await initializeDatabases();
-  
+
   server.listen(PORT, HOST, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
@@ -274,31 +285,31 @@ startServer().catch(err => {
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
   console.log(`\n${signal} signal received: starting graceful shutdown`);
-  
+
   // Close HTTP server first (stop accepting new connections)
   server.close(() => {
     console.log('✅ HTTP server closed');
   });
-  
+
   // Close Socket.io connections
   if (io) {
     io.close(() => {
       console.log('✅ Socket.io server closed');
     });
   }
-  
+
   // Close MongoDB connection
   try {
     await closeMongoDB();
   } catch (error) {
     console.error('⚠️ Error closing MongoDB:', error.message);
   }
-  
+
   // Flush cache statistics
   console.log('📊 Final cache stats:', cacheService.getStats());
-  
+
   // Database pool will close automatically via its own shutdown handler
-  
+
   // Force exit after timeout
   setTimeout(() => {
     console.error('⚠️ Forced shutdown after timeout');
