@@ -1,9 +1,12 @@
 -- SIMPLE ROOM BOOKING SETUP (NO FOREIGN KEYS)
 -- This version creates tables without foreign key constraints for easier setup
 
+-- Ensure UUID extension exists
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- 1. ROOMS TABLE
 CREATE TABLE IF NOT EXISTS rooms (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   room_code VARCHAR(10) NOT NULL UNIQUE,
   room_name VARCHAR(100) NOT NULL,
   capacity INTEGER NOT NULL DEFAULT 10,
@@ -37,8 +40,8 @@ END $$;
 
 -- 4. ROOM BOOKINGS TABLE
 CREATE TABLE IF NOT EXISTS room_bookings (
-  id SERIAL PRIMARY KEY,
-  room_id INTEGER NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id UUID NOT NULL,
   title VARCHAR(200) NOT NULL,
   description TEXT,
   meeting_type meeting_type NOT NULL DEFAULT 'other',
@@ -48,12 +51,12 @@ CREATE TABLE IF NOT EXISTS room_bookings (
   end_time TIME NOT NULL,
   week_number INTEGER NOT NULL,
   year INTEGER NOT NULL,
-  booked_by_user_id INTEGER NOT NULL,
+  booked_by_user_id UUID NOT NULL,
   booked_by_name VARCHAR(100) NOT NULL,
-  department_id INTEGER,
+  department_id UUID,
   department_name VARCHAR(100),
   status booking_status DEFAULT 'pending',
-  approved_by_user_id INTEGER,
+  approved_by_user_id UUID,
   approved_by_name VARCHAR(100),
   approved_at TIMESTAMP,
   rejection_reason TEXT,
@@ -67,10 +70,10 @@ CREATE TABLE IF NOT EXISTS room_bookings (
 
 -- 5. BOOKING HISTORY
 CREATE TABLE IF NOT EXISTS room_booking_history (
-  id SERIAL PRIMARY KEY,
-  booking_id INTEGER NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  booking_id UUID NOT NULL,
   action VARCHAR(50) NOT NULL,
-  performed_by_user_id INTEGER,
+  performed_by_user_id UUID,
   performed_by_name VARCHAR(100),
   details JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -144,11 +147,11 @@ CREATE TRIGGER trigger_log_booking_history
 
 -- CONFLICT CHECK FUNCTION
 CREATE OR REPLACE FUNCTION check_booking_conflict(
-  p_room_id INTEGER,
+  p_room_id UUID,
   p_booking_date DATE,
   p_start_time TIME,
   p_end_time TIME,
-  p_exclude_booking_id INTEGER DEFAULT NULL
+  p_exclude_booking_id UUID DEFAULT NULL
 )
 RETURNS BOOLEAN AS $$
 DECLARE
