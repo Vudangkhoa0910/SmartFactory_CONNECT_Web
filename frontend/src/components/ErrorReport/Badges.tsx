@@ -35,7 +35,7 @@ export const PriorityBadge = ({ priority }: { priority: Priority }) => {
   };
   return (
     <span
-      className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${styles[priority]}`}
+      className={`px-2.5 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0 ${styles[priority]}`}
     >
       {t(`priority.${priority.toLowerCase()}`)}
     </span>
