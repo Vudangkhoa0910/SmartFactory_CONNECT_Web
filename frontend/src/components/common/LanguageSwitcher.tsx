@@ -30,28 +30,30 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'd
   }
 
   return (
-    <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
+    <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700 shadow-sm">
       <button
         onClick={() => handleLanguageChange('vi')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
           language === 'vi'
-            ? 'bg-red-600 text-white shadow-sm hover:bg-red-700'
-            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ? 'bg-white text-gray-900 shadow-md border-2 border-red-500 dark:bg-gray-700 dark:text-white'
+            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50'
         }`}
         title="Tiếng Việt"
       >
-        🇻🇳 VI
+        <span className="text-lg">🇻🇳</span>
+        <span>VI</span>
       </button>
       <button
         onClick={() => handleLanguageChange('ja')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
           language === 'ja'
-            ? 'bg-red-600 text-white shadow-sm hover:bg-red-700'
-            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ? 'bg-white text-gray-900 shadow-md border-2 border-red-500 dark:bg-gray-700 dark:text-white'
+            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50'
         }`}
         title="日本語"
       >
-        🇯🇵 JA
+        <span className="text-lg">🇯🇵</span>
+        <span>JA</span>
       </button>
     </div>
   );
