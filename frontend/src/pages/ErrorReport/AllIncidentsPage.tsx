@@ -1,5 +1,5 @@
 // src/pages/AllIncidentsPage.tsx
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import {
   DndContext,
@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "react-toastify";
+import { Filter, ChevronDown, X, Search } from "lucide-react";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -43,6 +44,12 @@ export default function AllIncidentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -90,6 +97,44 @@ export default function AllIncidentsPage() {
     return map[backendPriority] || 'Normal';
   };
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target as Node)) {
+        setShowPriorityDropdown(false);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Helper functions for multi-select
+  const togglePriority = (priority: Priority) => {
+    setFilterPriorities(prev => 
+      prev.includes(priority) 
+        ? prev.filter(p => p !== priority)
+        : [...prev, priority]
+    );
+  };
+
+  const toggleStatus = (status: Status) => {
+    setFilterStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setFilterPriorities([]);
+    setFilterStatuses([]);
+  };
+
   // Fetch data from API
   const fetchIncidents = async () => {
     try {
@@ -128,13 +173,27 @@ export default function AllIncidentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cải tiến: Lọc dữ liệu dựa trên searchTerm
+  // Cải tiến: Lọc dữ liệu dựa trên searchTerm, priority và status
   const filteredIncidents = useMemo(
     () =>
-      incidents.filter((incident) =>
-        incident.title.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [incidents, searchTerm]
+      incidents.filter((incident) => {
+        // Filter by search term
+        const matchesSearch = searchTerm === "" || 
+          incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (!matchesSearch) return false;
+        
+        // Filter by priority (multi-select)
+        if (filterPriorities.length > 0 && !filterPriorities.includes(incident.priority)) return false;
+        
+        // Filter by status (multi-select)
+        if (filterStatuses.length > 0 && !filterStatuses.includes(incident.status)) return false;
+        
+        return true;
+      }),
+    [incidents, searchTerm, filterPriorities, filterStatuses]
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -234,9 +293,166 @@ export default function AllIncidentsPage() {
           <PageHeader
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            onSearchChange={setSearchTerm}
             onExport={handleExport}
           />
+
+          {/* Search and Filter Controls */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
+              {/* Search Box */}
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder={t('error_report.search_placeholder') || 'Tìm kiếm...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* Priority Filter - Multi Select */}
+              <div className="relative" ref={priorityDropdownRef}>
+                <button
+                  onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
+                >
+                  <Filter size={16} className="absolute left-3 text-gray-400" />
+                  <span className="flex-1 text-left">
+                    {filterPriorities.length === 0 
+                      ? 'Mức độ' 
+                      : `Mức độ (${filterPriorities.length})`}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showPriorityDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {[
+                      { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
+                      { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
+                      { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-blue-600' },
+                      { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
+                    ].map((priority) => (
+                      <label
+                        key={priority.value}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filterPriorities.includes(priority.value)}
+                          onChange={() => togglePriority(priority.value)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className={`text-sm font-medium ${priority.color}`}>
+                          {priority.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Filter - Multi Select */}
+              <div className="relative" ref={statusDropdownRef}>
+                <button
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
+                >
+                  <Filter size={16} className="absolute left-3 text-gray-400" />
+                  <span className="flex-1 text-left">
+                    {filterStatuses.length === 0 
+                      ? 'Trạng thái' 
+                      : `Trạng thái (${filterStatuses.length})`}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showStatusDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {KANBAN_COLUMNS.map((status) => (
+                      <label
+                        key={status}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filterStatuses.includes(status)}
+                          onChange={() => toggleStatus(status)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {t(`error_report.status.${status}`)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Clear Filters Button */}
+              <button
+                onClick={clearAllFilters}
+                disabled={!searchTerm && filterPriorities.length === 0 && filterStatuses.length === 0}
+                className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${
+                  searchTerm || filterPriorities.length > 0 || filterStatuses.length > 0
+                    ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
+                    : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                }`}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+
+            {/* Active Filters Display */}
+            <div 
+              className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
+                filterPriorities.length > 0 || filterStatuses.length > 0
+                  ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+                  : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
+              }`}
+            >
+              {filterPriorities.map((priority) => (
+                <span
+                  key={priority}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full"
+                >
+                  {priority}
+                  <button
+                    onClick={() => togglePriority(priority)}
+                    className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {filterStatuses.map((status) => (
+                <span
+                  key={status}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                >
+                  {t(`error_report.status.${status}`)}
+                  <button
+                    onClick={() => toggleStatus(status)}
+                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Content Section */}
