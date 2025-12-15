@@ -25,7 +25,7 @@ const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
     <span
       className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full border ${styles}`}
     >
-      {t(`error_report.priority.${priority}`)}
+      {t(`priority.${priority.toLowerCase()}`)}
     </span>
   );
 };

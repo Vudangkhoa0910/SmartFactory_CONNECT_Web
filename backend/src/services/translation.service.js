@@ -1,16 +1,15 @@
 const axios = require('axios');
 const db = require('../config/database');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Mistral } = require('@mistralai/mistralai');
 
 /**
  * Translation Service
- * Supports Gemini API, Google Translate Free API with fallback to mock data
+ * Supports Mistral AI, Google Translate Free API with fallback to mock data
  */
 class TranslationService {
-  
-  static genAI = null;
-  static model = null;
-  
+
+  static mistralClient = null;
+
   // Mock translations for testing (will be replaced by real API)
   static mockTranslations = {
     // UI Labels
@@ -22,7 +21,7 @@ class TranslationService {
     'menu.news': { vi: 'Tin tức', ja: 'ニュース' },
     'menu.users': { vi: 'Quản lý người dùng', ja: 'ユーザー管理' },
     'menu.departments': { vi: 'Quản lý phòng ban', ja: '部門管理' },
-    
+
     // Buttons
     'button.submit': { vi: 'Gửi', ja: '送信' },
     'button.cancel': { vi: 'Hủy', ja: 'キャンセル' },
@@ -34,7 +33,7 @@ class TranslationService {
     'button.export': { vi: 'Xuất', ja: 'エクスポート' },
     'button.close': { vi: 'Đóng', ja: '閉じる' },
     'button.back': { vi: 'Quay lại', ja: '戻る' },
-    
+
     // Incident Status
     'status.pending': { vi: 'Chờ xử lý', ja: '保留中' },
     'status.assigned': { vi: 'Đã phân công', ja: '割り当て済み' },
@@ -42,20 +41,20 @@ class TranslationService {
     'status.resolved': { vi: 'Đã xử lý', ja: '解決済み' },
     'status.closed': { vi: 'Đã đóng', ja: '終了' },
     'status.cancelled': { vi: 'Đã hủy', ja: 'キャンセル済み' },
-    
+
     // Priority
     'priority.low': { vi: 'Thấp', ja: '低' },
     'priority.medium': { vi: 'Trung bình', ja: '中' },
     'priority.normal': { vi: 'Bình thường', ja: '通常' },
     'priority.high': { vi: 'Cao', ja: '高' },
     'priority.critical': { vi: 'Khẩn cấp', ja: '緊急' },
-    
+
     // Incident Types
     'incident.type.safety': { vi: 'An toàn', ja: '安全' },
     'incident.type.quality': { vi: 'Chất lượng', ja: '品質' },
     'incident.type.equipment': { vi: 'Thiết bị', ja: '設備' },
     'incident.type.other': { vi: 'Khác', ja: 'その他' },
-    
+
     // Common Labels
     'label.title': { vi: 'Tiêu đề', ja: 'タイトル' },
     'label.description': { vi: 'Mô tả', ja: '説明' },
@@ -67,14 +66,14 @@ class TranslationService {
     'label.status': { vi: 'Trạng thái', ja: 'ステータス' },
     'label.created_at': { vi: 'Ngày tạo', ja: '作成日' },
     'label.updated_at': { vi: 'Ngày cập nhật', ja: '更新日' },
-    
+
     // Messages
     'message.success': { vi: 'Thành công', ja: '成功' },
     'message.error': { vi: 'Lỗi', ja: 'エラー' },
     'message.loading': { vi: 'Đang tải...', ja: '読み込み中...' },
     'message.no_data': { vi: 'Không có dữ liệu', ja: 'データなし' },
     'message.confirm_delete': { vi: 'Bạn có chắc muốn xóa?', ja: '削除してもよろしいですか？' },
-    
+
     // Incident Page
     'incident.title': { vi: 'Quản lý sự cố', ja: 'インシデント管理' },
     'incident.create': { vi: 'Tạo sự cố mới', ja: '新規インシデント作成' },
@@ -104,40 +103,39 @@ class TranslationService {
   }
 
   /**
-   * Initialize Gemini API
+   * Initialize Mistral API
    */
-  static initGemini() {
-    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyBGjtr63SefTQ-DRRD8NDn0LVqmZqXJJ4g';
-    
-    if (!this.genAI && apiKey) {
+  static initMistral() {
+    const apiKey = process.env.MISTRAL_API_KEY;
+
+    if (!this.mistralClient && apiKey) {
       try {
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        console.log('[Gemini] API initialized successfully');
+        this.mistralClient = new Mistral({ apiKey });
+        console.log('[Mistral] API initialized successfully');
       } catch (error) {
-        console.error('[Gemini] Initialization failed:', error.message);
+        console.error('[Mistral] Initialization failed:', error.message);
       }
     }
   }
 
   /**
-   * Translate using Gemini API
+   * Translate using Mistral API
    * Best quality, context-aware, technical terminology support
    */
-  static async translateViaGemini(text, sourceLang = 'vi', targetLang = 'ja') {
-    this.initGemini();
-    
-    if (!this.model) {
-      throw new Error('Gemini API not initialized');
+  static async translateViaMistral(text, sourceLang = 'vi', targetLang = 'ja') {
+    this.initMistral();
+
+    if (!this.mistralClient) {
+      throw new Error('Mistral API not initialized');
     }
-    
+
     try {
       const langMap = {
         'vi': 'Vietnamese',
         'ja': 'Japanese',
         'en': 'English'
       };
-      
+
       const prompt = `You are a professional translator for a manufacturing/factory management system.
 Translate the following text from ${langMap[sourceLang]} to ${langMap[targetLang]}.
 
@@ -161,30 +159,34 @@ ${text}
 
 Translation:`;
 
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      let translated = response.text().trim();
-      
+      const model = process.env.MISTRAL_MODEL;
+      const response = await this.mistralClient.chat.complete({
+        model: model,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      let translated = response.choices[0].message.content.trim();
+
       // Remove quotes if present
       translated = translated.replace(/^["'「」『』]|["'「」『』]$/g, '');
-      
-      console.log(`[Gemini] Translated: "${text.substring(0, 30)}..." → "${translated.substring(0, 30)}..."`);
-      
+
+      console.log(`[Mistral] Translated: "${text.substring(0, 30)}..." → "${translated.substring(0, 30)}..."`);
+
       return translated;
-      
+
     } catch (error) {
-      console.error('[Gemini] Translation error:', error.message);
+      console.error('[Mistral] Translation error:', error.message);
       throw error;
     }
   }
 
   /**
    * Smart translate with multiple fallbacks
-   * Priority: Cache → Gemini → Google Free → Mock
+   * Priority: Cache → Mistral → Google Free → Mock
    */
   static async translateText(text, sourceLang = 'vi', targetLang = 'ja', useMock = false) {
     if (!text || text.trim() === '') return text;
-    
+
     // Use mock translation during testing
     if (useMock) {
       return this.mockTranslate(text, sourceLang, targetLang);
@@ -198,20 +200,20 @@ Translation:`;
         return cached;
       }
 
-      // 2. Try Gemini first (best quality)
+      // 2. Try Mistral first (best quality)
       try {
-        const translated = await this.translateViaGemini(text, sourceLang, targetLang);
+        const translated = await this.translateViaMistral(text, sourceLang, targetLang);
         if (translated && translated !== text) {
-          await this.saveCachedTranslation(text, sourceLang, targetLang, translated, 'gemini');
+          await this.saveCachedTranslation(text, sourceLang, targetLang, translated, 'mistral');
           return translated;
         }
-      } catch (geminiError) {
-        console.warn('[Gemini] Failed, trying Google Translate...', geminiError.message);
+      } catch (mistralError) {
+        console.warn('[Mistral] Failed, trying Google Translate...', mistralError.message);
       }
 
       // 3. Fallback to Google Translate Free
       const translated = await this.translateViaGoogleFree(text, sourceLang, targetLang);
-      
+
       // Save to cache
       if (translated && translated !== text) {
         await this.saveCachedTranslation(text, sourceLang, targetLang, translated, 'google_free');
@@ -231,7 +233,7 @@ Translation:`;
    */
   static mockTranslate(text, sourceLang, targetLang) {
     if (targetLang !== 'ja') return text;
-    
+
     // Simple mock: add [JA] prefix to indicate it's "translated"
     return `[JA] ${text}`;
   }
@@ -242,7 +244,7 @@ Translation:`;
   static async translateViaGoogleFree(text, sourceLang = 'vi', targetLang = 'ja') {
     try {
       const url = 'https://translate.googleapis.com/translate_a/single';
-      
+
       const params = {
         client: 'gtx',
         sl: sourceLang,
@@ -250,15 +252,15 @@ Translation:`;
         dt: 't',
         q: text
       };
-      
-      const response = await axios.get(url, { 
+
+      const response = await axios.get(url, {
         params,
         timeout: 5000,
         headers: {
           'User-Agent': 'Mozilla/5.0'
         }
       });
-      
+
       // Response format: [[[translated_text, original_text, ...]]]
       if (response.data && response.data[0]) {
         const translated = response.data[0]
@@ -266,9 +268,9 @@ Translation:`;
           .join('');
         return translated;
       }
-      
+
       return text;
-      
+
     } catch (error) {
       console.error('Google Translate API error:', error.message);
       throw error;
@@ -280,17 +282,17 @@ Translation:`;
    */
   static async batchTranslate(texts, sourceLang = 'vi', targetLang = 'ja', useMock = true) {
     const results = [];
-    
+
     for (const text of texts) {
       const translated = await this.translateText(text, sourceLang, targetLang, useMock);
       results.push(translated);
-      
+
       // Add small delay to avoid rate limiting
       if (!useMock) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    
+
     return results;
   }
 
@@ -307,7 +309,7 @@ Translation:`;
           AND target_lang = $3
         LIMIT 1
       `;
-      
+
       const result = await db.query(query, [text, sourceLang, targetLang]);
       return result.rows[0]?.translated_text;
     } catch (error) {
@@ -334,17 +336,17 @@ Translation:`;
           updated_at = NOW()
         RETURNING *
       `;
-      
+
       await db.query(query, [
-        originalText, 
-        sourceLang, 
-        targetLang, 
-        translatedText, 
+        originalText,
+        sourceLang,
+        targetLang,
+        translatedText,
         method
       ]);
-      
+
       console.log(`[Translation Cached] ${originalText.substring(0, 50)}... -> ${translatedText.substring(0, 50)}...`);
-      
+
     } catch (error) {
       // Ignore cache errors during development
       console.warn('Failed to cache translation:', error.message);
@@ -357,14 +359,14 @@ Translation:`;
    */
   static getTranslatedField(record, fieldName, language = 'vi') {
     if (!record) return '';
-    
+
     if (language === 'ja') {
       const jaField = `${fieldName}_ja`;
       if (record[jaField]) {
         return record[jaField];
       }
     }
-    
+
     return record[fieldName] || '';
   }
 }

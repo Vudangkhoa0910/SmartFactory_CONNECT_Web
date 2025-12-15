@@ -2,6 +2,7 @@ const db = require('../config/database');
 const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
+const { getLanguageFromRequest } = require('../utils/i18n.helper');
 
 /**
  * Create new idea
@@ -12,8 +13,11 @@ const createIdea = asyncHandler(async (req, res) => {
     ideabox_type,
     category,
     title,
+    title_ja,
     description,
+    description_ja,
     expected_benefit,
+    expected_benefit_ja,
     department_id
   } = req.body;
   
@@ -41,8 +45,11 @@ const createIdea = asyncHandler(async (req, res) => {
       ideabox_type,
       category,
       title,
+      title_ja,
       description,
+      description_ja,
       expected_benefit,
+      expected_benefit_ja,
       submitter_id,
       department_id,
       is_anonymous,
@@ -51,7 +58,7 @@ const createIdea = asyncHandler(async (req, res) => {
       handler_level,
       difficulty_level,
       priority
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10, 'B', 'medium')
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12, 'B', 'medium')
     RETURNING *
   `;
   
@@ -59,8 +66,11 @@ const createIdea = asyncHandler(async (req, res) => {
     ideabox_type,
     category,
     title,
+    title_ja || null,
     description,
+    description_ja || null,
     expected_benefit || null,
+    expected_benefit_ja || null,
     submitter_id,
     department_id || null,
     is_anonymous,
@@ -105,6 +115,7 @@ const getIdeas = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userLevel = req.user.level;
   const userRole = req.user.role;
+  const lang = getLanguageFromRequest(req);
   
   const conditions = [];
   const params = [];
@@ -200,12 +211,22 @@ const getIdeas = asyncHandler(async (req, res) => {
       const normalizedTitle = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.title, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
       const normalizedDesc = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.description, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
       const normalizedBenefit = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.expected_benefit, 'hoá', 'hóa'), 'uỷ', 'ủy'), 'thuỷ', 'thủy'), 'khoá', 'khóa'), 'toá', 'tóa'))`;
+      const titleJa = `LOWER(COALESCE(i.title_ja, ''))`;
+      const descJa = `LOWER(COALESCE(i.description_ja, ''))`;
+      const benefitJa = `LOWER(COALESCE(i.expected_benefit_ja, ''))`;
       
       // Each keyword must appear in at least one field (AND logic for all keywords)
       const keywordConditions = keywords.map((keyword) => {
         const normalizedKeyword = normalizeVietnamese(keyword);
         const searchPattern = `%${normalizedKeyword}%`;
-        const condition = `(${normalizedTitle} LIKE $${paramIndex} OR ${normalizedDesc} LIKE $${paramIndex} OR ${normalizedBenefit} LIKE $${paramIndex})`;
+        const condition = `(
+          ${normalizedTitle} LIKE $${paramIndex}
+          OR ${normalizedDesc} LIKE $${paramIndex}
+          OR ${normalizedBenefit} LIKE $${paramIndex}
+          OR ${titleJa} LIKE $${paramIndex}
+          OR ${descJa} LIKE $${paramIndex}
+          OR ${benefitJa} LIKE $${paramIndex}
+        )`;
         params.push(searchPattern);
         paramIndex++;
         return condition;
@@ -263,6 +284,10 @@ const getIdeas = asyncHandler(async (req, res) => {
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+      COALESCE(${lang === 'ja' ? 'i.expected_benefit_ja' : 'NULL'}, i.expected_benefit) as expected_benefit,
+      COALESCE(${lang === 'ja' ? 'i.actual_benefit_ja' : 'NULL'}, i.actual_benefit) as actual_benefit,
       CASE 
         WHEN i.is_anonymous = true AND i.submitter_id != $${paramIndex} AND $${paramIndex + 1} > 1 
         THEN NULL 
@@ -317,10 +342,15 @@ const getIdeaById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const userLevel = req.user.level;
+  const lang = getLanguageFromRequest(req);
   
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+      COALESCE(${lang === 'ja' ? 'i.expected_benefit_ja' : 'NULL'}, i.expected_benefit) as expected_benefit,
+      COALESCE(${lang === 'ja' ? 'i.actual_benefit_ja' : 'NULL'}, i.actual_benefit) as actual_benefit,
       CASE 
         WHEN i.is_anonymous = true AND i.submitter_id != $2 AND $3 > 1 
         THEN NULL 
@@ -369,6 +399,7 @@ const getIdeaById = asyncHandler(async (req, res) => {
   const responsesQuery = `
     SELECT 
       r.*,
+      COALESCE(${lang === 'ja' ? 'r.response_ja' : 'NULL'}, r.response) as response,
       u.full_name as responder_name,
       u.employee_code,
       u.role
@@ -473,8 +504,9 @@ const assignIdea = asyncHandler(async (req, res) => {
  */
 const addResponse = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { response } = req.body;
+  const { response, response_ja } = req.body;
   const userId = req.user.id;
+  const lang = getLanguageFromRequest(req);
   
   // Check if idea exists
   const idea = await db.query('SELECT * FROM ideas WHERE id = $1', [id]);
@@ -502,17 +534,18 @@ const addResponse = asyncHandler(async (req, res) => {
   })) : [];
   
   const query = `
-    INSERT INTO idea_responses (idea_id, user_id, response, attachments)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO idea_responses (idea_id, user_id, response, response_ja, attachments)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
   
-  const result = await db.query(query, [id, userId, response, JSON.stringify(attachments)]);
+  const result = await db.query(query, [id, userId, response, response_ja || null, JSON.stringify(attachments)]);
   
   // Get user info for response
   const responseWithUser = await db.query(`
     SELECT 
       r.*,
+      COALESCE(${lang === 'ja' ? 'r.response_ja' : 'NULL'}, r.response) as response,
       u.full_name as responder_name,
       u.employee_code,
       u.role
@@ -613,7 +646,7 @@ const reviewIdea = asyncHandler(async (req, res) => {
  */
 const implementIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { implementation_notes, actual_benefit } = req.body;
+  const { implementation_notes, actual_benefit, actual_benefit_ja } = req.body;
   const userId = req.user.id;
   
   // Get idea
@@ -630,19 +663,20 @@ const implementIdea = asyncHandler(async (req, res) => {
       status = 'implemented',
       implementation_notes = $1,
       actual_benefit = $2,
+      actual_benefit_ja = COALESCE($3, actual_benefit_ja),
       implemented_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $3
+    WHERE id = $4
     RETURNING *
   `;
   
-  const result = await db.query(query, [implementation_notes, actual_benefit, id]);
+  const result = await db.query(query, [implementation_notes, actual_benefit, actual_benefit_ja || null, id]);
   
   // Log history
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'implemented', $2, $3)`,
-    [id, userId, JSON.stringify({ implementation_notes, actual_benefit })]
+    [id, userId, JSON.stringify({ implementation_notes, actual_benefit, actual_benefit_ja: actual_benefit_ja || null })]
   );
   
   // TODO: Send notification to submitter with congratulations
@@ -808,25 +842,31 @@ const escalateIdea = asyncHandler(async (req, res) => {
 const getKaizenBank = asyncHandler(async (req, res) => {
   const { pagination, filters } = req;
   const { search, category } = req.query;
+  const lang = getLanguageFromRequest(req);
   
-  const conditions = ["status = 'implemented'"];
+  const conditions = ["i.status = 'implemented'"];
   const params = [];
   let paramIndex = 1;
   
   if (search) {
-    conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
+    conditions.push(`(
+      i.title ILIKE $${paramIndex}
+      OR i.title_ja ILIKE $${paramIndex}
+      OR i.description ILIKE $${paramIndex}
+      OR i.description_ja ILIKE $${paramIndex}
+    )`);
     params.push(`%${search}%`);
     paramIndex++;
   }
   
   if (category) {
-    conditions.push(`category = $${paramIndex}`);
+    conditions.push(`i.category = $${paramIndex}`);
     params.push(category);
     paramIndex++;
   }
   
   if (filters && filters.ideabox_type) {
-    conditions.push(`ideabox_type = $${paramIndex}`);
+    conditions.push(`i.ideabox_type = $${paramIndex}`);
     params.push(filters.ideabox_type);
     paramIndex++;
   }
@@ -834,7 +874,7 @@ const getKaizenBank = asyncHandler(async (req, res) => {
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
   
   // Get total count
-  const countQuery = `SELECT COUNT(*) FROM ideas ${whereClause}`;
+  const countQuery = `SELECT COUNT(*) FROM ideas i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
   
@@ -842,6 +882,10 @@ const getKaizenBank = asyncHandler(async (req, res) => {
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+      COALESCE(${lang === 'ja' ? 'i.expected_benefit_ja' : 'NULL'}, i.expected_benefit) as expected_benefit,
+      COALESCE(${lang === 'ja' ? 'i.actual_benefit_ja' : 'NULL'}, i.actual_benefit) as actual_benefit,
       CASE 
         WHEN i.is_anonymous = false THEN u.full_name
         ELSE 'Anonymous'
@@ -880,6 +924,7 @@ const getKaizenBank = asyncHandler(async (req, res) => {
  */
 const searchKaizenBank = asyncHandler(async (req, res) => {
   const { q, category, date_from, date_to } = req.query;
+  const lang = getLanguageFromRequest(req);
   
   if (!q || q.trim().length < 2) {
     throw new AppError('Search query must be at least 2 characters', 400);
@@ -912,12 +957,21 @@ const searchKaizenBank = asyncHandler(async (req, res) => {
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+      COALESCE(${lang === 'ja' ? 'i.expected_benefit_ja' : 'NULL'}, i.expected_benefit) as expected_benefit,
+      COALESCE(${lang === 'ja' ? 'i.actual_benefit_ja' : 'NULL'}, i.actual_benefit) as actual_benefit,
       CASE 
         WHEN i.is_anonymous = false THEN u.full_name
         ELSE 'Anonymous'
       END as contributor_name,
       ts_rank(
-        to_tsvector('english', i.title || ' ' || i.description || ' ' || COALESCE(i.actual_benefit, '')),
+        to_tsvector('english', 
+          COALESCE(i.title, '') || ' ' || COALESCE(i.title_ja, '') || ' ' ||
+          COALESCE(i.description, '') || ' ' || COALESCE(i.description_ja, '') || ' ' ||
+          COALESCE(i.actual_benefit, '') || ' ' || COALESCE(i.actual_benefit_ja, '') || ' ' ||
+          COALESCE(i.expected_benefit, '') || ' ' || COALESCE(i.expected_benefit_ja, '')
+        ),
         plainto_tsquery('english', $1)
       ) as relevance
     FROM ideas i
@@ -925,9 +979,13 @@ const searchKaizenBank = asyncHandler(async (req, res) => {
     ${whereClause}
     AND (
       i.title ILIKE $1 
+      OR i.title_ja ILIKE $1
       OR i.description ILIKE $1 
+      OR i.description_ja ILIKE $1
       OR i.actual_benefit ILIKE $1
+      OR i.actual_benefit_ja ILIKE $1
       OR i.expected_benefit ILIKE $1
+      OR i.expected_benefit_ja ILIKE $1
     )
     ORDER BY relevance DESC, i.implemented_at DESC
     LIMIT 50
@@ -985,6 +1043,7 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
   const { ideabox_type } = req.query;
   const userId = req.user.id;
   const userLevel = req.user.level;
+  const lang = getLanguageFromRequest(req);
   
   let typeFilter = '';
   const params = [];
@@ -1009,6 +1068,10 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
     const query = `
       SELECT 
         i.*,
+        COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+        COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+        COALESCE(${lang === 'ja' ? 'i.expected_benefit_ja' : 'NULL'}, i.expected_benefit) as expected_benefit,
+        COALESCE(${lang === 'ja' ? 'i.actual_benefit_ja' : 'NULL'}, i.actual_benefit) as actual_benefit,
         CASE 
           WHEN i.is_anonymous = true AND i.ideabox_type = 'pink' AND $${params.length + 1} > 1
           THEN 'Anonymous'
@@ -1040,6 +1103,7 @@ const getIdeasKanban = asyncHandler(async (req, res) => {
  */
 const getIdeaResponses = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const lang = getLanguageFromRequest(req);
   
   // Check if idea exists
   const ideaQuery = `
@@ -1068,7 +1132,9 @@ const getIdeaResponses = asyncHandler(async (req, res) => {
   const responsesQuery = `
     SELECT 
       ir.id,
-      ir.response,
+      COALESCE(${lang === 'ja' ? 'ir.response_ja' : 'NULL'}, ir.response) as response,
+      ir.response as response_vi,
+      ir.response_ja,
       ir.attachments,
       ir.created_at,
       u.id as user_id,

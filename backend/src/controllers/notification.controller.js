@@ -1,4 +1,5 @@
 const { asyncHandler } = require('../middlewares/error.middleware');
+const { getLanguageFromRequest } = require('../utils/i18n.helper');
 
 /**
  * Get user notifications
@@ -8,6 +9,7 @@ const getNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { pagination } = req;
   const { unread, type, priority, status } = req.query;
+  const lang = getLanguageFromRequest(req);
   
   const notificationService = req.app.get('notificationService');
   
@@ -17,7 +19,8 @@ const getNotifications = asyncHandler(async (req, res) => {
     unreadOnly: unread === 'true',
     type,
     priority,
-    status
+    status,
+    lang
   });
   
   res.json({
@@ -34,12 +37,14 @@ const getNotifications = asyncHandler(async (req, res) => {
 const getRecentNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { limit = 10 } = req.query;
+  const lang = getLanguageFromRequest(req);
   
   const notificationService = req.app.get('notificationService');
   
   const result = await notificationService.getUserNotifications(userId, {
     page: 1,
-    limit: parseInt(limit)
+    limit: parseInt(limit),
+    lang
   });
   
   res.json({

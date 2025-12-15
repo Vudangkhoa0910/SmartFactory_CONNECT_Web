@@ -86,6 +86,7 @@ const authenticate = async (req, res, next) => {
       SELECT 
         u.id, u.employee_code, u.email, u.full_name,
         u.phone, u.role, u.level, u.department_id,
+        u.preferred_language,
         d.name as department_name
       FROM users u
       LEFT JOIN departments d ON u.department_id = d.id

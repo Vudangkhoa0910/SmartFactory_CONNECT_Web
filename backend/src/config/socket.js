@@ -72,7 +72,7 @@ function initializeSocket(server) {
       
       // Get user from database
       const result = await db.query(
-        'SELECT id, employee_code, email, full_name, role, level, department_id FROM users WHERE id = $1 AND is_active = true',
+        'SELECT id, employee_code, email, full_name, role, level, department_id, preferred_language FROM users WHERE id = $1 AND is_active = true',
         [decoded.id]
       );
 
@@ -131,10 +131,15 @@ function initializeSocket(server) {
         const page = data?.page || 1;
         const limit = data?.limit || 20;
         const offset = (page - 1) * limit;
+        const lang = socket.user?.preferred_language || 'vi';
         
         const result = await db.query(
-          `SELECT * FROM notifications 
-           WHERE user_id = $1 
+          `SELECT 
+             n.*,
+             COALESCE(${lang === 'ja' ? 'n.title_ja' : 'NULL'}, n.title) as title,
+             COALESCE(${lang === 'ja' ? 'n.message_ja' : 'NULL'}, n.message) as message
+           FROM notifications n
+           WHERE recipient_id = $1 
            ORDER BY created_at DESC 
            LIMIT $2 OFFSET $3`,
           [socket.user.id, limit, offset]
@@ -159,7 +164,7 @@ function initializeSocket(server) {
         await db.query(
           `UPDATE notifications 
            SET is_read = true, read_at = CURRENT_TIMESTAMP 
-           WHERE id = $1 AND user_id = $2`,
+           WHERE id = $1 AND recipient_id = $2`,
           [notificationId, socket.user.id]
         );
         
@@ -167,7 +172,7 @@ function initializeSocket(server) {
         
         // Send updated unread count
         const countResult = await db.query(
-          'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false',
+          'SELECT COUNT(*) as count FROM notifications WHERE recipient_id = $1 AND is_read = false',
           [socket.user.id]
         );
         
@@ -184,7 +189,7 @@ function initializeSocket(server) {
         await db.query(
           `UPDATE notifications 
            SET is_read = true, read_at = CURRENT_TIMESTAMP 
-           WHERE user_id = $1 AND is_read = false`,
+           WHERE recipient_id = $1 AND is_read = false`,
           [socket.user.id]
         );
         
@@ -200,7 +205,7 @@ function initializeSocket(server) {
     socket.on('get_unread_count', async () => {
       try {
         const result = await db.query(
-          'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false',
+          'SELECT COUNT(*) as count FROM notifications WHERE recipient_id = $1 AND is_read = false',
           [socket.user.id]
         );
         

@@ -236,4 +236,38 @@ router.post(
   userController.resetUserPassword
 );
 
+// FCM Token Management
+const fcmTokenController = require('../controllers/fcm-token.controller');
+
+/**
+ * @route   POST /api/users/fcm-token
+ * @desc    Register FCM token for push notifications
+ * @access  Private
+ */
+router.post(
+  '/fcm-token',
+  authenticate,
+  [
+    body('token').notEmpty().withMessage('FCM token is required'),
+    body('deviceName').optional().trim(),
+    body('devicePlatform').optional().isIn(['android', 'ios']).withMessage('Invalid platform')
+  ],
+  validate,
+  fcmTokenController.registerFcmToken
+);
+
+/**
+ * @route   DELETE /api/users/fcm-token
+ * @desc    Remove FCM token (on logout)
+ * @access  Private
+ */
+router.delete(
+  '/fcm-token',
+  authenticate,
+  [body('token').notEmpty().withMessage('FCM token is required')],
+  validate,
+  fcmTokenController.removeFcmToken
+);
+
 module.exports = router;
+

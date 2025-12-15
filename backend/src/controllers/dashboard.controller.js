@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { AppError, asyncHandler } = require('../middlewares/error.middleware');
+const { getLanguageFromRequest } = require('../utils/i18n.helper');
 
 /**
  * Get Dashboard Overview Statistics
@@ -9,6 +10,7 @@ const getOverview = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userLevel = req.user.level;
   const userDepartment = req.user.department_id;
+  const lang = getLanguageFromRequest(req);
 
   // Get total counts
   const countsQuery = `
@@ -17,14 +19,19 @@ const getOverview = asyncHandler(async (req, res) => {
       (SELECT COUNT(*) FROM incidents WHERE status = 'pending') as pending_incidents,
       (SELECT COUNT(*) FROM ideas WHERE status = 'pending') as pending_ideas,
       (SELECT COUNT(*) FROM news WHERE status = 'published' AND publish_at <= NOW()) as active_news,
-      (SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false) as unread_notifications
+      (SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = false) as unread_notifications
   `;
   
   const counts = await db.query(countsQuery, [userId]);
 
   // Get recent incidents
   const recentIncidentsQuery = `
-    SELECT i.*, u.full_name as reporter_name, d.name as department_name
+    SELECT 
+      i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+      u.full_name as reporter_name,
+      d.name as department_name
     FROM incidents i
     LEFT JOIN users u ON i.reporter_id = u.id
     LEFT JOIN departments d ON i.department_id = d.id
@@ -37,7 +44,11 @@ const getOverview = asyncHandler(async (req, res) => {
 
   // Get recent news
   const recentNewsQuery = `
-    SELECT n.*, u.full_name as author_name
+    SELECT 
+      n.*,
+      COALESCE(${lang === 'ja' ? 'n.title_ja' : 'NULL'}, n.title) as title,
+      COALESCE(${lang === 'ja' ? 'n.excerpt_ja' : 'NULL'}, n.excerpt) as excerpt,
+      u.full_name as author_name
     FROM news n
     LEFT JOIN users u ON n.author_id = u.id
     WHERE n.status = 'published' AND n.publish_at <= NOW()
@@ -812,7 +823,7 @@ async function getOverviewData(userId) {
       (SELECT COUNT(*) FROM incidents WHERE status = 'pending') as pending_incidents,
       (SELECT COUNT(*) FROM ideas WHERE status = 'pending') as pending_ideas,
       (SELECT COUNT(*) FROM news WHERE status = 'published') as active_news,
-      (SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false) as unread_notifications
+      (SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = false) as unread_notifications
   `;
   
   const result = await db.query(countsQuery, [userId]);
