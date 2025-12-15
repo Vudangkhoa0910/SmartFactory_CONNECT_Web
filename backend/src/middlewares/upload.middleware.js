@@ -19,11 +19,11 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const subDir = req.uploadDir || 'temp'; // Set via route
     const destPath = path.join(uploadDir, subDir);
-    
+
     if (!fs.existsSync(destPath)) {
       fs.mkdirSync(destPath, { recursive: true });
     }
-    
+
     cb(null, destPath);
   },
   filename: (req, file, cb) => {
@@ -37,19 +37,37 @@ const storage = multer.diskStorage({
 // File filter
 const fileFilter = (req, file, cb) => {
   const allowedTypes = process.env.ALLOWED_FILE_TYPES?.split(',') || [
+    // Images
     'image/jpeg',
     'image/png',
     'image/jpg',
     'image/gif',
+    'image/webp',
+    // Videos
     'video/mp4',
     'video/quicktime',
-    'audio/mpeg',
+    'video/webm',
+    // Audio - Standard formats
+    'audio/mpeg',        // MP3
     'audio/wav',
+    'audio/mp3',
+    // Audio - Mobile/iPhone recordings
+    'audio/m4a',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/mp4',         // AAC in MP4 container
+    // Audio - Web formats
+    'audio/webm',
+    'audio/ogg',
+    // Documents
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // Text files
+    'text/plain',
+    'text/csv',
   ];
 
   if (allowedTypes.includes(file.mimetype)) {
@@ -94,14 +112,14 @@ const handleUploadError = (err, req, res, next) => {
       message: `Upload error: ${err.message}`
     });
   }
-  
+
   if (err) {
     return res.status(400).json({
       success: false,
       message: err.message
     });
   }
-  
+
   next();
 };
 

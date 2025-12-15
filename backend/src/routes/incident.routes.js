@@ -414,6 +414,25 @@ router.get(
 );
 
 /**
+ * @route   GET /api/incidents/rating-stats
+ * @desc    Get rating statistics
+ * @access  Private (Supervisor and above)
+ * NOTE: This route MUST be before /:id to avoid matching 'rating-stats' as an ID
+ */
+router.get(
+  '/rating-stats',
+  authenticate,
+  authorizeLevel(4),
+  [
+    query('department_id').optional().isUUID(),
+    query('start_date').optional().isISO8601(),
+    query('end_date').optional().isISO8601()
+  ],
+  validate,
+  incidentController.getRatingStats
+);
+
+/**
  * @route   GET /api/incidents/:id
  * @desc    Get incident by ID
  * @access  Private (Authenticated users - own incidents or authorized roles)
@@ -654,24 +673,6 @@ router.post(
   ],
   validate,
   incidentController.submitDetailedRating
-);
-
-/**
- * @route   GET /api/incidents/rating-stats
- * @desc    Get rating statistics
- * @access  Private (Supervisor and above)
- */
-router.get(
-  '/rating-stats',
-  authenticate,
-  authorizeLevel(4),
-  [
-    query('department_id').optional().isUUID(),
-    query('start_date').optional().isISO8601(),
-    query('end_date').optional().isISO8601()
-  ],
-  validate,
-  incidentController.getRatingStats
 );
 
 module.exports = router;
