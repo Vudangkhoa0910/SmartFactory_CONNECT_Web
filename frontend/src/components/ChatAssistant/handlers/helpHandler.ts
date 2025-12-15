@@ -66,32 +66,32 @@ export function handleHelpCommand(
 }
 
 function showRoomBookingHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.booking_title')}**\n\n${t('help.booking_content')}`;
+  const text = `${t('help.booking_title')}\n\n${t('help.booking_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
 function showNotificationHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.notification_title')}**\n\n${t('help.notification_content')}`;
+  const text = `${t('help.notification_title')}\n\n${t('help.notification_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
 function showNavigationHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.navigation_title')}**\n\n${t('help.navigation_content')}`;
+  const text = `${t('help.navigation_title')}\n\n${t('help.navigation_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
 function showIncidentHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.incident_title')}**\n\n${t('help.incident_content')}`;
+  const text = `${t('help.incident_title')}\n\n${t('help.incident_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
 function showIdeaHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.idea_title')}**\n\n${t('help.idea_content')}`;
+  const text = `${t('help.idea_title')}\n\n${t('help.idea_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
 function showNewsHelp(setMessages: any, t: (key: string) => string) {
-  const text = `**${t('help.news_title')}**\n\n${t('help.news_content')}`;
+  const text = `${t('help.news_title')}\n\n${t('help.news_content')}`;
   setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 

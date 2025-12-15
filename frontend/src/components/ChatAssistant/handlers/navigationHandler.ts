@@ -12,7 +12,7 @@ export function handleNavigationCommands(params: CommandHandlerParams): boolean 
     navigate('/room-booking');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '📅 Đã chuyển đến trang **Đặt phòng họp**' 
+      text: 'Đã chuyển đến trang Đặt phòng họp' 
     }]);
     return true;
   }
@@ -21,7 +21,7 @@ export function handleNavigationCommands(params: CommandHandlerParams): boolean 
     navigate('/my-bookings');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '📅 Đã chuyển đến trang **Lịch của tôi**' 
+      text: 'Đã chuyển đến trang Lịch của tôi' 
     }]);
     return true;
   }
@@ -30,7 +30,7 @@ export function handleNavigationCommands(params: CommandHandlerParams): boolean 
     navigate('/admin/booking-approval');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '✅ Đã chuyển đến trang **Duyệt đặt phòng**' 
+      text: 'Đã chuyển đến trang Duyệt đặt phòng' 
     }]);
     return true;
   }

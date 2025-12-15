@@ -36,9 +36,9 @@ function handleMarkAllRead(params: CommandHandlerParams): boolean {
   (async () => {
     try {
       await api.put('/notifications/read-all');
-      setMessages(prev => [...prev, { role: 'model', text: '✅ Đã đánh dấu tất cả thông báo là đã đọc.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Đã đánh dấu tất cả thông báo là đã đọc.' }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'model', text: '❌ Có lỗi khi cập nhật trạng thái thông báo.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Có lỗi khi cập nhật trạng thái thông báo.' }]);
     }
   })();
   
@@ -88,12 +88,12 @@ function handleViewNotificationDetail(params: CommandHandlerParams): boolean {
     const n = cachedNotifications[index];
     setMessages(prev => [...prev, {
       role: 'model',
-      text: `📄 **Chi tiết thông báo:**\n\n**${n.title}**\n${n.message || n.content || ''}`
+      text: `Chi tiết thông báo:\n\n${n.title}\n${n.message || n.content || ''}`
     }]);
   } else {
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: `❌ Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại.` 
+      text: `Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại.` 
     }]);
   }
   
@@ -123,19 +123,19 @@ async function handleViewNotificationList(params: CommandHandlerParams): Promise
         onClick: () => {
           setMessages(prev => [...prev, {
             role: 'model',
-            text: `📄 **Chi tiết thông báo:**\n\n**${n.title}**\n${n.message || n.content || ''}`
+            text: `Chi tiết thông báo:\n\n${n.title}\n${n.message || n.content || ''}`
           }]);
         }
       }));
 
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: `📬 **Bạn có ${unread.length} thông báo mới:**\n\n${unread.map((n, i) => `${i+1}. ${n.title}`).join('\n')}\n\n💡 Gõ **"đã xem [số]"** để đánh dấu đã xem (ví dụ: "đã xem 1").\n(Hoặc chọn nút bên dưới để xem chi tiết)`,
+        text: `Bạn có ${unread.length} thông báo mới:\n\n${unread.map((n, i) => `${i+1}. ${n.title}`).join('\n')}\n\nGõ "đã xem [số]" để đánh dấu đã xem (ví dụ: "đã xem 1").\n(Hoặc chọn nút bên dưới để xem chi tiết)`,
         actions: actions
       }]);
     }
   } catch {
-    setMessages(prev => [...prev, { role: 'model', text: '❌ Không thể tải thông báo lúc này.' }]);
+    setMessages(prev => [...prev, { role: 'model', text: 'Không thể tải thông báo lúc này.' }]);
   }
   
   return true;
