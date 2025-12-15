@@ -5,23 +5,135 @@ const fs = require('fs').promises;
 const ExcelJS = require('exceljs');
 const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
+const { isAutoAssignEnabled } = require('./settings.controller');
+const { getLanguageFromRequest } = require('../utils/i18n.helper');
+
+// RAG Service configuration
+const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL || 'http://localhost:8001';
+
+/**
+ * Helper function to call RAG service for department suggestion
+ * Supports multi-field matching for better accuracy
+ */
+async function suggestDepartmentFromRAG(description, location = null, incident_type = null, priority = null) {
+  try {
+    // Build request body with all available fields
+    const requestBody = {
+      description,
+      ...(location && { location }),
+      ...(incident_type && { incident_type }),
+      ...(priority && { priority })
+    };
+
+    console.log('[RAG] Sending multi-field request:', JSON.stringify(requestBody));
+
+    const response = await fetch(`${RAG_SERVICE_URL}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(10000) // 10 second timeout for background processing
+    });
+
+    if (!response.ok) {
+      console.log('[RAG] Service returned error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('[RAG] Suggestion result:', JSON.stringify(data));
+
+    if (data.success && data.suggestion) {
+      return {
+        department_id: data.suggestion.department_id,
+        department_name: data.suggestion.department_name,
+        confidence: data.suggestion.confidence,
+        auto_assign: data.suggestion.auto_assign
+      };
+    }
+    return null;
+  } catch (error) {
+    console.log('[RAG] Service unavailable:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Background RAG processing - runs AFTER response sent to mobile
+ * Updates incident with department suggestion asynchronously
+ */
+async function processRAGInBackground(incidentId, description, location, incident_type, priority, reporterId) {
+  try {
+    console.log(`[RAG-BG] Starting background processing for incident ${incidentId}`);
+
+    // Call RAG with multi-field data
+    const rag_suggestion = await suggestDepartmentFromRAG(description, location, incident_type, priority);
+
+    if (rag_suggestion && rag_suggestion.department_id) {
+      // Update incident with RAG suggestion
+      // If auto_assign (>=85% confidence): assign department AND move to assigned
+      // If not auto_assign (<85%): just save suggestion, keep status as pending
+      const updateQuery = rag_suggestion.auto_assign
+        ? `UPDATE incidents 
+           SET assigned_department_id = $1, 
+               rag_suggestion = $2,
+               status = 'assigned',
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $3`
+        : `UPDATE incidents 
+           SET rag_suggestion = $1,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $2`;
+
+      const updateValues = rag_suggestion.auto_assign
+        ? [rag_suggestion.department_id, JSON.stringify(rag_suggestion), incidentId]
+        : [JSON.stringify(rag_suggestion), incidentId];
+
+      await db.query(updateQuery, updateValues);
+
+      // Log history - different action based on auto_assign
+      const historyAction = rag_suggestion.auto_assign ? 'ai_auto_assigned' : 'rag_processed';
+      await db.query(
+        `INSERT INTO incident_history (incident_id, action, performed_by, details)
+         VALUES ($1, $2, $3, $4)`,
+        [incidentId, historyAction, reporterId, JSON.stringify({
+          department_id: rag_suggestion.department_id,
+          department_name: rag_suggestion.department_name,
+          confidence: rag_suggestion.confidence,
+          auto_assigned: rag_suggestion.auto_assign,
+          new_status: rag_suggestion.auto_assign ? 'assigned' : 'pending'
+        })]
+      );
+
+      const statusMsg = rag_suggestion.auto_assign ? '→ assigned' : '(suggest only)';
+      console.log(`[RAG-BG] Incident ${incidentId} updated: ${rag_suggestion.department_name} (${(rag_suggestion.confidence * 100).toFixed(0)}%) ${statusMsg}`);
+    } else {
+      console.log(`[RAG-BG] No suggestion for incident ${incidentId}`);
+    }
+  } catch (error) {
+    console.error(`[RAG-BG] Error processing incident ${incidentId}:`, error.message);
+  }
+}
 
 /**
  * Create new incident
  * POST /api/incidents
+ * 
+ * FAST RESPONSE: Saves incident immediately, RAG runs in background
  */
 const createIncident = asyncHandler(async (req, res) => {
   const {
     incident_type,
     title,
+    title_ja,
     description,
+    description_ja,
     location,
     department_id,
     priority
   } = req.body;
-  
+
   const reporter_id = req.user.id;
-  
+
   // Handle file attachments
   const attachments = req.files ? req.files.map(file => ({
     filename: file.filename,
@@ -30,50 +142,91 @@ const createIncident = asyncHandler(async (req, res) => {
     size: file.size,
     path: file.path
   })) : [];
-  
+
+  // INSERT IMMEDIATELY - No waiting for RAG
   const query = `
     INSERT INTO incidents (
       incident_type,
       title,
+      title_ja,
       description,
+      description_ja,
       location,
       department_id,
+      assigned_department_id,
       reporter_id,
       priority,
       attachments,
       status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, $10, 'pending')
     RETURNING *
   `;
-  
+
   const values = [
     incident_type,
     title,
+    title_ja || null,
     description,
+    description_ja || null,
     location,
     department_id || null,
     reporter_id,
     priority || 'medium',
     JSON.stringify(attachments)
   ];
-  
+
   const result = await db.query(query, values);
   const incident = result.rows[0];
-  
-  // Log history
+
+  // Log history - FAST, no RAG info yet
+  const historyDetails = {
+    status: 'pending',
+    rag_processing: 'pending'  // Will be updated by background process
+  };
+
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'created', $2, $3)`,
-    [incident.id, reporter_id, JSON.stringify({ status: 'pending' })]
+    [incident.id, reporter_id, JSON.stringify(historyDetails)]
   );
-  
-  // TODO: Send notification to Team Leader/Supervisor
-  
+
+  // RESPOND IMMEDIATELY to mobile - don't wait for RAG
   res.status(201).json({
     success: true,
     message: 'Incident reported successfully',
-    data: incident
+    data: incident,
+    rag_processing: 'background'  // Indicate RAG is processing in background
   });
+
+  // BROADCAST incident_created for real-time updates (e.g., AnomalyAlerts)
+  const io = req.app.get('io');
+  if (io && io.broadcastIncident) {
+    io.broadcastIncident('incident_created', {
+      id: incident.id,
+      title: incident.title,
+      incident_type: incident.incident_type,
+      location: incident.location,
+      priority: incident.priority,
+      created_at: incident.created_at
+    });
+  }
+
+  // START RAG PROCESSING IN BACKGROUND (after response sent)
+  if (description && description.length >= 10 && isAutoAssignEnabled()) {
+    // Use setImmediate to ensure response is sent first
+    setImmediate(() => {
+      processRAGInBackground(
+        incident.id,
+        description,
+        location,
+        incident_type,
+        priority || 'medium',
+        reporter_id
+      );
+    });
+  } else if (!isAutoAssignEnabled()) {
+    console.log('[RAG] Auto-assign is DISABLED, skipping background processing');
+  }
 });
 
 /**
@@ -85,12 +238,13 @@ const getIncidents = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userRole = req.user.role;
   const userLevel = req.user.level;
-  
+  const lang = getLanguageFromRequest(req);
+
   // Build WHERE conditions based on role
   const conditions = [];
   const params = [];
   let paramIndex = 1;
-  
+
   // Filter by role permissions
   // User requested that everyone can view all incidents
   /*
@@ -109,68 +263,76 @@ const getIncidents = asyncHandler(async (req, res) => {
     paramIndex++;
   }
   */
-  
+
   // Apply search filter
   if (req.query.search) {
-    conditions.push(`(LOWER(i.title) LIKE $${paramIndex} OR LOWER(i.description) LIKE $${paramIndex} OR LOWER(i.location) LIKE $${paramIndex})`);
+    conditions.push(`(
+      LOWER(i.title) LIKE $${paramIndex}
+      OR LOWER(COALESCE(i.title_ja, '')) LIKE $${paramIndex}
+      OR LOWER(i.description) LIKE $${paramIndex}
+      OR LOWER(COALESCE(i.description_ja, '')) LIKE $${paramIndex}
+      OR LOWER(COALESCE(i.location, '')) LIKE $${paramIndex}
+    )`);
     params.push(`%${req.query.search.toLowerCase()}%`);
     paramIndex++;
   }
-  
+
   // Apply filters
   if (filters.status) {
     conditions.push(`status = $${paramIndex}`);
     params.push(filters.status);
     paramIndex++;
   }
-  
+
   if (filters.incident_type) {
     conditions.push(`incident_type = $${paramIndex}`);
     params.push(filters.incident_type);
     paramIndex++;
   }
-  
+
   if (filters.priority) {
     conditions.push(`priority = $${paramIndex}`);
     params.push(filters.priority);
     paramIndex++;
   }
-  
+
   if (filters.department_id) {
     conditions.push(`department_id = $${paramIndex}`);
     params.push(filters.department_id);
     paramIndex++;
   }
-  
+
   if (filters.assigned_to) {
     conditions.push(`assigned_to = $${paramIndex}`);
     params.push(filters.assigned_to);
     paramIndex++;
   }
-  
+
   if (filters.date_from) {
     conditions.push(`i.created_at >= $${paramIndex}`);
     params.push(filters.date_from);
     paramIndex++;
   }
-  
+
   if (filters.date_to) {
     conditions.push(`i.created_at <= $${paramIndex}`);
     params.push(filters.date_to);
     paramIndex++;
   }
-  
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
   // Get total count
   const countQuery = `SELECT COUNT(*) FROM incidents i ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
-  
+
   // Get incidents with pagination
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
       u.full_name as reporter_name,
       u.employee_code as reporter_code,
       d.name as department_name,
@@ -183,11 +345,11 @@ const getIncidents = asyncHandler(async (req, res) => {
     ORDER BY ${sort.sortBy} ${sort.sortOrder}
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;
-  
+
   params.push(pagination.limit, pagination.offset);
-  
+
   const result = await db.query(query, params);
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -208,10 +370,13 @@ const getIncidentById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const userLevel = req.user.level;
-  
+  const lang = getLanguageFromRequest(req);
+
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
       u.full_name as reporter_name,
       u.employee_code as reporter_code,
       u.email as reporter_email,
@@ -226,15 +391,15 @@ const getIncidentById = asyncHandler(async (req, res) => {
     LEFT JOIN users r ON i.resolved_by = r.id
     WHERE i.id = $1
   `;
-  
+
   const result = await db.query(query, [id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   const incident = result.rows[0];
-  
+
   // Check access permissions
   // User requested that everyone can view all incidents
   /*
@@ -242,11 +407,12 @@ const getIncidentById = asyncHandler(async (req, res) => {
     throw new AppError('You do not have permission to view this incident', 403);
   }
   */
-  
+
   // Get comments
   const commentsQuery = `
     SELECT 
       c.*,
+      COALESCE(${lang === 'ja' ? 'c.comment_ja' : 'NULL'}, c.comment) as comment,
       u.full_name as user_name,
       u.employee_code,
       u.role
@@ -255,10 +421,10 @@ const getIncidentById = asyncHandler(async (req, res) => {
     WHERE c.incident_id = $1
     ORDER BY c.created_at ASC
   `;
-  
+
   const commentsResult = await db.query(commentsQuery, [id]);
   incident.comments = commentsResult.rows;
-  
+
   // Get history
   const historyQuery = `
     SELECT 
@@ -270,10 +436,10 @@ const getIncidentById = asyncHandler(async (req, res) => {
     WHERE h.incident_id = $1
     ORDER BY h.created_at DESC
   `;
-  
+
   const historyResult = await db.query(historyQuery, [id]);
   incident.history = historyResult.rows;
-  
+
   res.json({
     success: true,
     data: incident
@@ -288,21 +454,21 @@ const assignIncident = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { assigned_to } = req.body;
   const userId = req.user.id;
-  
+
   // Get incident
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   // Check if user exists and has appropriate role
   const assignee = await db.query('SELECT * FROM users WHERE id = $1', [assigned_to]);
-  
+
   if (assignee.rows.length === 0) {
     throw new AppError('Assignee not found', 404);
   }
-  
+
   // Update incident
   const query = `
     UPDATE incidents
@@ -316,18 +482,18 @@ const assignIncident = asyncHandler(async (req, res) => {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [assigned_to, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'assigned', $2, $3)`,
     [id, userId, JSON.stringify({ assigned_to, assignee_name: assignee.rows[0].full_name })]
   );
-  
+
   // TODO: Send notification to assigned user
-  
+
   res.json({
     success: true,
     message: 'Incident assigned successfully',
@@ -343,16 +509,16 @@ const updateIncidentStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, notes } = req.body;
   const userId = req.user.id;
-  
+
   // Get incident
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   const oldStatus = incident.rows[0].status;
-  
+
   // Update status
   const query = `
     UPDATE incidents
@@ -360,16 +526,16 @@ const updateIncidentStatus = asyncHandler(async (req, res) => {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [status, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'status_changed', $2, $3)`,
     [id, userId, JSON.stringify({ old_status: oldStatus, new_status: status, notes })]
   );
-  
+
   // If status is 'in_progress', add comment if notes provided
   if (notes) {
     await db.query(
@@ -378,9 +544,9 @@ const updateIncidentStatus = asyncHandler(async (req, res) => {
       [id, userId, notes]
     );
   }
-  
+
   // TODO: Send notification to reporter
-  
+
   res.json({
     success: true,
     message: 'Incident status updated successfully',
@@ -394,16 +560,17 @@ const updateIncidentStatus = asyncHandler(async (req, res) => {
  */
 const addComment = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { comment } = req.body;
+  const { comment, comment_ja } = req.body;
   const userId = req.user.id;
-  
+  const lang = getLanguageFromRequest(req);
+
   // Check if incident exists
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   // Handle attachments
   const attachments = req.files ? req.files.map(file => ({
     filename: file.filename,
@@ -412,19 +579,20 @@ const addComment = asyncHandler(async (req, res) => {
     size: file.size,
     path: file.path
   })) : [];
-  
+
   const query = `
-    INSERT INTO incident_comments (incident_id, user_id, comment, attachments)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO incident_comments (incident_id, user_id, comment, comment_ja, attachments)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
-  
-  const result = await db.query(query, [id, userId, comment, JSON.stringify(attachments)]);
-  
+
+  const result = await db.query(query, [id, userId, comment, comment_ja || null, JSON.stringify(attachments)]);
+
   // Get user info for response
   const commentWithUser = await db.query(`
     SELECT 
       c.*,
+      COALESCE(${lang === 'ja' ? 'c.comment_ja' : 'NULL'}, c.comment) as comment,
       u.full_name as user_name,
       u.employee_code,
       u.role
@@ -432,9 +600,9 @@ const addComment = asyncHandler(async (req, res) => {
     LEFT JOIN users u ON c.user_id = u.id
     WHERE c.id = $1
   `, [result.rows[0].id]);
-  
+
   // TODO: Send notification to relevant users
-  
+
   res.status(201).json({
     success: true,
     message: 'Comment added successfully',
@@ -450,25 +618,25 @@ const escalateIncident = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { escalate_to, reason } = req.body;
   const userId = req.user.id;
-  
+
   // Get incident
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   // Verify escalate_to user exists and has higher role
   const escalateTo = await db.query('SELECT * FROM users WHERE id = $1', [escalate_to]);
-  
+
   if (escalateTo.rows.length === 0) {
     throw new AppError('User to escalate to not found', 404);
   }
-  
+
   if (escalateTo.rows[0].level >= req.user.level) {
     throw new AppError('Can only escalate to higher level users', 400);
   }
-  
+
   // Update incident
   const query = `
     UPDATE incidents
@@ -481,9 +649,9 @@ const escalateIncident = asyncHandler(async (req, res) => {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [escalate_to, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
@@ -499,7 +667,7 @@ const escalateIncident = asyncHandler(async (req, res) => {
       })
     ]
   );
-  
+
   // Add comment with reason
   if (reason) {
     await db.query(
@@ -508,9 +676,9 @@ const escalateIncident = asyncHandler(async (req, res) => {
       [id, userId, `Escalated: ${reason}`]
     );
   }
-  
+
   // TODO: Send notification to escalated user
-  
+
   res.json({
     success: true,
     message: 'Incident escalated successfully',
@@ -526,14 +694,14 @@ const resolveIncident = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { resolution_notes, root_cause, corrective_actions } = req.body;
   const userId = req.user.id;
-  
+
   // Get incident
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   // Update incident
   const query = `
     UPDATE incidents
@@ -548,7 +716,7 @@ const resolveIncident = asyncHandler(async (req, res) => {
     WHERE id = $5
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [
     userId,
     resolution_notes,
@@ -556,16 +724,16 @@ const resolveIncident = asyncHandler(async (req, res) => {
     corrective_actions,
     id
   ]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'resolved', $2, $3)`,
     [id, userId, JSON.stringify({ resolution_notes, root_cause, corrective_actions })]
   );
-  
+
   // TODO: Send notification to reporter
-  
+
   res.json({
     success: true,
     message: 'Incident resolved successfully',
@@ -581,24 +749,24 @@ const rateIncident = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { rating, feedback } = req.body;
   const userId = req.user.id;
-  
+
   // Get incident
   const incident = await db.query('SELECT * FROM incidents WHERE id = $1', [id]);
-  
+
   if (incident.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   // Only reporter can rate
   if (incident.rows[0].reporter_id !== userId) {
     throw new AppError('Only the reporter can rate this incident', 403);
   }
-  
+
   // Must be resolved
   if (incident.rows[0].status !== 'resolved') {
     throw new AppError('Can only rate resolved incidents', 400);
   }
-  
+
   // Update rating
   const query = `
     UPDATE incidents
@@ -610,16 +778,16 @@ const rateIncident = asyncHandler(async (req, res) => {
     WHERE id = $3
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [rating, feedback, id]);
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'rated', $2, $3)`,
     [id, userId, JSON.stringify({ rating, feedback })]
   );
-  
+
   res.json({
     success: true,
     message: 'Thank you for your feedback',
@@ -633,31 +801,31 @@ const rateIncident = asyncHandler(async (req, res) => {
  */
 const getIncidentStats = asyncHandler(async (req, res) => {
   const { date_from, date_to, department_id } = req.query;
-  
+
   const conditions = [];
   const params = [];
   let paramIndex = 1;
-  
+
   if (date_from) {
     conditions.push(`created_at >= $${paramIndex}`);
     params.push(date_from);
     paramIndex++;
   }
-  
+
   if (date_to) {
     conditions.push(`created_at <= $${paramIndex}`);
     params.push(date_to);
     paramIndex++;
   }
-  
+
   if (department_id) {
     conditions.push(`department_id = $${paramIndex}`);
     params.push(department_id);
     paramIndex++;
   }
-  
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
   // Overall stats
   const statsQuery = `
     SELECT 
@@ -676,9 +844,9 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     FROM incidents
     ${whereClause}
   `;
-  
+
   const statsResult = await db.query(statsQuery, params);
-  
+
   // By type
   const byTypeQuery = `
     SELECT 
@@ -688,9 +856,9 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ${whereClause}
     GROUP BY incident_type
   `;
-  
+
   const byTypeResult = await db.query(byTypeQuery, params);
-  
+
   // By priority
   const byPriorityQuery = `
     SELECT 
@@ -700,9 +868,9 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ${whereClause}
     GROUP BY priority
   `;
-  
+
   const byPriorityResult = await db.query(byPriorityQuery, params);
-  
+
   // By department
   const byDepartmentQuery = `
     SELECT 
@@ -713,9 +881,9 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ${whereClause}
     GROUP BY d.name
   `;
-  
+
   const byDepartmentResult = await db.query(byDepartmentQuery, params);
-  
+
   res.json({
     success: true,
     data: {
@@ -733,9 +901,12 @@ const getIncidentStats = asyncHandler(async (req, res) => {
  * Returns only new/pending and critical incidents for quick action
  */
 const getIncidentQueue = asyncHandler(async (req, res) => {
+  const lang = getLanguageFromRequest(req);
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
       u.full_name as reporter_name,
       u.employee_code as reporter_code,
       d.name as department_name
@@ -753,9 +924,9 @@ const getIncidentQueue = asyncHandler(async (req, res) => {
       END,
       i.created_at DESC
   `;
-  
+
   const result = await db.query(query);
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -770,7 +941,7 @@ const getIncidentQueue = asyncHandler(async (req, res) => {
 const quickAcknowledge = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  
+
   // Update status to assigned
   const updateQuery = `
     UPDATE incidents
@@ -780,24 +951,24 @@ const quickAcknowledge = asyncHandler(async (req, res) => {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const result = await db.query(updateQuery, [userId, id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   const incident = result.rows[0];
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'acknowledged', $2, $3)`,
     [id, userId, JSON.stringify({ status: 'assigned' })]
   );
-  
+
   // TODO: Send notification
-  
+
   res.json({
     success: true,
     message: 'Incident acknowledged successfully',
@@ -813,7 +984,7 @@ const quickAssignToDepartment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { department_id, assigned_to } = req.body;
   const userId = req.user.id;
-  
+
   // Update incident
   const updateQuery = `
     UPDATE incidents
@@ -824,24 +995,24 @@ const quickAssignToDepartment = asyncHandler(async (req, res) => {
     WHERE id = $3
     RETURNING *
   `;
-  
+
   const result = await db.query(updateQuery, [department_id, assigned_to || null, id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   const incident = result.rows[0];
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'quick_assigned', $2, $3)`,
     [id, userId, JSON.stringify({ department_id, assigned_to, status: 'assigned' })]
   );
-  
+
   // TODO: Send notification to department/user
-  
+
   res.json({
     success: true,
     message: 'Incident assigned successfully',
@@ -857,26 +1028,31 @@ const getKanbanData = asyncHandler(async (req, res) => {
   const { department_id } = req.query;
   const userId = req.user.id;
   const userLevel = req.user.level;
-  
+  const lang = getLanguageFromRequest(req);
+
   const statusColumns = [
     'pending',
-    'assigned', 
+    'assigned',
     'in_progress',
     'on_hold',
     'resolved',
     'closed'
   ];
-  
+
   const kanbanData = {};
-  
+
   for (const status of statusColumns) {
     try {
       let query = `
         SELECT 
           i.id,
           i.incident_type,
-          i.title,
-          i.description,
+          COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+          COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
+          i.title as title_vi,
+          i.title_ja,
+          i.description as description_vi,
+          i.description_ja,
           i.location,
           i.status,
           i.priority,
@@ -891,10 +1067,10 @@ const getKanbanData = asyncHandler(async (req, res) => {
         FROM incidents i
         WHERE i.status = $1
       `;
-      
+
       const params = [status];
       let paramIndex = 2;
-      
+
       if (department_id) {
         query += ` AND i.department_id = $${paramIndex}`;
         params.push(department_id);
@@ -905,7 +1081,7 @@ const getKanbanData = asyncHandler(async (req, res) => {
         params.push(req.user.department_id, userId);
         paramIndex += 2;
       }
-      
+
       query += `
         ORDER BY 
           CASE i.priority
@@ -917,7 +1093,7 @@ const getKanbanData = asyncHandler(async (req, res) => {
           i.created_at DESC
         LIMIT 100
       `;
-      
+
       const result = await db.query(query, params);
       kanbanData[status] = result.rows;
     } catch (error) {
@@ -925,7 +1101,7 @@ const getKanbanData = asyncHandler(async (req, res) => {
       kanbanData[status] = [];
     }
   }
-  
+
   res.json({
     success: true,
     data: kanbanData
@@ -940,7 +1116,7 @@ const moveIncidentStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { new_status, new_assigned_to } = req.body;
   const userId = req.user.id;
-  
+
   const updateQuery = `
     UPDATE incidents
     SET status = $1,
@@ -949,22 +1125,22 @@ const moveIncidentStatus = asyncHandler(async (req, res) => {
     WHERE id = $3
     RETURNING *
   `;
-  
+
   const result = await db.query(updateQuery, [new_status, new_assigned_to, id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Incident not found', 404);
   }
-  
+
   const incident = result.rows[0];
-  
+
   // Log history
   await db.query(
     `INSERT INTO incident_history (incident_id, action, performed_by, details)
      VALUES ($1, 'status_changed', $2, $3)`,
     [id, userId, JSON.stringify({ old_status: 'unknown', new_status, new_assigned_to })]
   );
-  
+
   res.json({
     success: true,
     message: 'Incident status updated',
@@ -979,14 +1155,14 @@ const moveIncidentStatus = asyncHandler(async (req, res) => {
 const bulkUpdateIncidents = asyncHandler(async (req, res) => {
   const { incident_ids, action, data } = req.body;
   const userId = req.user.id;
-  
+
   if (!incident_ids || incident_ids.length === 0) {
     throw new AppError('No incidents selected', 400);
   }
-  
+
   let updateQuery = '';
   let params = [];
-  
+
   switch (action) {
     case 'assign':
       updateQuery = `
@@ -997,7 +1173,7 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
       `;
       params = [data.assigned_to, incident_ids];
       break;
-      
+
     case 'change_status':
       updateQuery = `
         UPDATE incidents
@@ -1007,7 +1183,7 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
       `;
       params = [data.status, incident_ids];
       break;
-      
+
     case 'change_priority':
       updateQuery = `
         UPDATE incidents
@@ -1017,13 +1193,13 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
       `;
       params = [data.priority, incident_ids];
       break;
-      
+
     default:
       throw new AppError('Invalid bulk action', 400);
   }
-  
+
   const result = await db.query(updateQuery, params);
-  
+
   // Log history for each incident
   for (const incident_id of incident_ids) {
     await db.query(
@@ -1032,7 +1208,7 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
       [incident_id, `bulk_${action}`, userId, JSON.stringify(data)]
     );
   }
-  
+
   res.json({
     success: true,
     message: `Successfully updated ${result.rows.length} incidents`,
@@ -1046,60 +1222,63 @@ const bulkUpdateIncidents = asyncHandler(async (req, res) => {
  */
 const exportIncidentsToExcel = asyncHandler(async (req, res) => {
   const { filters } = req;
-  
+  const lang = getLanguageFromRequest(req);
+
   // Build WHERE conditions (same as getIncidents but without pagination)
   const conditions = [];
   const params = [];
   let paramIndex = 1;
-  
+
   // Apply filters
   if (filters.status) {
     conditions.push(`status = $${paramIndex}`);
     params.push(filters.status);
     paramIndex++;
   }
-  
+
   if (filters.incident_type) {
     conditions.push(`incident_type = $${paramIndex}`);
     params.push(filters.incident_type);
     paramIndex++;
   }
-  
+
   if (filters.priority) {
     conditions.push(`priority = $${paramIndex}`);
     params.push(filters.priority);
     paramIndex++;
   }
-  
+
   if (filters.department_id) {
     conditions.push(`department_id = $${paramIndex}`);
     params.push(filters.department_id);
     paramIndex++;
   }
-  
+
   if (filters.assigned_to) {
     conditions.push(`assigned_to = $${paramIndex}`);
     params.push(filters.assigned_to);
     paramIndex++;
   }
-  
+
   if (filters.date_from) {
     conditions.push(`created_at >= $${paramIndex}`);
     params.push(filters.date_from);
     paramIndex++;
   }
-  
+
   if (filters.date_to) {
     conditions.push(`created_at <= $${paramIndex}`);
     params.push(filters.date_to);
     paramIndex++;
   }
-  
+
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
   const query = `
     SELECT 
       i.*,
+      COALESCE(${lang === 'ja' ? 'i.title_ja' : 'NULL'}, i.title) as title,
+      COALESCE(${lang === 'ja' ? 'i.description_ja' : 'NULL'}, i.description) as description,
       u.full_name as reporter_name,
       u.employee_code as reporter_code,
       d.name as department_name,
@@ -1113,7 +1292,7 @@ const exportIncidentsToExcel = asyncHandler(async (req, res) => {
     ${whereClause}
     ORDER BY i.created_at DESC
   `;
-  
+
   const result = await db.query(query, params);
   const incidents = result.rows;
 
@@ -1151,7 +1330,7 @@ const exportIncidentsToExcel = asyncHandler(async (req, res) => {
 
   // Style Header
   worksheet.getRow(1).font = { bold: true };
-  
+
   // Set Response Headers
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename=incidents.xlsx');
@@ -1169,9 +1348,9 @@ const escalateToNextLevel = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
   const userId = req.user.id;
-  
+
   const result = await escalationService.escalateIncident(id, userId, reason, false);
-  
+
   // Get notification service and send notification
   const notificationService = req.app.get('notificationService');
   if (notificationService && result.newHandler) {
@@ -1184,7 +1363,7 @@ const escalateToNextLevel = asyncHandler(async (req, res) => {
       reference_id: id,
     });
   }
-  
+
   res.json({
     success: true,
     message: `Incident escalated to ${result.levelName}`,
@@ -1200,17 +1379,17 @@ const assignToDepartments = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { departments } = req.body; // Array of { department_id, assigned_to, task_description, priority, due_date }
   const userId = req.user.id;
-  
+
   if (!departments || !Array.isArray(departments) || departments.length === 0) {
     throw new AppError('Departments array is required', 400);
   }
-  
+
   const results = await escalationService.assignIncidentToDepartments(id, departments, userId);
-  
+
   // Send notifications to assigned departments
   const notificationService = req.app.get('notificationService');
   const io = req.app.get('io');
-  
+
   for (const assignment of results) {
     // Notify department
     if (io && assignment.department_id) {
@@ -1221,7 +1400,7 @@ const assignToDepartments = asyncHandler(async (req, res) => {
         priority: assignment.priority,
       });
     }
-    
+
     // Notify specific assignee
     if (notificationService && assignment.assigned_to) {
       await notificationService.createNotification({
@@ -1234,7 +1413,7 @@ const assignToDepartments = asyncHandler(async (req, res) => {
       });
     }
   }
-  
+
   res.json({
     success: true,
     message: `Incident assigned to ${results.length} department(s)`,
@@ -1248,7 +1427,7 @@ const assignToDepartments = asyncHandler(async (req, res) => {
  */
 const getDepartmentAssignments = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   const result = await db.query(`
     SELECT 
       ida.*,
@@ -1263,7 +1442,7 @@ const getDepartmentAssignments = asyncHandler(async (req, res) => {
     WHERE ida.incident_id = $1
     ORDER BY ida.created_at DESC
   `, [id]);
-  
+
   res.json({
     success: true,
     data: result.rows
@@ -1278,15 +1457,15 @@ const updateDepartmentAssignment = asyncHandler(async (req, res) => {
   const { id, assignmentId } = req.params;
   const { status, completion_notes } = req.body;
   const userId = req.user.id;
-  
+
   const updateFields = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
   const params = [status];
   let paramIndex = 2;
-  
+
   if (status === 'in_progress' && !req.body.started_at) {
     updateFields.push(`started_at = CURRENT_TIMESTAMP`);
   }
-  
+
   if (status === 'completed') {
     updateFields.push(`completed_at = CURRENT_TIMESTAMP`);
     if (completion_notes) {
@@ -1294,26 +1473,26 @@ const updateDepartmentAssignment = asyncHandler(async (req, res) => {
       params.push(completion_notes);
     }
   }
-  
+
   params.push(assignmentId, id);
-  
+
   const result = await db.query(`
     UPDATE incident_department_assignments
     SET ${updateFields.join(', ')}
     WHERE id = $${paramIndex++} AND incident_id = $${paramIndex}
     RETURNING *
   `, params);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Assignment not found', 404);
   }
-  
+
   // Log history
   await db.query(`
     INSERT INTO incident_history (incident_id, action, performed_by, details)
     VALUES ($1, 'department_task_updated', $2, $3)
   `, [id, userId, JSON.stringify({ assignment_id: assignmentId, status })]);
-  
+
   res.json({
     success: true,
     message: 'Department assignment updated',
@@ -1328,9 +1507,9 @@ const updateDepartmentAssignment = asyncHandler(async (req, res) => {
 const submitDetailedRating = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  
+
   const rating = await ratingService.rateIncident(id, userId, req.body);
-  
+
   res.json({
     success: true,
     message: 'Rating submitted successfully',
@@ -1344,13 +1523,13 @@ const submitDetailedRating = asyncHandler(async (req, res) => {
  */
 const getRatingStats = asyncHandler(async (req, res) => {
   const { department_id, start_date, end_date } = req.query;
-  
+
   const stats = await ratingService.getIncidentRatingStats({
     department_id,
     start_date,
     end_date
   });
-  
+
   res.json({
     success: true,
     data: stats
