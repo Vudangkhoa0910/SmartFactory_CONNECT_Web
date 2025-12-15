@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send } from 'lucide-react';
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface ChatInputProps {
   input: string;
@@ -9,6 +10,7 @@ interface ChatInputProps {
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({ input, setInput, onSend, isLoading }) => {
+  const { t } = useTranslation();
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -24,7 +26,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ input, setInput, onSend, isLoadin
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Nhập tin nhắn..."
+          placeholder={t('chat.input_placeholder')}
           className="w-full pl-5 pr-12 py-3 bg-slate-100 dark:bg-slate-900 border-none rounded-full text-base focus:ring-2 focus:ring-red-500/50 focus:outline-none dark:text-white placeholder-slate-400"
           disabled={isLoading}
         />

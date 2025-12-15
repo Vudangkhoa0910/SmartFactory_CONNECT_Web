@@ -12,6 +12,7 @@ export interface CommandHandlerParams {
   setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>;
   setPendingAction: (action: string | null) => void;
   navigate: NavigateFunction;
+  t: (key: string) => string;
 }
 
 export interface CommandResult {

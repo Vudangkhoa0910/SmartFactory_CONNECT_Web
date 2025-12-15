@@ -33,7 +33,8 @@
     "settings": "Cài đặt",
     "support": "Hỗ trợ",
     "logout": "Đăng xuất",
-    "queue": "Hàng đợi"
+    "queue": "Hàng đợi",
+    "chat_assistant": "Trợ lý AI"
   },
 
   "calendarf": {
@@ -488,6 +489,7 @@
     "bar_chart": "Biểu đồ cột"
   },
   "booking": {
+    "attendees_unit": "người",
     "title": "Đặt phòng họp",
     "create_new": "Đặt Phòng Họp",
     "my_bookings": "Đặt phòng của tôi",
@@ -817,7 +819,38 @@
     "menu":"Menu",
     "error_report":"Báo cáo sự cố",
     "feedback":"Hòm thư góp ý"
+  },
+  "chat": {
+    "welcome_message": "Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?",
+    "guide_button": "Hướng dẫn sử dụng",
+    "title": "Trợ lý ảo SmartFactory",
+    "subtitle": "Hỗ trợ quản lý, tra cứu và điều hành",
+    "help_title": "Tôi có thể giúp gì cho bạn?",
+    "help_subtitle": "Tra cứu sự cố, quản lý đặt phòng, xem thông báo và nhiều hơn nữa.",
+    "quick_guide": "Hướng dẫn sử dụng",
+    "quick_news": "Xem thông báo mới",
+    "quick_booking": "Đặt phòng họp",
+    "input_placeholder": "Nhập tin nhắn..."
+  },
+  "help": {
+    "menu_title": "HƯỚNG DẪN SỬ DỤNG CHATBOT\n\nChọn một chủ đề bên dưới để xem hướng dẫn chi tiết:",
+    "booking_title": "ĐẶT PHÒNG HỌP NHANH",
+    "booking_content": "• \"Đặt phòng [số người] tổ chức [mục đích] từ [giờ] đến [giờ] ngày [ngày] tháng [tháng]\"\n• VD: \"Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11\"\n• \"xem lịch phòng\" - Xem tất cả phòng và lịch đặt",
+    "notification_title": "QUẢN LÝ THÔNG BÁO",
+    "notification_content": "• \"xem thông báo\" - Xem danh sách thông báo chưa đọc\n• \"xem thông báo [số]\" - Xem chi tiết thông báo\n• \"đã xem [số]\" - Đánh dấu đã đọc 1 thông báo\n• \"đã xem hết\" - Đánh dấu tất cả đã đọc",
+    "navigation_title": "ĐIỀU HƯỚNG",
+    "navigation_content": "• \"dashboard\" - Trang tổng quan\n• \"sự cố\" - Quản lý sự cố\n• \"ý tưởng\" - Quản lý ý tưởng\n• \"tin tức\" - Quản lý tin tức\n• \"người dùng\" - Quản lý người dùng\n• \"phòng ban\" - Quản lý phòng ban\n• \"thông báo\" - Trang thông báo\n• \"profile\" - Trang cá nhân\n• \"lịch đặt phòng\" - Trang đặt phòng họp\n• \"lịch của tôi\" - Trang lịch cá nhân\n• \"duyệt đặt phòng\" - Trang duyệt đặt phòng",
+    "incident_title": "TÌM KIẾM SỰ CỐ (ADMIN)",
+    "incident_content": "• \"tìm sự cố\" - Hiển thị tất cả sự cố\n• \"tìm sự cố [từ khóa]\" - Tìm theo tiêu đề/mô tả\n• \"tìm sự cố tháng [số]\" - Tìm theo tháng\n• \"tìm sự cố năm [số]\" - Tìm theo năm\n• \"tìm sự cố ngày [DD/MM/YYYY]\" - Tìm theo ngày\n• \"tìm sự cố [từ khóa] tháng 11 năm 2025\"\n\nLỌC THEO TRẠNG THÁI:\n• Thêm: \"đang xử lý\", \"chờ xử lý\", \"đã giải quyết\", \"đã đóng\"\n\nLỌC THEO ƯU TIÊN:\n• Thêm: \"khẩn cấp\", \"cao\", \"trung bình\", \"thấp\"",
+    "idea_title": "TÌM KIẾM Ý TƯỞNG (ADMIN)",
+    "idea_content": "• \"tìm ý tưởng\" - Tìm tất cả ý tưởng\n• \"tìm ý tưởng [từ khóa]\" - Tìm theo tiêu đề/mô tả\n• \"tìm hòm trắng [từ khóa]\" - Tìm ý tưởng hòm trắng\n• \"tìm hòm hồng [từ khóa]\" - Tìm ý tưởng hòm hồng\n• \"tìm ý tưởng tháng [số]\" - Tìm theo tháng\n• \"tìm hòm trắng cải tiến quy trình tháng 9\"\n\nLỌC TRẠNG THÁI Ý TƯỞNG:\n• Thêm: \"chờ xử lý\", \"đang xem xét\", \"đã phê duyệt\", \"từ chối\", \"đã triển khai\"",
+    "news_title": "TẠO TIN TỨC (ADMIN)",
+    "news_content": "• \"tạo tin [chủ đề]\" - Tạo tin tức mới bằng AI",
+    "btn_booking": "Đặt phòng họp",
+    "btn_notification": "Quản lý thông báo",
+    "btn_navigation": "Điều hướng",
+    "btn_incident": "Tìm kiếm sự cố",
+    "btn_idea": "Tìm kiếm ý tưởng",
+    "btn_news": "Tạo tin tức"
   }
-
-
 }

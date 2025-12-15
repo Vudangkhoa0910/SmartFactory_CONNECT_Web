@@ -14,6 +14,7 @@ import {
   TaskIcon,
   BoxIcon,
   FolderIcon,
+  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../contexts/SidebarContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -55,6 +56,11 @@ const navItemsConfig: NavItem[] = [
     icon: <TaskIcon />,
     nameKey: "menu.news",
     path: "/news",
+  },
+  {
+    icon: <ChatIcon />,
+    nameKey: "menu.chat_assistant",
+    path: "/chat-assistant",
   },
   // {
   //   icon: <CalenderIcon />,

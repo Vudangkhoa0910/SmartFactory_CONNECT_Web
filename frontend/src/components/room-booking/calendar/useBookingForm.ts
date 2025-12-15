@@ -10,7 +10,7 @@ export interface BookingFormState {
   eventStartDate: string;
   eventStartTime: string;
   eventEndTime: string;
-  selectedRoom: number;
+  selectedRoom: string;
   meetingType: MeetingType;
   attendeesCount: number;
   selectedBooking: RoomBooking | null;
@@ -22,7 +22,7 @@ export interface UseBookingFormReturn extends BookingFormState {
   setEventStartDate: (value: string) => void;
   setEventStartTime: (value: string) => void;
   setEventEndTime: (value: string) => void;
-  setSelectedRoom: (value: number) => void;
+  setSelectedRoom: (value: string) => void;
   setMeetingType: (value: MeetingType) => void;
   setAttendeesCount: (value: number) => void;
   setSelectedBooking: (value: RoomBooking | null) => void;
@@ -36,7 +36,7 @@ export function useBookingForm(): UseBookingFormReturn {
   const [eventStartDate, setEventStartDate] = useState('');
   const [eventStartTime, setEventStartTime] = useState('09:00');
   const [eventEndTime, setEventEndTime] = useState('10:00');
-  const [selectedRoom, setSelectedRoom] = useState<number>(0);
+  const [selectedRoom, setSelectedRoom] = useState<string>('');
   const [meetingType, setMeetingType] = useState<MeetingType>('department_meeting');
   const [attendeesCount, setAttendeesCount] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<RoomBooking | null>(null);
@@ -56,7 +56,8 @@ export function useBookingForm(): UseBookingFormReturn {
       console.log('✅ Setting default room:', rooms[0].id, rooms[0].room_name);
       setSelectedRoom(rooms[0].id);
     } else {
-      console.log('⚠️ No rooms available yet, keeping selectedRoom as 0');
+      console.log('⚠️ No rooms available yet, keeping selectedRoom as empty');
+      setSelectedRoom('');
     }
   }, []);
 

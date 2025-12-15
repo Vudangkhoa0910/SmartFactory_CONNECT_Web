@@ -37,6 +37,7 @@ import TranslationTest from "./pages/TranslationTest";
 import RoomBookingPage from "./pages/RoomBookingPage";
 import AdminApprovalPage from "./pages/AdminApprovalPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
+import LargeChatPage from "./pages/Chat/LargeChatPage";
 
 export default function App() {
   return (
@@ -52,6 +53,9 @@ export default function App() {
 
             {/* Translation Test Page */}
             <Route path="/translation-test" element={<TranslationTest />} />
+
+            {/* Chat Assistant Page */}
+            <Route path="/chat-assistant" element={<LargeChatPage />} />
 
             <Route index path="/incident-queue" element={<IncidentQueue />} />
 

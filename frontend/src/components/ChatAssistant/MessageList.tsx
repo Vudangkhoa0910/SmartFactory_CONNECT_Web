@@ -8,9 +8,10 @@ interface MessageListProps {
   onNotificationClick?: (notification: Notification) => void;
   onIncidentClick?: (incident: Incident) => void;
   onIdeaClick?: (idea: Idea) => void;
+  className?: string;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotificationClick, onIncidentClick, onIdeaClick }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotificationClick, onIncidentClick, onIdeaClick, className }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -20,7 +21,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
   useEffect(scrollToBottom, [messages, isLoading]);
 
   return (
-    <div className="h-[450px] overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+    <div className={`overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 ${className || 'h-[450px]'}`}>
       <div className="space-y-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

@@ -2,11 +2,15 @@
 -- ROOM BOOKING SYSTEM DATABASE SCHEMA
 -- Created: 2025-11-26
 -- Description: Complete room booking system with approval workflow
+-- Updated: Converted to UUID to match existing system
 -- =====================================================
+
+-- Ensure UUID extension exists
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. ROOMS TABLE (Meeting Rooms Configuration)
 CREATE TABLE IF NOT EXISTS rooms (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   room_code VARCHAR(10) NOT NULL UNIQUE, -- 'A', 'B', 'C', 'D', 'E'
   room_name VARCHAR(100) NOT NULL,       -- 'Phòng Họp A', 'Phòng Họp B'...
   capacity INTEGER NOT NULL DEFAULT 10,  -- Sức chứa người
@@ -54,8 +58,8 @@ END $$;
 
 -- 4. ROOM BOOKINGS TABLE (Main Booking Data)
 CREATE TABLE IF NOT EXISTS room_bookings (
-  id SERIAL PRIMARY KEY,
-  room_id INTEGER NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id UUID NOT NULL,
   
   -- Booking Information
   title VARCHAR(200) NOT NULL,           -- "Họp Team Sprint Planning"
@@ -71,14 +75,14 @@ CREATE TABLE IF NOT EXISTS room_bookings (
   year INTEGER NOT NULL,                 -- Năm
   
   -- Booker Information
-  booked_by_user_id INTEGER NOT NULL,
+  booked_by_user_id UUID NOT NULL,
   booked_by_name VARCHAR(100) NOT NULL,  -- Denormalized for quick display
-  department_id INTEGER,
+  department_id UUID,
   department_name VARCHAR(100),          -- Denormalized
   
   -- Approval Workflow
   status booking_status DEFAULT 'pending',
-  approved_by_user_id INTEGER,
+  approved_by_user_id UUID,
   approved_by_name VARCHAR(100),
   approved_at TIMESTAMP,
   rejection_reason TEXT,
@@ -131,10 +135,10 @@ END $$;
 
 -- 5. BOOKING HISTORY/AUDIT LOG
 CREATE TABLE IF NOT EXISTS room_booking_history (
-  id SERIAL PRIMARY KEY,
-  booking_id INTEGER NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  booking_id UUID NOT NULL,
   action VARCHAR(50) NOT NULL, -- 'created', 'updated', 'approved', 'rejected', 'cancelled'
-  performed_by_user_id INTEGER,
+  performed_by_user_id UUID,
   performed_by_name VARCHAR(100),
   details JSONB DEFAULT '{}'::jsonb, -- Store old/new values
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -187,12 +191,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_room_booking_timestamp ON room_bookings;
 CREATE TRIGGER trigger_update_room_booking_timestamp
   BEFORE UPDATE ON room_bookings
   FOR EACH ROW
   EXECUTE FUNCTION update_room_booking_timestamp();
 
 -- Auto-update rooms timestamp
+DROP TRIGGER IF EXISTS trigger_update_rooms_timestamp ON rooms;
 CREATE TRIGGER trigger_update_rooms_timestamp
   BEFORE UPDATE ON rooms
   FOR EACH ROW
@@ -233,6 +239,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_log_booking_history ON room_bookings;
 CREATE TRIGGER trigger_log_booking_history
   AFTER INSERT OR UPDATE ON room_bookings
   FOR EACH ROW
@@ -240,11 +247,11 @@ CREATE TRIGGER trigger_log_booking_history
 
 -- Function to check booking conflicts
 CREATE OR REPLACE FUNCTION check_booking_conflict(
-  p_room_id INTEGER,
+  p_room_id UUID,
   p_booking_date DATE,
   p_start_time TIME,
   p_end_time TIME,
-  p_exclude_booking_id INTEGER DEFAULT NULL
+  p_exclude_booking_id UUID DEFAULT NULL
 )
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -292,25 +299,6 @@ INSERT INTO rooms (room_code, room_name, capacity, location, facilities, descrip
    '["projector", "whiteboard", "video_conference", "sound_system", "microphone", "air_conditioner", "wifi"]'::jsonb,
    'Hội trường lớn, dùng cho sự kiện công ty và presentation')
 ON CONFLICT (room_code) DO NOTHING;
-
--- =====================================================
--- MEETING TYPE COLOR MAPPING (for reference in frontend)
--- =====================================================
-
--- Use this mapping in your frontend:
--- department_meeting: #3B82F6 (Blue)
--- team_standup: #10B981 (Green)
--- project_review: #8B5CF6 (Purple)
--- training_session: #F59E0B (Amber)
--- client_meeting: #EC4899 (Pink)
--- interview: #EF4444 (Red)
--- workshop: #06B6D4 (Cyan)
--- company_event: #F97316 (Orange)
--- celebration: #A855F7 (Violet)
--- technical_discussion: #6366F1 (Indigo)
--- brainstorming: #14B8A6 (Teal)
--- presentation: #84CC16 (Lime)
--- other: #6B7280 (Gray)
 
 -- =====================================================
 -- CLEANUP OLD BOOKINGS (>1 month)
@@ -391,15 +379,6 @@ JOIN rooms r ON rb.room_id = r.id
 JOIN users u ON rb.booked_by_user_id = u.id
 WHERE rb.status = 'pending'
 ORDER BY rb.created_at ASC;
-
--- =====================================================
--- GRANT PERMISSIONS (adjust based on your setup)
--- =====================================================
-
--- GRANT ALL PRIVILEGES ON TABLE rooms TO your_app_user;
--- GRANT ALL PRIVILEGES ON TABLE room_bookings TO your_app_user;
--- GRANT ALL PRIVILEGES ON TABLE room_booking_history TO your_app_user;
--- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO your_app_user;
 
 -- =====================================================
 -- END OF SCHEMA

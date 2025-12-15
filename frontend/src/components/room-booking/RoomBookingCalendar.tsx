@@ -33,7 +33,7 @@ const RoomBookingCalendar: React.FC = () => {
 
   // Set default room when rooms are loaded
   useEffect(() => {
-    if (rooms.length > 0 && form.selectedRoom === 0) {
+    if (rooms.length > 0 && !form.selectedRoom) {
       form.setSelectedRoom(rooms[0].id);
     }
   }, [rooms, form.selectedRoom, form.setSelectedRoom]);
@@ -58,7 +58,7 @@ const RoomBookingCalendar: React.FC = () => {
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const bookingId = parseInt(clickInfo.event.id);
+    const bookingId = clickInfo.event.id;
     const booking = bookings.find(b => b.id === bookingId);
     if (booking) {
       form.populateFromBooking(booking);
@@ -83,7 +83,7 @@ const RoomBookingCalendar: React.FC = () => {
     }
     
     console.log('🔍 Validation - selectedRoom:', form.selectedRoom, 'rooms available:', rooms.length);
-    if (form.selectedRoom === 0) {
+    if (!form.selectedRoom) {
       toast.error(t('booking.validation.room_required'));
       return;
     }

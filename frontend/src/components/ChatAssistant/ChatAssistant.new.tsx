@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { MessageCircle, X } from 'lucide-react';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 // Import các phần đã được tách
 import { UIMessage } from './types';
@@ -25,6 +26,7 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 
 const ChatAssistant: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<UIMessage[]>([
     { 
@@ -69,19 +71,20 @@ const ChatAssistant: React.FC = () => {
 
     try {
       const commandHandled = await handleCommand({
-        input: currentInput,
+        input,
         lowerInput: currentInput.toLowerCase(),
         pendingAction,
         cachedNotifications,
         setMessages,
         setPendingAction,
         navigate,
+        t
       });
 
-      if (!commandHandled) {
-        const responseText = await sendMessageToGemini(messages, currentInput);
-        setMessages(prev => [...prev, { role: 'model', text: responseText }]);
-      }
+      if (commandHandled) return;
+
+      const responseText = await sendMessageToGemini(messages, currentInput);
+      setMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (error) {
       console.error('Error handling message:', error);
       setMessages(prev => [...prev, { role: 'model', text: 'Xin lỗi, tôi đang gặp sự cố kết nối.' }]);

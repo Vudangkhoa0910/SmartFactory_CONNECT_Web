@@ -1,14 +1,50 @@
-/**
- * Help Command Handler
- */
-import { CommandHandlerParams } from './command.types';
+import { NavigateFunction } from 'react-router';
+import { UIMessage, Notification } from '../types';
+
+interface CommandHandlerParams {
+  input: string;
+  lowerInput: string;
+  pendingAction: string | null;
+  cachedNotifications: Notification[];
+  setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>;
+  setPendingAction: (action: string | null) => void;
+  navigate: NavigateFunction;
+  t: (key: string) => string;
+}
 
 export function handleHelpCommand(
   params: CommandHandlerParams,
   isAdmin: boolean
 ): boolean {
-  const { lowerInput, setMessages, pendingAction, cachedNotifications, setPendingAction, navigate } = params;
+  const { lowerInput, setMessages, t } = params;
   
+  // Check for specific help topics first
+  if (lowerInput.includes('hướng dẫn đặt phòng')) {
+    showRoomBookingHelp(setMessages, t);
+    return true;
+  }
+  if (lowerInput.includes('hướng dẫn thông báo')) {
+    showNotificationHelp(setMessages, t);
+    return true;
+  }
+  if (lowerInput.includes('hướng dẫn điều hướng')) {
+    showNavigationHelp(setMessages, t);
+    return true;
+  }
+  if (isAdmin && lowerInput.includes('hướng dẫn sự cố')) {
+    showIncidentHelp(setMessages, t);
+    return true;
+  }
+  if (isAdmin && lowerInput.includes('hướng dẫn ý tưởng')) {
+    showIdeaHelp(setMessages, t);
+    return true;
+  }
+  if (isAdmin && lowerInput.includes('hướng dẫn tin tức')) {
+    showNewsHelp(setMessages, t);
+    return true;
+  }
+
+  // General help command
   if (!lowerInput.includes('hướng dẫn') && 
       !lowerInput.includes('trợ giúp') && 
       !lowerInput.includes('help') && 
@@ -19,100 +55,103 @@ export function handleHelpCommand(
     return false;
   }
 
-  let helpMessage = buildHelpMessage(isAdmin);
-  const actions = buildHelpActions(params, isAdmin, pendingAction, cachedNotifications, setPendingAction, navigate);
-  
-  setMessages(prev => [...prev, { role: 'model', text: helpMessage, actions }]);
+  // Show topic selection menu
+  const actions = buildTopicActions(params, isAdmin);
+  setMessages(prev => [...prev, { 
+    role: 'model', 
+    text: t('help.menu_title'), 
+    actions 
+  }]);
   return true;
 }
 
-function buildHelpMessage(isAdmin: boolean): string {
-  let helpMessage = `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**📅 ĐẶT PHÒNG HỌP NHANH:**\n• "Đặt phòng [số người] tổ chức [mục đích] từ [giờ] đến [giờ] ngày [ngày] tháng [tháng]"\n• VD: "Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11"\n• "xem lịch phòng" - Xem tất cả phòng và lịch đặt\n\n**📅 QUẢN LÝ LỊCH ĐẶT PHÒNG:**\n• "lịch đặt phòng" - Di chuyển đến trang đặt phòng\n• "lịch của tôi" - Di chuyển đến trang lịch của tôi\n• "duyệt đặt phòng" - Di chuyển đến trang duyệt đặt phòng\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
-  
-  if (isAdmin) {
-    helpMessage += `\n\n**🔍 TÌM KIẾM SỰ CỐ (ADMIN):**\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\n**🎯 LỌC THEO TRẠNG THÁI:**\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\n**⚡ LỌC THEO ƯU TIÊN:**\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\n**💡 TÌM KIẾM Ý TƯỞNG (ADMIN):**\n• "tìm ý tưởng" - Tìm tất cả ý tưởng\n• "tìm ý tưởng [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm hòm trắng [từ khóa]" - Tìm ý tưởng hòm trắng\n• "tìm hòm hồng [từ khóa]" - Tìm ý tưởng hòm hồng\n• "tìm ý tưởng tháng [số]" - Tìm theo tháng\n• "tìm hòm trắng cải tiến quy trình tháng 9"\n\n**🏷️ LỌC TRẠNG THÁI Ý TƯỞNG:**\n• Thêm: "chờ xử lý", "đang xem xét", "đã phê duyệt", "từ chối", "đã triển khai"\n\n**📰 TẠO TIN TỨC (ADMIN):**\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI`;
-  }
-  
-  helpMessage += `\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n• "lịch đặt phòng" - Trang đặt phòng họp\n• "lịch của tôi" - Trang lịch cá nhân\n• "duyệt đặt phòng" - Trang duyệt đặt phòng\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
-  
-  return helpMessage;
+function showRoomBookingHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.booking_title')}**\n\n${t('help.booking_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
 }
 
-function buildHelpActions(
+function showNotificationHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.notification_title')}**\n\n${t('help.notification_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
+}
+
+function showNavigationHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.navigation_title')}**\n\n${t('help.navigation_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
+}
+
+function showIncidentHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.incident_title')}**\n\n${t('help.incident_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
+}
+
+function showIdeaHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.idea_title')}**\n\n${t('help.idea_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
+}
+
+function showNewsHelp(setMessages: any, t: (key: string) => string) {
+  const text = `**${t('help.news_title')}**\n\n${t('help.news_content')}`;
+  setMessages((prev: any) => [...prev, { role: 'model', text }]);
+}
+
+function buildTopicActions(
   params: CommandHandlerParams,
-  isAdmin: boolean,
-  pendingAction: string | null,
-  cachedNotifications: any[],
-  setPendingAction: (action: string | null) => void,
-  navigate: any
+  isAdmin: boolean
 ): Array<{ label: string; onClick: () => void; className: string }> {
-  const { setMessages } = params;
-  // Import handleCommand dynamically to avoid circular dependency
-  const handleCommandFn = async (input: string) => {
-    const { handleCommand } = await import('./commandHandler');
-    handleCommand({
-      input,
-      lowerInput: input.toLowerCase(),
-      pendingAction,
-      cachedNotifications,
-      setMessages,
-      setPendingAction,
-      navigate
-    });
+  const { setMessages, t } = params;
+  
+  // Helper to simulate sending a message
+  const sendHiddenCommand = (text: string) => {
+    // We don't show the user message to keep it clean, or we can show it.
+    // Let's show it so the user knows what happened.
+    // setMessages(prev => [...prev, { role: 'user', text }]);
+    
+    if (text.includes('đặt phòng')) showRoomBookingHelp(setMessages, t);
+    else if (text.includes('thông báo')) showNotificationHelp(setMessages, t);
+    else if (text.includes('điều hướng')) showNavigationHelp(setMessages, t);
+    else if (text.includes('sự cố')) showIncidentHelp(setMessages, t);
+    else if (text.includes('ý tưởng')) showIdeaHelp(setMessages, t);
+    else if (text.includes('tin tức')) showNewsHelp(setMessages, t);
   };
 
-  const actions: Array<{ label: string; onClick: () => void; className: string }> = [
+  const actions = [
     {
-      label: '📅 Ví dụ: Đặt phòng họp',
-      onClick: () => {
-        const exampleInput = 'Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11 năm 2025';
-        setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-        handleCommandFn(exampleInput);
-      },
-      className: 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+      label: t('help.btn_booking'),
+      onClick: () => sendHiddenCommand('hướng dẫn đặt phòng'),
+      className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
     },
     {
-      label: '🔔 Ví dụ: Xem thông báo',
-      onClick: () => {
-        const exampleInput = 'xem thông báo';
-        setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-        handleCommandFn(exampleInput);
-      },
-      className: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50'
+      label: t('help.btn_notification'),
+      onClick: () => sendHiddenCommand('hướng dẫn thông báo'),
+      className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
     },
     {
-      label: '🧭 Ví dụ: Đi đến Dashboard',
-      onClick: () => {
-        const exampleInput = 'dashboard';
-        setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-        handleCommandFn(exampleInput);
-      },
-      className: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
+      label: t('help.btn_navigation'),
+      onClick: () => sendHiddenCommand('hướng dẫn điều hướng'),
+      className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
     }
   ];
-  
+
   if (isAdmin) {
-    actions.unshift(
+    actions.push(
       {
-        label: '📋 Ví dụ: Tìm sự cố',
-        onClick: () => {
-          const exampleInput = 'tìm sự cố máy CNC tháng 11';
-          setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-          handleCommandFn(exampleInput);
-        },
-        className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+        label: t('help.btn_incident'),
+        onClick: () => sendHiddenCommand('hướng dẫn sự cố'),
+        className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
       },
       {
-        label: '💡 Ví dụ: Tìm ý tưởng',
-        onClick: () => {
-          const exampleInput = 'tìm hòm trắng cải tiến tháng 9';
-          setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
-          handleCommandFn(exampleInput);
-        },
-        className: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+        label: t('help.btn_idea'),
+        onClick: () => sendHiddenCommand('hướng dẫn ý tưởng'),
+        className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+      },
+      {
+        label: t('help.btn_news'),
+        onClick: () => sendHiddenCommand('hướng dẫn tin tức'),
+        className: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
       }
     );
   }
-  
+
   return actions;
 }

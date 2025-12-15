@@ -39,7 +39,7 @@ export type RoomFacility =
 
 // Room Interface
 export interface Room {
-  id: number;
+  id: string;
   room_code: string;
   room_name: string;
   capacity: number;
@@ -53,8 +53,8 @@ export interface Room {
 
 // Room Booking Interface
 export interface RoomBooking {
-  id: number;
-  room_id: number;
+  id: string;
+  room_id: string;
   room_code?: string;
   room_name?: string;
   title: string;
@@ -66,13 +66,13 @@ export interface RoomBooking {
   end_time: string;     // HH:mm format
   week_number: number;
   year: number;
-  booked_by_user_id: number;
+  booked_by_user_id: string;
   booked_by_name: string;
   booked_by_email?: string;
-  department_id?: number;
+  department_id?: string;
   department_name?: string;
   status: BookingStatus;
-  approved_by_user_id?: number;
+  approved_by_user_id?: string;
   approved_by_name?: string;
   approved_at?: string;
   rejection_reason?: string;
@@ -84,10 +84,10 @@ export interface RoomBooking {
 
 // Booking History Entry
 export interface BookingHistoryEntry {
-  id: number;
-  booking_id: number;
+  id: string;
+  booking_id: string;
   action: 'created' | 'updated' | 'approved' | 'rejected' | 'cancelled';
-  performed_by_user_id?: number;
+  performed_by_user_id?: string;
   performed_by_name?: string;
   details: {
     old_status?: BookingStatus;
@@ -100,7 +100,7 @@ export interface BookingHistoryEntry {
 
 // Create Booking DTO
 export interface CreateBookingDTO {
-  room_id: number;
+  room_id: string;
   title: string;
   description?: string;
   meeting_type: MeetingType;
@@ -114,7 +114,7 @@ export interface CreateBookingDTO {
 
 // Update Booking DTO
 export interface UpdateBookingDTO {
-  room_id?: number;
+  room_id?: string;
   title?: string;
   description?: string;
   meeting_type?: MeetingType;
@@ -196,7 +196,7 @@ export const MEETING_TYPE_OPTIONS: MeetingTypeInfo[] = [
 
 // Calendar Event (for full calendar library)
 export interface CalendarEvent {
-  id: string | number;
+  id: string;
   title: string;
   start: Date | string;
   end: Date | string;
@@ -215,7 +215,7 @@ export interface CalendarEvent {
 export interface GetBookingsParams {
   week_number?: number;
   year?: number;
-  room_id?: number;
+  room_id?: string;
   status?: BookingStatus;
   date_from?: string;
   date_to?: string;
@@ -237,7 +237,7 @@ export interface GetBookingByIdResponse {
 
 export interface CreateBookingResponse {
   message: string;
-  booking_id: number;
+  booking_id: string;
 }
 
 export interface BulkApproveResponse {

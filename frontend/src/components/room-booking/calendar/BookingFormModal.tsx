@@ -15,7 +15,7 @@ interface BookingFormModalProps {
   // Form values
   eventTitle: string;
   eventDescription: string;
-  selectedRoom: number;
+  selectedRoom: string;
   meetingType: MeetingType;
   attendeesCount: number;
   eventStartTime: string;
@@ -23,7 +23,7 @@ interface BookingFormModalProps {
   // Setters
   setEventTitle: (value: string) => void;
   setEventDescription: (value: string) => void;
-  setSelectedRoom: (value: number) => void;
+  setSelectedRoom: (value: string) => void;
   setMeetingType: (value: MeetingType) => void;
   setAttendeesCount: (value: number) => void;
   setEventStartTime: (value: string) => void;
@@ -66,11 +66,11 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           <FormField label={t('booking.info.room')} required>
             <select
               value={selectedRoom}
-              onChange={(e) => setSelectedRoom(parseInt(e.target.value))}
+              onChange={(e) => setSelectedRoom(e.target.value)}
               disabled={selectedBooking !== null}
               className={inputClass}
             >
-              <option value={0}>{t('booking.info.select_room')}</option>
+              <option value="">{t('booking.info.select_room')}</option>
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.room_name} ({room.capacity} {t('booking.info.attendees_unit')})
