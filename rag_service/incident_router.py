@@ -8,7 +8,7 @@ import re
 import datetime
 from collections import defaultdict
 
-from database import db
+from database import db, ContentType
 from embedding_service import embedding_service
 from config import Config
 
@@ -84,7 +84,7 @@ class IncidentRouter:
 
         # Stage 1: Retrieve
         embedding = embedding_service.encode(description, is_query=True)
-        candidates = db.find_similar(embedding, limit=20)
+        candidates = db.find_similar(ContentType.INCIDENT, embedding, limit=20)
         candidates = [dict(c) for c in candidates]
         print(f"[{ts}] Stage 1: Retrieved {len(candidates)} candidates")
 
@@ -224,18 +224,18 @@ class IncidentRouter:
 
     def find_similar_incidents(self, description: str, limit: int = 5) -> Dict:
         embedding = embedding_service.encode(description, is_query=True)
-        similar = db.find_similar(embedding, limit=limit)
+        similar = db.find_similar(ContentType.INCIDENT, embedding, limit=limit)
         return {'success': True, 'count': len(similar), 'incidents': [dict(s) for s in similar]}
 
     def auto_fill_form(self, description: str) -> Dict:
         embedding = embedding_service.encode(description, is_query=True)
-        similar = db.find_similar(embedding, limit=1)
+        similar = db.find_similar(ContentType.INCIDENT, embedding, limit=1)
         if not similar:
             return {'success': True, 'suggestions': {}, 'confidence': 0.0, 'reference_incident_id': None}
         best = similar[0]
         return {
             'success': True,
-            'suggestions': {'department_id': str(best['assigned_department_id']) if best['assigned_department_id'] else None, 'department_name': best['department_name']},
+            'suggestions': {'department_id': str(best['assigned_department_id']) if best.get('assigned_department_id') else None, 'department_name': best.get('department_name')},
             'confidence': float(best['similarity']),
             'reference_incident_id': str(best['id'])
         }

@@ -1,14 +1,15 @@
 """
-Database Service
-Ket noi PostgreSQL voi pgvector extension
+Database Service - Multi-table RAG Support
+Hỗ trợ vector search cho: incidents, ideas, news
 """
 import numpy as np
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Literal
 from contextlib import contextmanager
+from enum import Enum
 
 try:
     import psycopg2
-    from psycopg2.extras import RealDictCursor, execute_values
+    from psycopg2.extras import RealDictCursor, execute_values, Json
     HAS_PSYCOPG2 = True
 except ImportError:
     HAS_PSYCOPG2 = False
@@ -24,8 +25,44 @@ except ImportError:
 from config import Config
 
 
+# ============================================
+# CONSTANTS
+# ============================================
+class ContentType(str, Enum):
+    """Loại nội dung hỗ trợ RAG"""
+    INCIDENT = "incident"
+    IDEA = "idea"
+    NEWS = "news"
+
+
+# Cấu hình cho từng loại content
+TABLE_CONFIG = {
+    ContentType.INCIDENT: {
+        "table": "incidents",
+        "text_fields": ["description"],  # Chỉ embedding tiếng Việt
+        "join_dept": "LEFT JOIN departments d ON t.assigned_department_id = d.id",
+        "dept_field": "assigned_department_id",
+        "extra_fields": ["title", "location", "incident_type", "priority", "status"],
+    },
+    ContentType.IDEA: {
+        "table": "ideas",
+        "text_fields": ["title", "description", "expected_benefit"],  # Tiếng Việt
+        "join_dept": "LEFT JOIN departments d ON t.department_id = d.id",
+        "dept_field": "department_id",
+        "extra_fields": ["title", "category", "ideabox_type", "status"],
+    },
+    ContentType.NEWS: {
+        "table": "news",
+        "text_fields": ["title", "content"],  # Tiếng Việt
+        "join_dept": "",  # News không có department trực tiếp
+        "dept_field": None,
+        "extra_fields": ["title", "category", "excerpt", "status", "is_priority"],
+    },
+}
+
+
 class Database:
-    """Database connection va vector operations"""
+    """Database connection và vector operations cho multi-table"""
     _instance: Optional['Database'] = None
     _conn = None
 
@@ -36,7 +73,7 @@ class Database:
         return cls._instance
 
     def _connect(self):
-        """Ket noi database va dang ky vector type"""
+        """Kết nối database và đăng ký vector type"""
         if not HAS_PSYCOPG2:
             raise ImportError("psycopg2 not installed")
 
@@ -49,18 +86,17 @@ class Database:
                 user=Config.DB_USER,
                 password=Config.DB_PASSWORD
             )
-
             if HAS_PGVECTOR:
                 register_vector(self._conn)
                 print("[OK] Connected to PostgreSQL with pgvector support")
             else:
-                print("[WARN] Connected to PostgreSQL (pgvector python package not installed)")
+                print("[WARN] Connected but pgvector python package not installed")
         except psycopg2.OperationalError as e:
             print(f"[ERROR] Database connection failed: {e}")
             raise
 
     def reconnect(self):
-        """Reconnect neu connection bi mat"""
+        """Reconnect nếu connection bị mất"""
         if self._conn:
             try:
                 self._conn.close()
@@ -70,7 +106,7 @@ class Database:
 
     @contextmanager
     def cursor(self):
-        """Context manager cho cursor voi auto-commit/rollback"""
+        """Context manager cho cursor với auto-commit/rollback"""
         cur = self._conn.cursor(cursor_factory=RealDictCursor)
         try:
             yield cur
@@ -81,8 +117,11 @@ class Database:
         finally:
             cur.close()
 
+    # ============================================
+    # SCHEMA MANAGEMENT
+    # ============================================
     def check_extension(self) -> bool:
-        """Kiem tra pgvector extension"""
+        """Kiểm tra pgvector extension"""
         try:
             with self.cursor() as cur:
                 cur.execute("SELECT * FROM pg_extension WHERE extname = 'vector'")
@@ -90,303 +129,442 @@ class Database:
                 if result:
                     print(f"[OK] pgvector extension version: {result['extversion']}")
                     return True
-                else:
-                    print("[ERROR] pgvector extension not installed!")
-                    return False
+                print("[ERROR] pgvector extension not installed!")
+                return False
         except Exception as e:
             print(f"[ERROR] Error checking extension: {e}")
             return False
 
     def setup_schema(self) -> bool:
-        """Tao schema cho vector search - tu dong cap nhat dimension neu khac"""
+        """Tạo/cập nhật schema cho tất cả tables"""
         dim = Config.VECTOR_DIM
-        column_name = "embedding"
+        success = True
 
-        print(f"Setting up schema for {column_name} (dim={dim})...")
+        for content_type, config in TABLE_CONFIG.items():
+            table = config["table"]
+            print(f"\nSetting up embedding for {table}...")
 
-        try:
-            with self.cursor() as cur:
-                cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            try:
+                with self.cursor() as cur:
+                    # Check table exists
+                    cur.execute("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables WHERE table_name = %s
+                        )
+                    """, (table,))
+                    if not cur.fetchone()['exists']:
+                        print(f"[WARN] Table '{table}' does not exist, skipping")
+                        continue
 
-                cur.execute("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables
-                        WHERE table_name = 'incidents'
-                    )
-                """)
-                if not cur.fetchone()['exists']:
-                    print("[WARN] Table 'incidents' does not exist.")
-                    return False
+                    # Check/create embedding column
+                    cur.execute("""
+                        SELECT atttypmod FROM pg_attribute 
+                        WHERE attrelid = %s::regclass AND attname = 'embedding'
+                    """, (table,))
+                    result = cur.fetchone()
 
-                cur.execute("""
-                    SELECT atttypmod 
-                    FROM pg_attribute 
-                    WHERE attrelid = 'incidents'::regclass 
-                    AND attname = 'embedding'
-                """)
-                result = cur.fetchone()
-                
-                if result is None:
-                    print(f"[INFO] Creating embedding column with dim={dim}")
-                    cur.execute(f"ALTER TABLE incidents ADD COLUMN embedding vector({dim})")
-                else:
-                    current_dim = result['atttypmod']
-                    if current_dim != dim:
-                        print(f"[WARN] Dimension mismatch: current={current_dim}, expected={dim}")
-                        print(f"[INFO] Dropping and recreating embedding column...")
-                        cur.execute("DROP INDEX IF EXISTS idx_incidents_embedding_hnsw")
-                        cur.execute("ALTER TABLE incidents DROP COLUMN embedding")
-                        cur.execute(f"ALTER TABLE incidents ADD COLUMN embedding vector({dim})")
-                        print(f"[OK] Column recreated with dim={dim}")
+                    if result is None:
+                        print(f"[INFO] Creating embedding column (dim={dim})")
+                        cur.execute(f"ALTER TABLE {table} ADD COLUMN embedding vector({dim})")
+                    elif result['atttypmod'] != dim:
+                        print(f"[WARN] Dimension mismatch, recreating column...")
+                        cur.execute(f"DROP INDEX IF EXISTS idx_{table}_embedding_hnsw")
+                        cur.execute(f"ALTER TABLE {table} DROP COLUMN embedding")
+                        cur.execute(f"ALTER TABLE {table} ADD COLUMN embedding vector({dim})")
                     else:
-                        print(f"[OK] Embedding column exists with correct dim={dim}")
+                        print(f"[OK] Embedding column exists with dim={dim}")
 
-                cur.execute(f"""
-                    CREATE INDEX IF NOT EXISTS idx_incidents_{column_name}_hnsw
-                    ON incidents USING hnsw ({column_name} vector_cosine_ops)
-                    WITH (m = 16, ef_construction = 64)
-                """)
+                    # Create HNSW index
+                    cur.execute(f"""
+                        CREATE INDEX IF NOT EXISTS idx_{table}_embedding_hnsw
+                        ON {table} USING hnsw (embedding vector_cosine_ops)
+                        WITH (m = 16, ef_construction = 64)
+                    """)
 
-            print("[OK] Schema setup complete!")
-            return True
+                print(f"[OK] {table} schema ready")
 
-        except Exception as e:
-            print(f"[ERROR] Schema setup failed: {e}")
-            return False
+            except Exception as e:
+                print(f"[ERROR] Failed to setup {table}: {e}")
+                success = False
 
-    def save_embedding(self, incident_id: str, embedding: np.ndarray) -> bool:
-        """Luu embedding cho 1 incident"""
+        return success
+
+    # ============================================
+    # EMBEDDING OPERATIONS (Generic)
+    # ============================================
+    def save_embedding(
+        self,
+        content_type: ContentType,
+        record_id: str,
+        embedding: np.ndarray
+    ) -> bool:
+        """Lưu embedding cho một record"""
+        table = TABLE_CONFIG[content_type]["table"]
         try:
             with self.cursor() as cur:
-                cur.execute("""
-                    UPDATE incidents
-                    SET embedding = %s
-                    WHERE id = %s::uuid
-                """, (embedding.tolist(), str(incident_id)))
+                cur.execute(f"""
+                    UPDATE {table} SET embedding = %s WHERE id = %s::uuid
+                """, (embedding.tolist(), str(record_id)))
             return True
         except Exception as e:
-            print(f"[ERROR] Error saving embedding for incident {incident_id}: {e}")
+            print(f"[ERROR] Error saving embedding for {table}/{record_id}: {e}")
             return False
 
-    def save_embeddings_batch(self, data: List[Dict]) -> int:
-        """Luu nhieu embeddings cung luc"""
+    def save_embeddings_batch(
+        self,
+        content_type: ContentType,
+        data: List[Dict]
+    ) -> int:
+        """Lưu nhiều embeddings cùng lúc"""
         if not data:
             return 0
 
+        table = TABLE_CONFIG[content_type]["table"]
         try:
             with self.cursor() as cur:
                 values = [(str(d['id']), d['embedding'].tolist()) for d in data]
-
-                execute_values(cur, """
-                    UPDATE incidents AS t SET
-                        embedding = v.embedding::vector
+                execute_values(cur, f"""
+                    UPDATE {table} AS t SET embedding = v.embedding::vector
                     FROM (VALUES %s) AS v(id, embedding)
                     WHERE t.id = v.id::uuid
                 """, values, template="(%s, %s)")
-
-            print(f"[OK] Saved {len(data)} embeddings")
+            print(f"[OK] Saved {len(data)} embeddings to {table}")
             return len(data)
-
         except Exception as e:
-            print(f"[ERROR] Error saving batch embeddings: {e}")
+            print(f"[ERROR] Error saving batch embeddings to {table}: {e}")
             return 0
 
+    # ============================================
+    # VECTOR SEARCH
+    # ============================================
     def find_similar(
         self,
+        content_type: ContentType,
         query_embedding: np.ndarray,
         limit: int = None,
-        min_similarity: float = None
+        min_similarity: float = None,
+        filters: Dict = None
     ) -> List[Dict]:
         """
-        Tim cac incidents tuong tu nhat voi query
-        Tra ve ca location, incident_type, priority de multi-field matching
+        Tìm records tương tự nhất với query embedding
+        Hỗ trợ filter theo status, category, date range, etc.
         """
         limit = limit or Config.DEFAULT_LIMIT
         min_similarity = min_similarity or Config.MIN_SIMILARITY
+        config = TABLE_CONFIG[content_type]
+        table = config["table"]
+
+        # Build extra fields
+        extra_fields = ", ".join([f"t.{f}" for f in config["extra_fields"]])
+        dept_join = config["join_dept"]
+        dept_select = ", d.name as department_name" if dept_join else ""
+
+        # Build WHERE clause
+        where_conditions = [
+            "t.embedding IS NOT NULL",
+            f"1 - (t.embedding <=> %s::vector) >= {min_similarity}"
+        ]
+        params = [query_embedding.tolist()]
+
+        if filters:
+            if filters.get("status"):
+                where_conditions.append("t.status = %s")
+                params.append(filters["status"])
+            if filters.get("category"):
+                where_conditions.append("t.category = %s")
+                params.append(filters["category"])
+            if filters.get("department_id") and config["dept_field"]:
+                where_conditions.append(f"t.{config['dept_field']} = %s::uuid")
+                params.append(filters["department_id"])
+
+        where_clause = " AND ".join(where_conditions)
+        # params order: WHERE, SELECT similarity, ORDER BY, LIMIT
+        params.extend([query_embedding.tolist(), query_embedding.tolist(), limit])
 
         try:
             with self.cursor() as cur:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT
-                        i.id,
-                        i.description,
-                        i.location,
-                        i.incident_type,
-                        i.priority,
-                        i.assigned_department_id,
-                        d.name as department_name,
-                        1 - (embedding <=> %s::vector) as similarity
-                    FROM incidents i
-                    LEFT JOIN departments d ON i.assigned_department_id = d.id
-                    WHERE embedding IS NOT NULL
-                      AND i.assigned_department_id IS NOT NULL
-                      AND 1 - (embedding <=> %s::vector) >= %s
-                    ORDER BY embedding <=> %s::vector
+                        t.id,
+                        t.{config['text_fields'][0]} as main_text,
+                        {extra_fields},
+                        1 - (t.embedding <=> %s::vector) as similarity
+                        {dept_select}
+                    FROM {table} t
+                    {dept_join}
+                    WHERE {where_clause}
+                    ORDER BY t.embedding <=> %s::vector
                     LIMIT %s
-                """, (
-                    query_embedding.tolist(),
-                    query_embedding.tolist(),
-                    min_similarity,
-                    query_embedding.tolist(),
-                    limit
-                ))
-
+                """, tuple(params))
                 return cur.fetchall()
-
         except Exception as e:
-            print(f"[ERROR] Error finding similar incidents: {e}")
+            print(f"[ERROR] Error finding similar in {table}: {e}")
             return []
 
-    def get_department_suggestion(self, query_embedding: np.ndarray) -> Dict:
+    def unified_search(
+        self,
+        query_embedding: np.ndarray,
+        content_types: List[ContentType] = None,
+        limit: int = 10,
+        min_similarity: float = None,
+        filters: Dict = None
+    ) -> Dict:
         """
-        Goi y department dua tren embedding (voting + weighted confidence)
+        Tìm kiếm xuyên suốt trên nhiều loại content
+        Trả về kết quả gộp, sắp xếp theo similarity
         """
-        similar = self.find_similar(query_embedding, limit=5)
+        if content_types is None:
+            content_types = list(ContentType)
 
-        if not similar:
-            return {
-                'department_id': None,
-                'department_name': None,
-                'confidence': 0.0,
-                'similar_incidents': [],
-                'auto_assign': False
-            }
+        all_results = []
+        stats = {}
 
-        dept_counts: Dict[str, int] = {}
-        dept_similarities: Dict[str, List[float]] = {}
-        dept_names: Dict[str, str] = {}
+        for ct in content_types:
+            results = self.find_similar(
+                content_type=ct,
+                query_embedding=query_embedding,
+                limit=limit,
+                min_similarity=min_similarity,
+                filters=filters
+            )
+            # Add type info
+            for r in results:
+                r['content_type'] = ct.value
+            all_results.extend(results)
+            stats[ct.value] = len(results)
 
-        for item in similar:
-            dept_id = str(item['assigned_department_id']) if item['assigned_department_id'] else None
-            if dept_id:
-                dept_counts[dept_id] = dept_counts.get(dept_id, 0) + 1
-                if dept_id not in dept_similarities:
-                    dept_similarities[dept_id] = []
-                dept_similarities[dept_id].append(float(item['similarity']))
-                dept_names[dept_id] = item['department_name']
-
-        if not dept_counts:
-            return {
-                'department_id': None,
-                'department_name': None,
-                'confidence': 0.0,
-                'similar_incidents': [dict(s) for s in similar],
-                'auto_assign': False
-            }
-
-        best_dept = max(dept_counts, key=dept_counts.get)
-        sims = dept_similarities[best_dept]
-
-        weights = [1.0, 0.7, 0.5, 0.3, 0.2][:len(sims)]
-        sims_sorted = sorted(sims, reverse=True)
-
-        weighted_sum = sum(s * w for s, w in zip(sims_sorted, weights))
-        weight_total = sum(weights[:len(sims)])
-        weighted_avg = weighted_sum / weight_total if weight_total > 0 else 0
-
-        total_matches = len(similar)
-        dept_matches = dept_counts[best_dept]
-        consistency = dept_matches / total_matches if total_matches > 0 else 0
-
-        consistency_bonus = consistency * 0.10
-        top_similarity = max(sims) if sims else 0
-        final_confidence = (0.6 * weighted_avg) + (0.4 * top_similarity) + consistency_bonus
-        final_confidence = min(final_confidence, 1.0)
-
+        # Sort by similarity và limit
+        all_results.sort(key=lambda x: x['similarity'], reverse=True)
         return {
-            'department_id': best_dept,
-            'department_name': dept_names.get(best_dept),
-            'confidence': float(final_confidence),
-            'similar_incidents': [dict(s) for s in similar],
-            'auto_assign': final_confidence >= Config.AUTO_ASSIGN_THRESHOLD,
-            '_debug': {
-                'weighted_avg': weighted_avg,
-                'top_similarity': top_similarity,
-                'consistency': consistency,
-                'consistency_bonus': consistency_bonus
-            }
+            "results": all_results[:limit],
+            "stats": stats,
+            "total": len(all_results)
         }
 
-    def count_embeddings(self) -> Dict:
-        """Dem so incidents da co embedding"""
+    # ============================================
+    # STATISTICS
+    # ============================================
+    def count_embeddings(self, content_type: ContentType = None) -> Dict:
+        """Đếm số records đã có embedding"""
+        if content_type:
+            return self._count_single_table(content_type)
+
+        # Count all tables
+        result = {"total": 0, "with_embedding": 0, "by_type": {}}
+        for ct in ContentType:
+            counts = self._count_single_table(ct)
+            result["by_type"][ct.value] = counts
+            result["total"] += counts["total"]
+            result["with_embedding"] += counts["with_embedding"]
+
+        result["percentage"] = (
+            result["with_embedding"] / result["total"] * 100
+            if result["total"] > 0 else 0
+        )
+        return result
+
+    def _count_single_table(self, content_type: ContentType) -> Dict:
+        """Đếm embeddings cho một table"""
+        table = TABLE_CONFIG[content_type]["table"]
         try:
             with self.cursor() as cur:
+                # Check column exists
                 cur.execute("""
                     SELECT EXISTS (
                         SELECT 1 FROM information_schema.columns
-                        WHERE table_name = 'incidents'
-                        AND column_name = 'embedding'
+                        WHERE table_name = %s AND column_name = 'embedding'
                     )
-                """)
+                """, (table,))
                 if not cur.fetchone()['exists']:
-                    cur.execute("SELECT COUNT(*) as total FROM incidents")
+                    cur.execute(f"SELECT COUNT(*) as total FROM {table}")
                     total = cur.fetchone()['total']
                     return {'total': total, 'with_embedding': 0, 'without_embedding': total, 'percentage': 0.0}
 
-                cur.execute("""
-                    SELECT
-                        COUNT(*) as total,
-                        COUNT(embedding) as with_embedding
-                    FROM incidents
+                cur.execute(f"""
+                    SELECT COUNT(*) as total, COUNT(embedding) as with_embedding FROM {table}
                 """)
                 result = cur.fetchone()
                 total = result['total']
                 with_emb = result['with_embedding']
-
                 return {
                     'total': total,
                     'with_embedding': with_emb,
                     'without_embedding': total - with_emb,
                     'percentage': (with_emb / total * 100) if total > 0 else 0.0
                 }
-
         except Exception as e:
-            print(f"[ERROR] Error counting embeddings: {e}")
+            print(f"[ERROR] Error counting {table}: {e}")
             return {'total': 0, 'with_embedding': 0, 'without_embedding': 0, 'percentage': 0.0}
 
-    def get_incidents_without_embedding(self, limit: int = 100) -> List[Dict]:
-        """Lay danh sach incidents chua co embedding"""
+    def get_records_without_embedding(
+        self,
+        content_type: ContentType,
+        limit: int = 100
+    ) -> List[Dict]:
+        """Lấy danh sách records chưa có embedding"""
+        config = TABLE_CONFIG[content_type]
+        table = config["table"]
+        text_field = config["text_fields"][0]
+
         try:
             with self.cursor() as cur:
-                cur.execute("""
-                    SELECT id, description
-                    FROM incidents
+                cur.execute(f"""
+                    SELECT id, {', '.join(config['text_fields'])}
+                    FROM {table}
                     WHERE embedding IS NULL
-                      AND description IS NOT NULL
-                      AND LENGTH(TRIM(description)) > 5
+                      AND {text_field} IS NOT NULL
+                      AND LENGTH(TRIM({text_field})) > 5
                     LIMIT %s
                 """, (limit,))
                 return cur.fetchall()
-
         except Exception as e:
-            print(f"[ERROR] Error getting incidents: {e}")
+            print(f"[ERROR] Error getting {table} without embedding: {e}")
             return []
 
+    # ============================================
+    # STATISTICS FOR CHATBOT
+    # ============================================
+    def get_stats_overview(self) -> Dict:
+        """Thống kê tổng quan cho chatbot"""
+        try:
+            with self.cursor() as cur:
+                # Incidents stats
+                cur.execute("""
+                    SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+                        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+                        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
+                        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as this_week
+                    FROM incidents
+                """)
+                incidents = dict(cur.fetchone())
+
+                # Ideas stats
+                cur.execute("""
+                    SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                        COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
+                        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as this_week
+                    FROM ideas
+                """)
+                ideas = dict(cur.fetchone())
+
+                # News stats
+                cur.execute("""
+                    SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'published' THEN 1 END) as published,
+                        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as this_week
+                    FROM news
+                """)
+                news = dict(cur.fetchone())
+
+                return {
+                    "incidents": incidents,
+                    "ideas": ideas,
+                    "news": news,
+                    "embeddings": self.count_embeddings()
+                }
+        except Exception as e:
+            print(f"[ERROR] Error getting overview stats: {e}")
+            return {}
+
+    def get_stats_by_department(self) -> List[Dict]:
+        """Thống kê theo phòng ban"""
+        try:
+            with self.cursor() as cur:
+                cur.execute("""
+                    SELECT 
+                        d.id,
+                        d.name,
+                        COUNT(DISTINCT i.id) as incident_count,
+                        COUNT(DISTINCT CASE WHEN i.status = 'resolved' THEN i.id END) as resolved_count,
+                        AVG(EXTRACT(EPOCH FROM (i.resolved_at - i.created_at))/3600) as avg_resolve_hours
+                    FROM departments d
+                    LEFT JOIN incidents i ON i.assigned_department_id = d.id
+                    GROUP BY d.id, d.name
+                    ORDER BY incident_count DESC
+                """)
+                return [dict(r) for r in cur.fetchall()]
+        except Exception as e:
+            print(f"[ERROR] Error getting department stats: {e}")
+            return []
+
+    def get_stats_trends(self, days: int = 30) -> Dict:
+        """Xu hướng theo thời gian"""
+        try:
+            with self.cursor() as cur:
+                # Incidents by day
+                cur.execute("""
+                    SELECT 
+                        DATE(created_at) as date,
+                        COUNT(*) as count,
+                        incident_type
+                    FROM incidents
+                    WHERE created_at >= NOW() - INTERVAL '%s days'
+                    GROUP BY DATE(created_at), incident_type
+                    ORDER BY date
+                """, (days,))
+                incidents_trend = [dict(r) for r in cur.fetchall()]
+
+                # Top incident types
+                cur.execute("""
+                    SELECT incident_type, COUNT(*) as count
+                    FROM incidents
+                    WHERE created_at >= NOW() - INTERVAL '%s days'
+                    GROUP BY incident_type
+                    ORDER BY count DESC
+                    LIMIT 5
+                """, (days,))
+                top_types = [dict(r) for r in cur.fetchall()]
+
+                # Top locations
+                cur.execute("""
+                    SELECT location, COUNT(*) as count
+                    FROM incidents
+                    WHERE created_at >= NOW() - INTERVAL '%s days'
+                      AND location IS NOT NULL
+                    GROUP BY location
+                    ORDER BY count DESC
+                    LIMIT 5
+                """, (days,))
+                top_locations = [dict(r) for r in cur.fetchall()]
+
+                return {
+                    "period_days": days,
+                    "incidents_trend": incidents_trend,
+                    "top_incident_types": top_types,
+                    "top_locations": top_locations
+                }
+        except Exception as e:
+            print(f"[ERROR] Error getting trends: {e}")
+            return {}
+
+    # ============================================
+    # RAG SETTINGS (backward compatible)
+    # ============================================
     def get_rag_settings(self) -> Dict:
-        """Lay RAG settings tu database."""
+        """Lấy RAG settings từ database"""
         default_settings = {
             'enabled': Config.AUTO_ASSIGN_ENABLED,
             'threshold': Config.AUTO_ASSIGN_THRESHOLD,
             'min_samples': Config.AUTO_ASSIGN_MIN_SAMPLES
         }
-
         try:
             with self.cursor() as cur:
                 cur.execute("""
                     SELECT EXISTS (
-                        SELECT FROM information_schema.tables
-                        WHERE table_name = 'system_settings'
+                        SELECT FROM information_schema.tables WHERE table_name = 'system_settings'
                     )
                 """)
                 if not cur.fetchone()['exists']:
                     return default_settings
 
-                cur.execute("""
-                    SELECT value FROM system_settings
-                    WHERE key = 'rag_auto_assign'
-                """)
+                cur.execute("SELECT value FROM system_settings WHERE key = 'rag_auto_assign'")
                 result = cur.fetchone()
-
                 if result and result['value']:
                     settings = result['value']
                     return {
@@ -394,15 +572,13 @@ class Database:
                         'threshold': settings.get('threshold', default_settings['threshold']),
                         'min_samples': settings.get('min_samples', default_settings['min_samples'])
                     }
-
                 return default_settings
-
         except Exception as e:
             print(f"[WARN] Error getting RAG settings: {e}")
             return default_settings
 
     def save_rag_settings(self, settings: Dict) -> bool:
-        """Luu RAG settings vao database."""
+        """Lưu RAG settings vào database"""
         try:
             with self.cursor() as cur:
                 cur.execute("""
@@ -414,26 +590,21 @@ class Database:
                         updated_at TIMESTAMP DEFAULT NOW()
                     )
                 """)
-
                 cur.execute("""
                     INSERT INTO system_settings (key, value, description)
-                    VALUES ('rag_auto_assign', %s, 'Cau hinh tu dong gan phong ban bang AI')
-                    ON CONFLICT (key) DO UPDATE SET
-                        value = EXCLUDED.value,
-                        updated_at = NOW()
-                """, (psycopg2.extras.Json(settings),))
-
+                    VALUES ('rag_auto_assign', %s, 'Cấu hình tự động gán phòng ban bằng AI')
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+                """, (Json(settings),))
             print(f"[OK] RAG settings saved: {settings}")
             return True
-
         except Exception as e:
             print(f"[ERROR] Error saving RAG settings: {e}")
             return False
 
     def should_auto_assign(self, confidence: float) -> Dict:
-        """Kiem tra xem co nen auto-assign hay khong."""
+        """Kiểm tra xem có nên auto-assign không"""
         settings = self.get_rag_settings()
-        stats = self.count_embeddings()
+        stats = self._count_single_table(ContentType.INCIDENT)
 
         enabled = settings['enabled']
         threshold = settings['threshold']
@@ -441,13 +612,10 @@ class Database:
         current_samples = stats['with_embedding']
 
         reasons = []
-
         if not enabled:
             reasons.append("Auto-assign is disabled")
-
         if current_samples < min_samples:
             reasons.append(f"Not enough samples ({current_samples}/{min_samples})")
-
         if confidence < threshold:
             reasons.append(f"Confidence too low ({confidence*100:.0f}% < {threshold*100:.0f}%)")
 
@@ -463,7 +631,44 @@ class Database:
             'reasons': reasons if not should_auto else ["All conditions met"]
         }
 
+    # ============================================
+    # RECORD RETRIEVAL (for creating embeddings)
+    # ============================================
+    def get_record_for_embedding(
+        self,
+        content_type: ContentType,
+        record_id: str
+    ) -> Optional[Dict]:
+        """Lấy record để tạo embedding"""
+        config = TABLE_CONFIG[content_type]
+        table = config["table"]
+        text_fields = ", ".join(config["text_fields"])
+
+        try:
+            with self.cursor() as cur:
+                cur.execute(f"""
+                    SELECT id, {text_fields}
+                    FROM {table}
+                    WHERE id = %s::uuid
+                """, (record_id,))
+                return cur.fetchone()
+        except Exception as e:
+            print(f"[ERROR] Error getting record {table}/{record_id}: {e}")
+            return None
+
+    def get_text_for_embedding(
+        self,
+        content_type: ContentType,
+        record: Dict
+    ) -> str:
+        """Ghép các text fields thành một string để embedding"""
+        config = TABLE_CONFIG[content_type]
+        texts = []
+        for field in config["text_fields"]:
+            if record.get(field):
+                texts.append(str(record[field]).strip())
+        return " ".join(texts)
+
 
 # Singleton instance
 db = Database()
-

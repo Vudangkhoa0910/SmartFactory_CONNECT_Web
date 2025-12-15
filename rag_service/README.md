@@ -1,234 +1,332 @@
-# RAG Incident Router Service
+# RAG Unified Search Service
 
 ## Giới thiệu
 
-**RAG (Retrieval-Augmented Generation)** là phương pháp AI kết hợp giữa **truy xuất dữ liệu** và **sinh kết quả**. Thay vì để AI "đoán" câu trả lời, RAG tìm kiếm trong cơ sở dữ liệu thực để đưa ra gợi ý chính xác hơn.
+**RAG (Retrieval-Augmented Generation)** Service cung cấp tìm kiếm semantic thống nhất cho toàn bộ hệ thống SmartFactory CONNECT:
 
-Trong hệ thống SmartFactory CONNECT, RAG Service tự động gợi ý **phòng ban xử lý** cho các sự cố dựa trên lịch sử các sự cố tương tự đã được xử lý trước đó.
+- **Incidents** (Sự cố)
+- **Ideas** (Góp ý - Hòm thư trắng/hồng)  
+- **News** (Tin tức/Thông báo)
 
----
-
-## RAG là gì?
-
-### Vấn đề với AI truyền thống
-
-AI thông thường (như ChatGPT) được huấn luyện trên dữ liệu cố định → không biết về dữ liệu riêng của doanh nghiệp.
-
-### Giải pháp: RAG
-
-RAG giải quyết bằng cách:
-1. **Lưu trữ knowledge** → Chuyển văn bản thành vectors (embeddings) và lưu vào database
-2. **Truy xuất (Retrieval)** → Khi có câu hỏi/sự cố mới, tìm các cases tương tự nhất
-3. **Tổng hợp (Generation)** → Đưa ra gợi ý dựa trên những cases đã tìm được
+Service này được thiết kế để tích hợp với **Chatbot AI** trong tương lai.
 
 ---
 
-## Tích hợp trong dự án SmartFactory CONNECT
+## Tính năng
 
-### Kiến trúc tích hợp
+### ✅ 1. Unified Search
+Tìm kiếm xuyên suốt trên tất cả loại content bằng một API duy nhất.
 
-```
-┌──────────────────┐        ┌──────────────────┐        ┌──────────────────┐
-│   Mobile App     │        │  Node.js Backend │        │   RAG Service    │
-│   Flutter        │───────►│   (Port 3001)    │───────►│   (Port 8001)    │
-└──────────────────┘        └──────────────────┘        └──────────────────┘
-       │                             │                           │
-       │                             ▼                           ▼
-       │                    ┌──────────────────┐        ┌──────────────────┐
-       │                    │   PostgreSQL     │◄───────│   PhoBERT Model  │
-       │                    │   + pgvector     │        │   (ONNX)         │
-       │                    └──────────────────┘        └──────────────────┘
-       │                             │
-       ▼                             ▼
-┌──────────────────┐        ┌──────────────────┐
-│   Frontend Web   │        │   FCM (Firebase) │
-│   React          │        │   Push Notify    │
-└──────────────────┘        └──────────────────┘
-```
+### ✅ 2. Incident Routing
+Tự động gợi ý phòng ban xử lý sự cố dựa trên lịch sử.
 
-### Điểm tích hợp trong Backend
+### ✅ 3. Statistics API
+Thống kê nhanh cho Chatbot: sự cố, góp ý, tin tức, phòng ban.
 
-| File | Chức năng |
-|------|-----------|
-| `incident.controller.js` | Gọi RAG `/suggest` khi tạo incident mới |
-| `settings.controller.js` | Bật/tắt tính năng auto-assign |
-| `anomaly.controller.js` | Gọi RAG `/similar` để phát hiện pattern mới |
+### ✅ 4. Duplicate Detection
+Phát hiện nội dung trùng lặp trước khi tạo mới.
+
+### ✅ 5. Related Content
+Tìm nội dung liên quan đến một record cụ thể.
+
+### ✅ 6. Multi-language Support
+Hỗ trợ tiếng Việt với PhoBERT model.
 
 ---
 
-## Chức năng đã triển khai
-
-### ✅ 1. Auto-suggest Department
-
-Khi user báo cáo sự cố → RAG tự động gợi ý phòng ban xử lý dựa trên mô tả.
-
-**Flow:**
-```
-User tạo incident → Backend gọi RAG → Gợi ý phòng ban
-                                           ↓
-                                   confidence >= 75%?
-                                       ↓          ↓
-                                      YES         NO
-                                       ↓          ↓
-                              Tự động gán    Chờ Leader duyệt
-```
-
-### ✅ 2. Similar Incidents Search
-
-Tìm các sự cố tương tự trong lịch sử → Giúp tra cứu cách xử lý trước đó.
-
-### ✅ 3. Multi-field Matching
-
-Kết hợp nhiều trường để tăng độ chính xác:
-- Description (60%)
-- Location (20%)
-- Incident Type (15%)
-- Priority (5%)
-
-### ✅ 4. Auto-assign Toggle
-
-Admin/Manager có thể bật/tắt tính năng auto-assign từ Web/App.
-
-### ✅ 5. Anomaly Detection - New Pattern
-
-Phát hiện sự cố hoàn toàn mới (không giống bất kỳ sự cố nào trong lịch sử).
-
----
-
-## Chức năng có thể mở rộng
-
-### 🔮 1. Auto-fill Form
-
-**Hiện có API:** `POST /auto-fill`
-
-**Ý tưởng:** Khi user mô tả sự cố, tự động điền các trường:
-- Priority (dựa trên pattern)
-- Incident Type
-- Location (nếu nhận diện được từ mô tả)
-
-### 🔮 2. Resolution Suggestion
-
-**Ý tưởng:** Gợi ý cách xử lý dựa trên các sự cố tương tự đã resolve:
-- Hiển thị `resolution_notes` của incidents tương tự
-- Gợi ý `corrective_actions` phổ biến
-
-### 🔮 3. Smart Escalation
-
-**Ý tưởng:** Tự động đề xuất escalation nếu:
-- Sự cố tương tự trong quá khứ thường phải escalate
-- Thời gian xử lý thường vượt SLA
-
-### 🔮 4. Predictive Maintenance
-
-**Ý tưởng:** Dựa trên patterns sự cố để dự đoán:
-- Thiết bị nào có nguy cơ hỏng
-- Thời điểm nào hay xảy ra sự cố
-
-### 🔮 5. Root Cause Analysis
-
-**Ý tưởng:** Phân tích và gợi ý root cause:
-- Cluster các sự cố tương tự
-- Tìm common root causes từ lịch sử
-
-### 🔮 6. Chatbot Integration
-
-**Ý tưởng:** Kết hợp RAG với AI chatbot:
-- User hỏi "Cách xử lý lỗi XYZ?"
-- RAG tìm incidents tương tự
-- AI tổng hợp thành câu trả lời
-
-### 🔮 7. Quality Suggestions (Ideas)
-
-**Mở rộng sang module Ideas:**
-- Gợi ý ý tưởng tương tự đã có
-- Tránh duplicate ideas
-- Gợi ý phòng ban review phù hợp
-
----
-
-## Cách hoạt động
-
-### Bước 1: Học từ lịch sử (Training)
-
-Khi một sự cố được **resolve thành công**, hệ thống sẽ:
+## Kiến trúc
 
 ```
-Mô tả sự cố → PhoBERT Model → 768-dimension vector → Lưu vào DB
+┌────────────────────────────────────────────────────────────────┐
+│                     CHATBOT AI (Future)                        │
+│                   (LLM + Function Calling)                     │
+└────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌────────────────────────────────────────────────────────────────┐
+│                    RAG SERVICE v3.0                            │
+│                      (Port 8001)                               │
+├────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │   UNIFIED   │  │   STATS     │  │  INCIDENT   │             │
+│  │   SEARCH    │  │   SERVICE   │  │   ROUTER    │             │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘             │
+│         │                │                │                     │
+│  ┌──────┴────────────────┴────────────────┴──────┐             │
+│  │              EMBEDDING SERVICE                │             │
+│  │           (PhoBERT ONNX - 768 dim)           │             │
+│  └───────────────────────────────────────────────┘             │
+│                          │                                      │
+│  ┌───────────────────────┴───────────────────────┐             │
+│  │              POSTGRESQL + pgvector            │             │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐      │             │
+│  │  │incidents │ │  ideas   │ │   news   │      │             │
+│  │  │+embedding│ │+embedding│ │+embedding│      │             │
+│  │  └──────────┘ └──────────┘ └──────────┘      │             │
+│  └───────────────────────────────────────────────┘             │
+└────────────────────────────────────────────────────────────────┘
 ```
-
-Vector này đại diện cho "ý nghĩa ngữ nghĩa" của mô tả. Càng nhiều sự cố được resolve → database càng "thông minh".
-
-### Bước 2: Gợi ý cho sự cố mới (Inference)
-
-```
-1. EMBEDDING      - Mô tả sự cố mới → Vector 768 chiều
-2. RETRIEVAL      - Tìm top 20 sự cố gần nhất (cosine similarity)
-3. MULTI-FIELD    - Kết hợp điểm từ các trường khác
-4. VOTING         - Phòng ban nào có nhiều matches nhất
-5. AUTO-ASSIGN    - Confidence >= 75% → Tự động gán
-```
-
----
-
-## Thuật toán
-
-### Vector Search với pgvector
-
-Sử dụng **cosine similarity** để tìm vectors tương tự:
-- similarity = 1.0 → Hoàn toàn giống nhau
-- similarity = 0.0 → Không liên quan
-
-**HNSW Index** giúp tìm kiếm trong milliseconds.
-
-### Voting Algorithm
-
-1. Nhóm theo phòng ban đã xử lý
-2. Tính điểm mỗi phòng ban = Trung bình điểm của top 3 matches
-3. Chọn phòng ban cao nhất
-
-### Confidence Calculation
-
-```
-final_confidence = 60% × weighted_avg 
-                 + 40% × top_similarity 
-                 + consistency_bonus (tối đa 10%)
-```
-
----
-
-## Cấu hình
-
-| Config | Mô tả | Mặc định |
-|--------|-------|----------|
-| `AUTO_ASSIGN_ENABLED` | Bật/tắt auto-assign | true |
-| `AUTO_ASSIGN_THRESHOLD` | Ngưỡng confidence | 0.75 (75%) |
-| `AUTO_ASSIGN_MIN_SAMPLES` | Số embeddings tối thiểu | 20 |
-| `MIN_SIMILARITY` | Ngưỡng similarity | 0.1 |
 
 ---
 
 ## API Endpoints
 
-| Endpoint | Mô tả | Sử dụng bởi |
-|----------|-------|-------------|
-| `POST /suggest` | Gợi ý phòng ban | incident.controller.js |
-| `GET /similar` | Tìm incidents tương tự | anomaly.controller.js |
-| `POST /create-embedding/{id}` | Tạo embedding sau resolve | incident.controller.js |
-| `GET /settings/rag` | Lấy cấu hình | settings.controller.js |
+### Health Check
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/` | Health check cơ bản |
+| GET | `/health` | Health check chi tiết |
+
+### Search APIs
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/search` | **Unified search** - Tìm kiếm xuyên suốt |
+| POST | `/search/incidents` | Tìm sự cố tương tự |
+| POST | `/search/ideas` | Tìm ý tưởng tương tự |
+| POST | `/search/news` | Tìm tin tức liên quan |
+| POST | `/check-duplicate` | Kiểm tra trùng lặp |
+| GET | `/related/{type}/{id}` | Tìm nội dung liên quan |
+
+### Incident Routing (Backward Compatible)
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/suggest` | Gợi ý phòng ban xử lý |
+| GET | `/similar` | Tìm incidents tương tự |
+| POST | `/auto-fill` | Tự động điền form |
+
+### Statistics APIs
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/stats/overview` | Thống kê tổng quan |
+| GET | `/stats/incidents` | Thống kê sự cố |
+| GET | `/stats/ideas` | Thống kê góp ý |
+| GET | `/stats/news` | Thống kê tin tức |
+| GET | `/stats/departments` | Thống kê theo phòng ban |
+| GET | `/stats/trends` | Xu hướng theo thời gian |
+| GET | `/stats/embeddings` | Thống kê embeddings |
+
+### Embedding Management
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/embeddings/create` | Tạo embedding cho record |
+| POST | `/embeddings/batch` | Tạo embeddings hàng loạt |
+| POST | `/create-embedding/{id}` | Tạo embedding (backward compatible) |
+
+### Admin
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/config` | Cấu hình hiện tại |
+| GET | `/model-info` | Thông tin model |
+| GET | `/settings/rag` | Lấy cấu hình RAG |
+| PUT | `/settings/rag` | Cập nhật cấu hình RAG |
 
 ---
 
-## Tại sao chọn RAG?
+## Cách sử dụng
 
-| Phương pháp | Ưu điểm | Nhược điểm |
-|-------------|---------|------------|
-| **Rule-based** | Đơn giản | Cứng nhắc |
-| **ML Classification** | Tự động học | Cần nhiều data |
-| **RAG** | Linh hoạt, giải thích được | Cần database tốt |
+### 1. Cài đặt
 
-RAG phù hợp vì:
-- ✅ Giải thích được (hiển thị incidents tương tự)
-- ✅ Học từ ít data ban đầu
-- ✅ Tự cải thiện khi có thêm data
-- ✅ Không cần re-train model
-- ✅ Hỗ trợ tiếng Việt tốt với PhoBERT
+```bash
+cd rag_service
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+```
+
+### 2. Cấu hình
+
+Tạo file `.env`:
+
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=smartfactory
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+# API
+API_HOST=0.0.0.0
+API_PORT=8001
+
+# Model
+MODEL_NAME=phobert-v6-denso
+MODEL_DIR=phobert_v6_denso_onnx_compressed
+VECTOR_DIM=768
+
+# Auto-assign
+AUTO_ASSIGN_ENABLED=true
+AUTO_ASSIGN_THRESHOLD=0.75
+AUTO_ASSIGN_MIN_SAMPLES=20
+```
+
+### 3. Chạy Migration
+
+```bash
+# Chạy SQL migration để thêm embedding columns
+psql -U postgres -d smartfactory -f migrations/001_add_embeddings.sql
+```
+
+### 4. Tạo Embeddings
+
+```bash
+# Tạo embeddings cho tất cả content types
+python batch_processor.py all
+
+# Hoặc cho từng loại
+python batch_processor.py incident
+python batch_processor.py idea
+python batch_processor.py news
+```
+
+### 5. Khởi động Server
+
+```bash
+python main.py
+# Hoặc
+uvicorn api:app --host 0.0.0.0 --port 8001 --reload
+```
+
+### 6. Truy cập API Docs
+
+- Swagger UI: http://localhost:8001/docs
+- ReDoc: http://localhost:8001/redoc
+
+---
+
+## Ví dụ sử dụng
+
+### Unified Search
+
+```bash
+curl -X POST "http://localhost:8001/search" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Máy CNC bị lỗi động cơ",
+    "content_types": ["incident", "idea"],
+    "limit": 10
+  }'
+```
+
+### Check Duplicate
+
+```bash
+curl -X POST "http://localhost:8001/check-duplicate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_type": "idea",
+    "title": "Tiết kiệm điện năng",
+    "description": "Đề xuất lắp cảm biến tự động tắt đèn",
+    "threshold": 0.85
+  }'
+```
+
+### Statistics
+
+```bash
+# Thống kê sự cố tuần này
+curl "http://localhost:8001/stats/incidents?time_range=week"
+
+# Thống kê theo phòng ban
+curl "http://localhost:8001/stats/departments"
+```
+
+### Create Embedding
+
+```bash
+curl -X POST "http://localhost:8001/embeddings/create" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_type": "idea",
+    "record_id": "uuid-of-idea"
+  }'
+```
+
+---
+
+## Cấu trúc thư mục
+
+```
+rag_service/
+├── api.py                 # FastAPI endpoints
+├── main.py                # Entry point
+├── config.py              # Configuration
+├── database.py            # Database operations (multi-table)
+├── embedding_service.py   # PhoBERT embedding
+├── incident_router.py     # Incident routing logic
+├── unified_search.py      # Unified search service
+├── stats_service.py       # Statistics service
+├── batch_processor.py     # Batch embedding creation
+├── migrations/
+│   └── 001_add_embeddings.sql  # Database migration
+├── phobert_v6_denso_onnx_compressed/
+│   ├── model.onnx         # ONNX model
+│   └── ...                # Tokenizer files
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Content Types
+
+| Type | Table | Text Fields (Tiếng Việt) |
+|------|-------|--------------------------|
+| incident | incidents | description |
+| idea | ideas | title, description, expected_benefit |
+| news | news | title, content |
+
+---
+
+## Chatbot Integration (Future)
+
+### Ví dụ câu hỏi Chatbot → API
+
+| User hỏi | API Call |
+|----------|----------|
+| "Có sự cố nào về máy CNC không?" | `POST /search {"query": "máy CNC", "content_types": ["incident"]}` |
+| "Tuần này có bao nhiêu sự cố?" | `GET /stats/incidents?time_range=week` |
+| "Đã có ai đề xuất tiết kiệm điện chưa?" | `POST /search {"query": "tiết kiệm điện", "content_types": ["idea"]}` |
+| "Phòng nào xử lý nhiều nhất?" | `GET /stats/departments` |
+| "Thông báo mới nhất về an toàn?" | `POST /search/news {"query": "an toàn"}` |
+
+---
+
+## Changelog
+
+### v3.0.0 (2024-12-15)
+- ✅ **Unified Search**: Tìm kiếm xuyên suốt incidents, ideas, news
+- ✅ **Statistics APIs**: Thống kê chi tiết cho chatbot
+- ✅ **Multi-table Support**: Hỗ trợ embedding cho cả 3 loại content
+- ✅ **Duplicate Detection**: Phát hiện nội dung trùng lặp
+- ✅ **Related Content**: Tìm nội dung liên quan
+- ✅ **Backward Compatible**: Giữ nguyên API cũ cho incident routing
+
+### v2.0.0
+- Multi-field matching cho incidents
+- Auto-assign với voting algorithm
+
+### v1.0.0
+- Basic incident routing với PhoBERT
+
+---
+
+## Files Changed (For Commit)
+
+### New Files
+- `migrations/001_add_embeddings.sql` - Migration thêm embedding columns
+- `unified_search.py` - Service tìm kiếm thống nhất
+- `stats_service.py` - Service thống kê cho chatbot
+
+### Modified Files
+- `database.py` - Refactor hỗ trợ multi-table (incidents, ideas, news)
+- `api.py` - Thêm endpoints mới (search, stats, embeddings)
+- `incident_router.py` - Cập nhật sử dụng ContentType
+- `batch_processor.py` - Hỗ trợ xử lý nhiều loại content
+- `README.md` - Document đầy đủ v3.0
+
+---
+
+## License
+
+Internal use only - DENSO Vietnam

@@ -1,5 +1,5 @@
 """
-RAG Incident Router Service
+RAG Unified Search Service
 Main Entry Point
 
 Chay service voi: python main.py
@@ -9,7 +9,7 @@ import uvicorn
 
 from config import Config
 from api import app
-from database import db
+from database import db, ContentType
 from embedding_service import embedding_service
 
 
@@ -18,10 +18,10 @@ def print_banner():
     banner = """
 ================================================================
                                                                
-   RAG INCIDENT ROUTER SERVICE                              
+   RAG UNIFIED SEARCH SERVICE v3.0                          
                                                                
-   Tu dong goi y department cho incident moi                   
-   Ho tro da ngon ngu: Tieng Viet, Tieng Nhat, English         
+   Semantic search for: incidents, ideas, news                
+   Supports: Vietnamese, Japanese, English                    
                                                                
 ================================================================
 """
@@ -61,12 +61,18 @@ def startup_checks():
     # 5. Current stats
     print("\n5. Embedding Statistics")
     stats = db.count_embeddings()
-    print(f"    Total incidents: {stats['total']}")
+    print(f"    Total records: {stats['total']}")
     print(f"    With embedding: {stats['with_embedding']} ({stats['percentage']:.1f}%)")
-    print(f"    Without embedding: {stats['without_embedding']}")
     
-    if stats['without_embedding'] > 0 and stats['total'] > 0:
-        print(f"\n    Tip: Run 'python batch_processor.py' to create missing embeddings")
+    # Show by type
+    if 'by_type' in stats:
+        print("    By type:")
+        for ct_name, ct_stats in stats['by_type'].items():
+            print(f"      - {ct_name}: {ct_stats['with_embedding']}/{ct_stats['total']}")
+    
+    without = stats['total'] - stats['with_embedding']
+    if without > 0:
+        print(f"\n    Tip: Run 'python batch_processor.py all' to create {without} missing embeddings")
     
     # 6. Search settings
     print("\n6. Search Settings")
@@ -109,7 +115,8 @@ def main():
         host=Config.API_HOST,
         port=Config.API_PORT,
         reload=True,  # Auto-reload for development
-        log_level="info"
+        log_level="info",
+        access_log=True  # Explicitly enable access log
     )
 
 
