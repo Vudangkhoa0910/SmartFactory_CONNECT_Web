@@ -5,16 +5,17 @@
 
 /** Trạng thái của ý tưởng / góp ý */
 export type StatusType =
-  | "Mới"
-  | "Đang xem xét"
-  | "Đã chuyển Manager"
-  | "Đã duyệt"
-  | "Đã từ chối"
-  | "Đã triển khai"
-  | "Đã hoàn tất";
+  | "new"
+  | "under_review"
+  | "assigned"
+  | "approved"
+  | "rejected"
+  | "implemented"
+  | "completed"
+  | "on_hold";
 
 /** Trạng thái tin nhắn nhạy cảm (Pink Box) */
-export type MessageStatus = "Mới" | "Đang xem xét" | "Đã xử lý";
+export type MessageStatus = "new" | "under_review" | "processed";
 export type HistoryAction = "CREATED" | "FORWARDED" | "REPLIED";
 
 /** Lịch sử hành động trên tin nhắn nhạy cảm */

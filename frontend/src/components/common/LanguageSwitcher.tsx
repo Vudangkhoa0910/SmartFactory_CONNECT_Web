@@ -35,7 +35,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'd
         onClick={() => handleLanguageChange('vi')}
         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
           language === 'vi'
-            ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400'
+            ? 'bg-red-600 text-white shadow-sm hover:bg-red-700'
             : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
         }`}
         title="Tiếng Việt"
@@ -46,7 +46,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'd
         onClick={() => handleLanguageChange('ja')}
         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
           language === 'ja'
-            ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400'
+            ? 'bg-red-600 text-white shadow-sm hover:bg-red-700'
             : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
         }`}
         title="日本語"

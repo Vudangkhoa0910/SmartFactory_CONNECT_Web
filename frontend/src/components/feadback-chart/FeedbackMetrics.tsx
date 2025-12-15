@@ -1,5 +1,6 @@
 import React from "react";
 import Badge from "../ui/badge/Badge";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 // Định nghĩa các component Icon đơn giản
 const CheckCircleIcon: React.FC = () => (
@@ -55,6 +56,7 @@ const ClockIcon: React.FC = () => (
 );
 
 export default function FeedbackMetrics({ data }: { data?: any }) {
+  const { t } = useTranslation();
   // Calculate rates from real data
   const totalIdeas = data?.total_ideas || 0;
   const approvedCount = data?.approved || 0;
@@ -74,13 +76,13 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Tỷ lệ chấp nhận
+              {t('feedback_dashboard.metrics.acceptance_rate')}
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
               {acceptanceRate}%
             </h4>
           </div>
-          <Badge color="success">{approvedCount} ý tưởng</Badge>
+          <Badge color="success">{approvedCount} {t('feedback_dashboard.metrics.ideas')}</Badge>
         </div>
       </div>
 
@@ -92,13 +94,13 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Tỷ lệ từ chối
+              {t('feedback_dashboard.metrics.rejection_rate')}
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
               {rejectionRate}%
             </h4>
           </div>
-          <Badge color="error">{rejectedCount} ý tưởng</Badge>
+          <Badge color="error">{rejectedCount} {t('feedback_dashboard.metrics.ideas')}</Badge>
         </div>
       </div>
 
@@ -110,10 +112,10 @@ export default function FeedbackMetrics({ data }: { data?: any }) {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Thời gian xử lý trung bình
+              {t('feedback_dashboard.metrics.avg_processing_time')}
             </span>
             <h4 className="mt-2 font-bold text-gray-900 text-title-sm dark:text-white">
-              {avgProcessingDays > 0 ? `${avgProcessingDays.toFixed(1)} Ngày` : 'N/A'}
+              {avgProcessingDays > 0 ? `${avgProcessingDays.toFixed(1)} ${t('feedback_dashboard.metrics.days')}` : 'N/A'}
             </h4>
           </div>
         </div>

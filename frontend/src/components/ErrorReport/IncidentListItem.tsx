@@ -2,6 +2,7 @@ import React from "react";
 import { ChevronRight } from "lucide-react";
 import { Incident } from "../types";
 import PriorityBadge from "./PriorityBadge";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface IncidentListItemProps {
   incident: Incident;
@@ -14,10 +15,14 @@ const IncidentListItem: React.FC<IncidentListItemProps> = ({
   isSelected,
   onClick,
 }) => {
+  const { t } = useTranslation();
   const timeAgo = Math.round(
     (Date.now() - incident.timestamp.getTime()) / 60000
   );
-  const displayTime = timeAgo < 1 ? "Vừa xong" : `${timeAgo} phút`;
+  const displayTime =
+    timeAgo < 1
+      ? t("error_report.just_now")
+      : `${timeAgo} ${t("error_report.minutes_ago")}`;
 
   return (
     <button

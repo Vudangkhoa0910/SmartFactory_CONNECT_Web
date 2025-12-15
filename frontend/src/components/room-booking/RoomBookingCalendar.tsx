@@ -9,6 +9,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { DateSelectArg, EventClickArg } from '@fullcalendar/core';
+import viLocale from '@fullcalendar/core/locales/vi';
+import jaLocale from '@fullcalendar/core/locales/ja';
 import roomBookingService from '../../services/room-booking.service';
 import { useModal } from '../../hooks/useModal';
 import {
@@ -18,8 +20,10 @@ import {
   useCalendarData,
   useBookingForm
 } from './calendar';
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const RoomBookingCalendar: React.FC = () => {
+  const { t, language } = useTranslation();
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
   
@@ -62,15 +66,25 @@ const RoomBookingCalendar: React.FC = () => {
     }
   };
 
+  const handleBookingError = (error: unknown) => {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string }; status?: number } };
+      const errorMessage = axiosError.response?.data?.message || t('booking.error.generic');
+      toast.error(errorMessage);
+    } else {
+      toast.error(t('booking.error.generic'));
+    }
+  };
+
   const handleAddOrUpdateEvent = async () => {
     if (!form.eventTitle.trim()) {
-      toast.error('Vui lòng nhập tiêu đề cuộc họp');
+      toast.error(t('booking.validation.title_required'));
       return;
     }
     
     console.log('🔍 Validation - selectedRoom:', form.selectedRoom, 'rooms available:', rooms.length);
     if (form.selectedRoom === 0) {
-      toast.error('Vui lòng chọn phòng họp');
+      toast.error(t('booking.validation.room_required'));
       return;
     }
 
@@ -91,10 +105,10 @@ const RoomBookingCalendar: React.FC = () => {
 
       if (form.selectedBooking) {
         await roomBookingService.updateBooking(form.selectedBooking.id, bookingData);
-        toast.success('Cập nhật đặt phòng thành công!');
+        toast.success(t('booking.success.update'));
       } else {
         await roomBookingService.createBooking(bookingData);
-        toast.success('Đặt phòng thành công! Chờ admin duyệt.');
+        toast.success(t('booking.success.create'));
       }
       
       // Reload data
@@ -139,7 +153,16 @@ const RoomBookingCalendar: React.FC = () => {
           select={handleDateSelect}
           eventClick={handleEventClick}
           eventContent={renderEventContent}
-          locale="vi"
+          locales={[viLocale, jaLocale]}
+          locale={language}
+          titleFormat={{ year: 'numeric', month: '2-digit' }}
+          buttonText={{
+            today: t('calendarf.today'),
+            month: t('calendarf.month'),
+            week: t('calendarf.week'),
+            day: t('calendarf.day'),
+            list: t('calendarf.list')
+          }}
           firstDay={1}
           weekends={true}
           height="auto"
@@ -171,15 +194,5 @@ const RoomBookingCalendar: React.FC = () => {
     </div>
   );
 };
-
-function handleBookingError(error: unknown) {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const axiosError = error as { response?: { data?: { message?: string }; status?: number } };
-    const errorMessage = axiosError.response?.data?.message || 'Có lỗi xảy ra khi đặt phòng';
-    toast.error(errorMessage);
-  } else {
-    toast.error('Có lỗi xảy ra khi đặt phòng');
-  }
-}
 
 export default RoomBookingCalendar;

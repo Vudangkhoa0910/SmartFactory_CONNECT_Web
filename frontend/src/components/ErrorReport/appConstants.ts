@@ -2,10 +2,10 @@
 import { Status } from "../types/index";
 
 export const KANBAN_COLUMNS: Status[] = [
-  "Mới",
-  "Đã tiếp nhận",
-  "Đang xử lý",
-  "Tạm dừng",
-  "Hoàn thành",
-  "Đã đóng",
+  "new",
+  "assigned",
+  "in_progress",
+  "on_hold",
+  "resolved",
+  "closed",
 ];

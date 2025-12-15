@@ -11,17 +11,19 @@ import {
 } from "../../components/feedback/types";
 import { MessageList } from "../../components/feedback/MessageList";
 import { MessageDetailView } from "../../components/feedback/MessageDetailView";
+import { useTranslation } from "../../contexts/LanguageContext";
+
 
 // Helper to map API status to UI status
 const mapStatus = (apiStatus: string): MessageStatus => {
   switch (apiStatus) {
-    case 'pending': return 'Mới';
-    case 'under_review': return 'Đang xem xét';
+    case 'pending': return 'new';
+    case 'under_review': return 'under_review';
     case 'approved': 
     case 'rejected':
     case 'implemented':
-      return 'Đã xử lý';
-    default: return 'Mới';
+      return 'processed';
+    default: return 'new';
   }
 };
 
@@ -70,6 +72,7 @@ export default function SensitiveInboxPage() {
   const [selectedMessageId, setSelectedMessageId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const { departments, loading: deptLoading } = useDepartments();
+  const { t } = useTranslation();
 
   // Fetch list of ideas
   useEffect(() => {
@@ -138,21 +141,21 @@ export default function SensitiveInboxPage() {
       setMessages(prev => prev.map(m => 
         m.id === messageId ? { 
           ...m, 
-          status: 'Đang xem xét',
+          status: 'under_review',
           history: [...m.history, {
             action: 'FORWARDED',
             timestamp: new Date(),
-            details: `Chuyển tiếp đến ${departments.find(d => d.id === departmentId)?.name}`,
+            details: `${t('feedback.forward_to')} ${departments.find(d => d.id === departmentId)?.name}`,
             actor: CURRENT_USER
           }]
         } : m
       ));
       
       // Show success message (could be a toast)
-      toast.success("Đã chuyển tiếp thành công!");
+      toast.success(t('feedback.messages.forward_success'));
     } catch (error: any) {
       console.error("Forward failed:", error);
-      toast.error(`Chuyển tiếp thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('feedback.messages.forward_fail')}: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -174,7 +177,7 @@ export default function SensitiveInboxPage() {
         if (m.id === messageId) {
           return {
             ...m,
-            status: 'Đã xử lý', // Assume replying marks it as handled/processed
+            status: 'processed', // Assume replying marks it as handled/processed
             replies: [...m.replies, {
               id: newResponse.id,
               author: newResponse.responder_name || CURRENT_USER,
@@ -184,7 +187,7 @@ export default function SensitiveInboxPage() {
             history: [...m.history, {
               action: 'REPLIED',
               timestamp: new Date(),
-              details: 'Đã phản hồi',
+              details: t('feedback.replied'),
               actor: CURRENT_USER
             }]
           };
@@ -192,10 +195,10 @@ export default function SensitiveInboxPage() {
         return m;
       }));
       
-      toast.success("Đã gửi phản hồi thành công!");
+      toast.success(t('feedback.messages.reply_success'));
     } catch (error: any) {
       console.error("Reply failed:", error);
-      toast.error(`Gửi phản hồi thất bại: ${error.response?.data?.message || error.message}`);
+      toast.error(`${t('feedback.messages.reply_fail')}: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }

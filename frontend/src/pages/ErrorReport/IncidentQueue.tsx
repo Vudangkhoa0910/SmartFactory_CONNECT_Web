@@ -60,13 +60,13 @@ const IncidentWorkspace: React.FC = () => {
 
   const mapStatus = (s: string) => {
     const map: Record<string, string> = {
-      'pending': 'Chờ tiếp nhận',
-      'assigned': 'Đang xử lý', // Map assigned to processing for this view
-      'in_progress': 'Đang xử lý',
-      'resolved': 'Đã xử lý',
-      'closed': 'Đã xử lý'
+      'pending': 'pending',
+      'assigned': 'in_progress', // Map assigned to processing for this view
+      'in_progress': 'in_progress',
+      'resolved': 'processed',
+      'closed': 'processed'
     };
-    return map[s] || 'Chờ tiếp nhận';
+    return map[s] || 'pending';
   };
 
   // Lọc ra các sự cố chưa được giải quyết và sắp xếp
@@ -78,7 +78,7 @@ const IncidentWorkspace: React.FC = () => {
       Low: 1,
     };
     return incidents
-      .filter((inc) => inc.status !== "Đã xử lý")
+      .filter((inc) => inc.status !== "processed")
       .sort((a, b) => {
         const priorityDiff =
           priorityWeight[b.priority] - priorityWeight[a.priority];
@@ -121,7 +121,7 @@ const IncidentWorkspace: React.FC = () => {
       // Optimistic update
       setIncidents((prev) =>
         prev.map((inc) =>
-          inc.id === id ? { ...inc, status: "Đang xử lý" } : inc
+          inc.id === id ? { ...inc, status: "in_progress" } : inc
         )
       );
       
@@ -139,7 +139,7 @@ const IncidentWorkspace: React.FC = () => {
       
       setIncidents((prev) =>
         prev.map((inc) =>
-          inc.id === id ? { ...inc, status: "Đang xử lý" } : inc
+          inc.id === id ? { ...inc, status: "in_progress" } : inc
         )
       );
       
@@ -147,24 +147,24 @@ const IncidentWorkspace: React.FC = () => {
       if (feedback) {
         await api.post(`/incidents/${id}/comments`, { comment: feedback });
       }
-      toast.success("Đã tiếp nhận sự cố");
+      toast.success(t('error_report.acknowledge_success'));
     } catch (error) {
       console.error("Acknowledge failed", error);
-      toast.error("Tiếp nhận thất bại");
+      toast.error(t('error_report.acknowledge_failed'));
     }
   };
 
   const handleResolve = async (id: string) => {
     try {
       await api.put(`/incidents/${id}/resolution`, {
-        resolution_notes: "Resolved via Command Room",
+        resolution_notes: t('error_report.resolved_via_command_room'),
         root_cause: "N/A",
         corrective_actions: "N/A"
       });
 
       setIncidents((prev) =>
         prev.map((inc) =>
-          inc.id === id ? { ...inc, status: "Đã xử lý" } : inc
+          inc.id === id ? { ...inc, status: "processed" } : inc
         )
       );
 
@@ -178,10 +178,10 @@ const IncidentWorkspace: React.FC = () => {
       } else {
         setSelectedIncident(null);
       }
-      toast.success("Đã xử lý sự cố");
+      toast.success(t('error_report.resolve_success'));
     } catch (error) {
       console.error("Resolve failed", error);
-      toast.error("Xử lý thất bại");
+      toast.error(t('error_report.resolve_failed'));
     }
   };
 
@@ -231,7 +231,7 @@ const IncidentWorkspace: React.FC = () => {
                 ))
               ) : (
                 <p className="text-center text-sm text-gray-500 py-8">
-                  Không có sự cố nào.
+                  {t('error_report.no_incidents')}
                 </p>
               )}
             </div>

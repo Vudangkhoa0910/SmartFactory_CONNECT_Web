@@ -141,7 +141,7 @@ const DashboardHeader = ({ loading, onRefresh, t }: { loading: boolean; onRefres
     <div>
       <h1 className="text-2xl font-bold text-gray-900">{t('menu.dashboard')}</h1>
       <p className="text-gray-500 mt-1">
-        {t('dashboard.overview')} • {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        {t('dashboard.overview')} • {new Date().toLocaleDateString('en-GB')}
       </p>
     </div>
     <button

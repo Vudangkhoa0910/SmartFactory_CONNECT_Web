@@ -4,6 +4,9 @@
     "tagline": "Hệ thống quản lý nhà máy thông minh",
     "platform": "SmartFactory CONNECT Web Platform"
   },
+  "card": {
+    "t1" : "so với tuần trước"
+  },
   
   "menu": {
     "dashboard": "Tổng quan",
@@ -18,6 +21,7 @@
     "kaizen_bank": "Ngân hàng cải tiến",
     "news": "Tin tức",
     "calendar": "Lịch",
+    "create_booking": "Tạo đặt phòng",
     "booking": "Đặt phòng họp",
     "my_bookings": "Đặt phòng của tôi",
     "admin_approval": "Phê duyệt đặt phòng",
@@ -27,10 +31,18 @@
     "management": "Quản lý",
     "profile": "Hồ sơ",
     "settings": "Cài đặt",
+    "support": "Hỗ trợ",
     "logout": "Đăng xuất",
     "queue": "Hàng đợi"
   },
 
+  "calendarf": {
+    "today": "Hôm nay",
+    "month": "Tháng",
+    "week": "Tuần",
+    "day": "Ngày",
+    "list": "Danh sách"
+  },
   "button": {
     "submit": "Gửi",
     "cancel": "Hủy",
@@ -56,6 +68,8 @@
     "view_details": "Xem chi tiết",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
+    "confirm_reject": "Xác nhận từ chối",
+    "book": "Đặt phòng",
     "print": "In",
     "download": "Tải xuống",
     "upload": "Tải lên",
@@ -69,6 +83,7 @@
   },
 
   "status": {
+    "confirmed": "Đã duyệt",
     "pending": "Đang chờ",
     "assigned": "Đã phân công",
     "in_progress": "Đang xử lý",
@@ -134,50 +149,43 @@
     }
   },
 
-  "booking": {
-    "title": "Đặt phòng họp",
-    "create": "Đặt phòng mới",
-    "my_bookings": "Đặt phòng của tôi",
-    "room": "Phòng họp",
-    "date": "Ngày",
-    "time": "Thời gian",
-    "start_time": "Thời gian bắt đầu",
-    "end_time": "Thời gian kết thúc",
-    "attendees": "Người tham dự",
-    "purpose": "Mục đích",
-    "notes": "Ghi chú",
-    "approval": "Phê duyệt đặt phòng",
-    "description": "Đặt phòng họp với khung giờ linh hoạt",
-    "my_bookings_desc": "Xem và quản lý đặt phòng của bạn",
-    "load_error": "Không thể tải danh sách đặt phòng",
-    "meeting_type": {
-      "department_meeting": "Họp phòng ban",
-      "team_standup": "Họp đứng team",
-      "project_review": "Họp review dự án",
-      "training_session": "Đào tạo nội bộ",
-      "client_meeting": "Gặp khách hàng",
-      "interview": "Phỏng vấn",
-      "workshop": "Hội thảo",
-      "company_event": "Sự kiện công ty",
-      "celebration": "Sinh nhật/Kỷ niệm",
-      "technical_discussion": "Thảo luận kỹ thuật",
-      "brainstorming": "Động não ý tưởng",
-      "presentation": "Thuyết trình",
-      "other": "Khác"
-    }
-  },
-
-  "news": {
-    "title": "Tin tức",
+   "news": {
+    "title": "Quản lý tin tức",
     "create": "Tạo tin tức",
     "list": "Danh sách tin tức",
     "details": "Chi tiết tin tức",
     "category": "Danh mục",
     "author": "Tác giả",
-    "published_at": "Ngày công bố",
+    "published_at": "Ngày xuất bản",
     "latest": "Tin tức mới nhất",
+    "recent_news": "Tin tức gần đây",
+    "history": "Lịch sử",
+    "no_news": "Không có tin tức",
+    "publish_date": "Ngày xuất bản: ",
+    "no_content": "Không có nội dung chi tiết.",
+    "attachments": "Tệp đính kèm:",
+    "create_title": "Tạo tin tức",
+    "priority": "Tin tức quan trọng",
+    "title_placeholder": "Tiêu đề",
+    "excerpt_placeholder": "Mô tả ngắn (hiển thị trong danh sách)",
+    "content_placeholder": "Nội dung",
+    "drag_drop": "Kéo và thả tệp vào đây",
+    "allowed_types": "PDF / DOC / DOCX / JPG / PNG",
+    "processing": "Đang xử lý...",
+    "post_news": "Đăng tin tức",
+    "validation_title_content": "Vui lòng nhập tiêu đề và nội dung!",
+    "post_success": "Đăng tin tức thành công!",
+    "post_failed": "Đăng tin tức thất bại: ",
+    "category_company_announcement": "Thông báo công ty",
+    "category_safety_alert": "Cảnh báo an toàn",
+    "category_event": "Sự kiện",
+    "category_production_update": "Cập nhật sản xuất",
+    "category_maintenance": "Bảo trì",
+    "published_history": "Lịch sử tin tức đã đăng",
     "description": "Quản lý tin tức công ty"
   },
+
+
 
   "user": {
     "title": "Quản lý người dùng",
@@ -337,7 +345,8 @@
     "go_back": "Quay lại",
     "go_home": "Về trang chủ",
     "404_message": "Không tìm thấy trang bạn đang tìm kiếm!",
-    "occurred": "Đã xảy ra lỗi"
+    "occurred": "Đã xảy ra lỗi",
+    "no_load_data": "Không tải được dữ liệu"
   },
 
   "date": {
@@ -406,6 +415,7 @@
     "description": "Mô tả",
     "manager": "Trưởng phòng",
     "parent": "Phòng ban cha",
+    "no_department": "Chưa có phòng ban",
     "employee_count": "Số nhân viên",
     "all_departments": "Tất cả phòng ban"
   },
@@ -448,7 +458,13 @@
     "employee_code": "Mã nhân viên",
     "last_login": "Đăng nhập lần cuối",
     "created_at": "Ngày tạo",
-    "never": "Chưa từng"
+    "never": "Chưa từng",
+    "country": "Quốc gia",
+    "city_state": "Thành phố/Tỉnh",
+    "postal_code": "Mã bưu chính",
+    "tax_id": "Mã số thuế",
+    "edit_address": "Sửa địa chỉ",
+    "update_details_desc": "Cập nhật thông tin chi tiết để giữ hồ sơ của bạn luôn mới nhất."
   },
 
   "filter": {
@@ -470,5 +486,338 @@
     "form_elements": "Các thành phần biểu mẫu",
     "line_chart": "Biểu đồ đường",
     "bar_chart": "Biểu đồ cột"
+  },
+  "booking": {
+    "title": "Đặt phòng họp",
+    "create_new": "Đặt Phòng Họp",
+    "my_bookings": "Đặt phòng của tôi",
+    "approval": "Phê duyệt đặt phòng",
+    "approver": "Người phê duyệt",
+     "attendees": "Người tham dự",
+    "purpose": "Mục đích",
+    "notes": "Ghi chú",
+    "date": "Ngày",
+    "time": "Thời gian",
+    "start_time": "Thời gian bắt đầu",
+    "end_time": "Thời gian kết thúc",
+    "handler": "Người xử lý",
+    "reject_reason": "Lý do từ chối",
+    "reject_reason_placeholder": "Nhập lý do từ chối...",
+    "history": "Lịch sử thay đổi",
+    "cancel": "Hủy lịch đặt phòng",
+    "description": "Đặt phòng họp với khung giờ linh hoạt",
+    "my_bookings_desc": "Xem và quản lý đặt phòng của bạn",
+    "load_error": "Không thể tải danh sách đặt phòng",
+    "no_bookings": "Không có đặt phòng",
+    "no_calendar_bookings": "Không có lịch đặt phòng ",
+    "no_bookings_message": "Chưa có lịch đặt phòng nào. Hãy đặt phòng ngay!",
+    "reason": "Lý do",
+    "create_new": "Tạo đặt phòng mới",
+    "create_subtitle": "Xem chi tiết đặt phòng hoặc chỉnh sửa",
+    "created_at": "Ngày đặt phòng",
+    "select_at_least_one": "Vui lòng chọn ít nhất một lịch đặt phòng",
+    "confirm_bulk_approve": "Bạn có chắc muốn phê duyệt tất cả lịch đặt phòng đã chọn?",
+    "confirm_single_approve": "Bạn có chắc muốn phê duyệt lịch đặt phòng này?",
+    "approval_description": "Quản lý và phê duyệt các yêu cầu đặt phòng họp",
+    "pending_count": "lịch đặt phòng đang chờ phê duyệt",
+    "selected": "Đã chọn",
+    "bulk_approve": "Phê duyệt hàng loạt",
+    "no_pending_approvals": "Không có lịch đặt phòng nào chờ duyệt",
+    "all_processed": "Tất cả lịch đặt phòng đã được xử lý",
+    "booker": "Người đặt",
+    "info": {
+      "meeting_type": "Loại cuộc họp",
+      "attendees_count": "Số người tham dự",
+      "attendees_unit": "người",
+      "time_label": "Thời gian",
+      "description": "Mô tả",
+      "description_placeholder": "Mô tả chi tiết về cuộc họp...",
+      "notes": "Ghi chú",
+      "notes_placeholder": "Ghi chú thêm (nếu có)",
+      "booker": "Người đặt",
+      "booked_at": "Đặt lúc:",
+      "at_time": "Lúc:",
+      "title": "Tiêu đề cuộc họp",
+      "title_placeholder": "VD: Họp Team Sprint Planning",
+      "date": "Ngày",
+      "start_time": "Giờ bắt đầu",
+      "end_time": "Giờ kết thúc",
+      "capacity": "Sức chứa",
+      "room": "Phòng Họp",
+      "select_room": "Chọn phòng họp"
+    },
+    "detail_title": "Chi Tiết Đặt Phòng",
+    "detail_subtitle": "Xem thông tin chi tiết hoặc chỉnh sửa đặt phòng",
+    "create_subtitle": "Điền thông tin để đặt phòng họp mới",
+    "validation": {
+      "title_required": "Vui lòng nhập tiêu đề cuộc họp",
+      "capacity_exceeded": "Số người tham dự vượt quá sức chứa phòng",
+      "room_occupied": "Phòng đã được đặt trong khung giờ này",
+      "invalid_time_range": "Thời gian kết thúc phải sau thời gian bắt đầu",
+      "past_time": "Không thể đặt phòng trong quá khứ",
+      "create_error": "Không thể tạo lịch đặt phòng",
+      "room_required": "Vui lòng chọn phòng họp",
+      "reject_reason_required": "Vui lòng nhập lý do từ chối"
+    },
+    "status": {
+      "label": "Trạng Thái",
+      "confirmed": "Đã Duyệt",
+      "pending": "Chờ Duyệt",
+      "rejected": "Bị Từ Chối",
+      "completed": "Đã Hoàn Thành",
+      "cancelled": "Đã Hủy",
+      "checking": "Đang kiểm tra trạng thái phòng...",
+      "occupied_message": "Phòng đã được đặt trong khung giờ này. Vui lòng chọn thời gian khác.",
+      "available_message": "Phòng còn trống trong khung giờ này",
+      "processing": "Đang xử lý..."
+    },
+    "success": {
+      "update": "Cập nhật đặt phòng thành công!",
+      "create": "Đặt phòng thành công! Chờ admin duyệt.",
+      "approve": "Đã phê duyệt lịch đặt phòng",
+      "reject": "Đã từ chối lịch đặt phòng",
+      "cancel": "Đã hủy lịch đặt phòng"
+    },
+    "error": {
+      "save": "Lỗi khi lưu đặt phòng",
+      "generic": "Có lỗi xảy ra khi đặt phòng",
+      "approve": "Không thể phê duyệt",
+      "reject": "Không thể từ chối",
+      "cancel": "Không thể hủy"
+    },
+    "confirm": {
+      "approve": "Bạn có chắc muốn phê duyệt lịch đặt phòng này?",
+      "cancel": "Bạn có chắc muốn hủy lịch đặt phòng này?"
+    },
+    "history_action": {
+      "created": "đã tạo lịch đặt phòng",
+      "approved": "đã phê duyệt",
+      "rejected": "đã từ chối",
+      "cancelled": "đã hủy",
+      "updated": "đã cập nhật"
+    },
+    "meeting_type": {
+      "department_meeting": "Họp phòng ban",
+      "team_standup": "Họp đứng team",
+      "project_review": "Họp review dự án",
+      "training_session": "Đào tạo nội bộ",
+      "client_meeting": "Gặp khách hàng",
+      "interview": "Phỏng vấn",
+      "workshop": "Workshop/Hội thảo",
+      "company_event": "Sự kiện công ty",
+      "celebration": "Sinh nhật/Kỷ niệm",
+      "technical_discussion": "Thảo luận kỹ thuật",
+      "brainstorming": "Brainstorming ý tưởng",
+      "presentation": "Thuyết trình",
+      "other": "Khác",
+      "training": "Đào tạo",
+      "project_meeting": "Họp dự án"
+    },
+    "no_bookings": "Chưa có lịch đặt phòng nào",
+    "no_bookings_message": "Bạn chưa đặt phòng họp nào. Hãy đặt phòng ngay!",
+    "reason": "Lý do:",
+    "created_at": "Đặt lúc:"
+  },
+  "incident_report": {
+    "title": "Thống kê Sự cố | SmartFactory CONNECT",
+    "description": "Dashboard hiển thị thống kê sự cố nhà máy",
+    "overview": {
+      "title": "Tổng quan sự cố",
+      "total": "Tổng số sự cố",
+      "pending": "Đang chờ xử lý",
+      "resolved": "Đã xử lý",
+      "sla_violations": "Vi phạm SLA"
+    },
+    "type_analysis": {
+      "title": "Phân Tích Loại Sự Cố",
+      "total": "Tổng Sự Cố",
+      "no_data": "Chưa có dữ liệu thiết bị lỗi",
+      "no_data_desc": "Dữ liệu sẽ hiển thị khi có sự cố được báo cáo",
+      "loading": "Đang tải...",
+      "types": {
+        "machine": "Máy móc",
+        "quality": "Chất lượng",
+        "safety": "An toàn",
+        "environment": "Môi trường",
+        "other": "Khác"
+      }
+    },
+    "time_stats": {
+      "response_time": "Thời gian phản hồi TB",
+      "resolve_time": "Thời gian xử lý TB",
+      "response_card_title": "Thời gian phản hồi",
+      "response_card_desc": "Thời gian trung bình để phản hồi sự cố.",
+      "resolve_card_title": "Thời gian xử lý",
+      "resolve_card_desc": "Thời gian trung bình để hoàn tất xử lý sự cố."
+    },
+    "top_machines": {
+      "title": "Top 10 Thiết Bị Gặp Lỗi Nhiều Nhất",
+      "no_data": "Chưa có dữ liệu thiết bị",
+      "error_count": "Số lần lỗi"
+    },
+    "department_kpi": {
+      "title": "KPI hiệu suất xử lý sự cố – Phòng ban",
+      "y_axis": "KPI xử lý (%)"
+    }
+  },
+  "error_report": {
+    "title": "Quản lý Sự cố",
+    "description": "Theo dõi, điều phối và tra cứu toàn bộ sự cố.",
+    "page_title": "Quản lý Sự cố | SmartFactory CONNECT",
+    "page_description": "Theo dõi và quản lý các sự cố trong nhà máy",
+    "search_placeholder": "Tìm kiếm sự cố...",
+    "export_excel": "Xuất Excel",
+    "view": {
+      "kanban": "Kanban",
+      "list": "Danh sách"
+    },
+    "status": {
+      "new": "Mới",
+      "assigned": "Đã tiếp nhận",
+      "in_progress": "Đang xử lý",
+      "on_hold": "Tạm dừng",
+      "resolved": "Hoàn thành",
+      "closed": "Đã đóng",
+      "pending": "Chờ tiếp nhận",
+      "processed": "Đã xử lý"
+    },
+    "empty_queue": "Hàng đợi trống",
+    "select_incident": "Chọn một sự cố từ danh sách để xem chi tiết.",
+    "id": "ID",
+    "unassigned": "Chưa phân công",
+    "na": "N/A",
+    "update_status_failed": "Cập nhật trạng thái thất bại",
+    "export_success": "Xuất file thành công!",
+    "export_failed": "Xuất file thất bại",
+    "no_incidents": "Không có sự cố nào.",
+    "acknowledge_success": "Đã tiếp nhận sự cố",
+    "acknowledge_failed": "Tiếp nhận thất bại",
+    "resolve_success": "Đã xử lý sự cố",
+    "resolve_failed": "Xử lý thất bại",
+    "resolved_via_command_room": "Đã xử lý qua Phòng Điều Hành",
+    "location": "Vị trí",
+    "table":{
+      "title": "Tiêu đề",
+      "priority": "Mức độ ưu tiên",
+      "status": "Trạng thái",
+      "department": "Phòng ban",
+      "created_at": "Ngày tạo"
+    }
+  },
+  "feedback": {
+    "pink_box_title": "Hộp thư nhạy cảm",
+    "pink_box_desc": "Quản lý các phản hồi nhạy cảm và ý kiến đóng góp",
+    "anonymous": "Ẩn danh",
+    "forward_to": "Chuyển tiếp đến",
+    "replied": "Đã phản hồi",
+    "escalate": "Leo thang",
+    "updated_status_to": "Đã cập nhật trạng thái sang",
+    "messages": {
+      "forward_success": "Đã chuyển tiếp thành công!",
+      "forward_fail": "Chuyển tiếp thất bại",
+      "reply_success": "Đã gửi phản hồi thành công!",
+      "reply_fail": "Gửi phản hồi thất bại",
+      "update_status_success": "Cập nhật trạng thái thành công!",
+      "update_status_fail": "Cập nhật thất bại",
+      "send_chat_fail": "Gửi tin nhắn thất bại"
+    },
+    "status": {
+      "new": "Mới",
+      "under_review": "Đang xem xét",
+      "processed": "Đã xử lý",
+      "approved": "Đã duyệt",
+      "rejected": "Đã từ chối",
+      "implemented": "Đã triển khai",
+      "on_hold": "Tạm dừng"
+    },
+    "white_box_title": "Hòm thư Trắng",
+    "no_selection": "Chưa có góp ý nào được chọn",
+    "reply_title": "Phản hồi góp ý",
+    "reply_placeholder": "Nhập nội dung phản hồi...",
+    "history_title": "Lịch sử hoạt động",
+    "archive": "Lưu trữ",
+    "forward": "Chuyển tiếp",
+    "send_reply": "Gửi phản hồi"
+  },
+  "kaizen": {
+    "title": "Kaizen Bank – Kho Cải Tiến",
+    "description": "Thư viện các ý tưởng cải tiến đã triển khai thành công. Tra cứu – học hỏi – áp dụng cho công việc.",
+    "page_title": "Kaizen Bank | SmartFactory CONNECT",
+    "page_description": "Kho lưu trữ các ý tưởng cải tiến đã được phê duyệt",
+    "search_placeholder": "Tìm kiếm theo từ khóa...",
+    "loading": "Đang tải dữ liệu...",
+    "id": "ID",
+    "difficulty": "Độ khó",
+    "desc": "Mô tả",
+    "expected_benefit": "Lợi ích dự kiến",
+    "actual_savings": "Tiết kiệm thực tế",
+    "contributed_by": "Đóng góp bởi",
+    "anonymous": "Ẩn danh",
+    "no_ideas": "Chưa có ý tưởng nào được triển khai.",
+    "no_results": "Không tìm thấy kết quả phù hợp.",
+    "tags": {
+      "quality": "Chất lượng",
+      "performance": "Hiệu suất",
+      "safety": "An toàn",
+      "energy_saving": "Tiết kiệm NL",
+      "5s": "5S",
+      "lean": "Lean"
+    }
+  },
+  "feedback_dashboard": {
+    "no_data": "Chưa có dữ liệu",
+    "error_loading": "Không thể tải dữ liệu",
+    "title": "Thống kê Ý kiến | SmartFactory CONNECT",
+    "description": "Trang tổng quan thống kê và phân tích các ý kiến đóng góp.",
+    "loading": "Đang tải thống kê...",
+    "metrics": {
+      "acceptance_rate": "Tỷ lệ chấp nhận",
+      "rejection_rate": "Tỷ lệ từ chối",
+      "avg_processing_time": "Thời gian xử lý trung bình",
+      "ideas": "ý tưởng",
+      "days": "Ngày"
+    },
+    "tag_chart": {
+      "title": "Phân loại theo Tag",
+      "total": "Tổng Góp Ý"
+    },
+    "rating_chart": {
+      "title": "Đánh giá người ý kiến",
+      "total": "Tổng Đánh Giá",
+      "no_data": "Chưa có dữ liệu đánh giá",
+      "very_satisfied": "Rất thoả mãn",
+      "satisfied": "Thoả mãn",
+      "acceptable": "Chấp nhận",
+      "unsatisfied": "Chưa được"
+    },
+    "difficulty_chart": {
+      "title": "Mức độ khó của ý kiến",
+      "error": "Không thể tải dữ liệu",
+      "y_axis": "Số lượng ý kiến",
+      "series_name": "Số lượng",
+      "tooltip_suffix": "ý kiến",
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó",
+      "very_hard": "Rất khó"
+    },
+    "tags": {
+      "quality": "Chất lượng",
+      "performance": "Hiệu suất",
+      "safety": "An toàn",
+      "energy_saving": "Tiết kiệm năng lượng",
+      "environment": "Môi trường",
+      "other": "Khác"
   }
+  },
+  "header":{
+    "search":"Tìm kiếm nhanh ..."
+  },
+  "sidebart":{
+    "menu":"Menu",
+    "error_report":"Báo cáo sự cố",
+    "feedback":"Hòm thư góp ý"
+  }
+
+
 }

@@ -1,5 +1,6 @@
 // components/news/NewsList.tsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useTranslation } from "../../contexts/LanguageContext";
 import NewsCard from "./NewsCard";
 import NewsDetailModal from "./NewsDetailModal";
 import api from "../../services/api";
@@ -26,6 +27,7 @@ interface BackendNews {
 }
 
 export default function NewsList() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"today" | "history">("today");
   const [news, setNews] = useState<{ today: NewsItem[]; history: NewsItem[] }>({ today: [], history: [] });
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
@@ -137,7 +139,7 @@ export default function NewsList() {
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          Tin tức gần đây
+          {t('news.recent_news')}
         </button>
         <button
           onClick={() => setActiveTab("history")}
@@ -147,7 +149,7 @@ export default function NewsList() {
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          Lịch sử
+          {t('news.history')}
         </button>
       </div>
 
@@ -169,7 +171,7 @@ export default function NewsList() {
           ))
         ) : (
           <p className="text-center text-gray-500 py-8">
-            Không có tin tức nào.
+            {t('news.no_news')}
           </p>
         )}
       </div>

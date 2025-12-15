@@ -7,10 +7,12 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import api from "../../services/api";
 import { toast } from "react-toastify";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function UserInfoCard() {
   const { user } = useAuth();
   const { isOpen, openModal, closeModal } = useModal();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -40,11 +42,11 @@ export default function UserInfoCard() {
       await api.put("/auth/profile", formData);
       // Ideally we should update the user context here, but a page reload or re-fetch would work too.
       // For now, let's just close the modal and maybe reload.
-      toast.success("Profile updated successfully");
+      toast.success(t('message.update_success', "Profile updated successfully"));
       setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Failed to update profile:", error);
-      toast.error("Failed to update profile");
+      toast.error(t('message.update_error', "Failed to update profile"));
     } finally {
       setLoading(false);
       closeModal();
@@ -58,13 +60,13 @@ export default function UserInfoCard() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-            Personal Information
+            {t('profile.personal_info')}
           </h4>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Full Name
+                {t('profile.full_name')}
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user.full_name}
@@ -73,7 +75,7 @@ export default function UserInfoCard() {
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Employee Code
+                {t('profile.employee_code')}
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user.employee_code}
@@ -82,7 +84,7 @@ export default function UserInfoCard() {
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Email address
+                {t('user.email')}
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user.email}
@@ -91,7 +93,7 @@ export default function UserInfoCard() {
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Phone
+                {t('user.phone')}
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user.phone || "N/A"}
@@ -100,10 +102,10 @@ export default function UserInfoCard() {
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Role
+                {t('user.role')}
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user.role.replace(/_/g, " ").toUpperCase()}
+                {t(`role.${user.role}`, user.role.replace(/_/g, " ").toUpperCase())}
               </p>
             </div>
           </div>
@@ -128,7 +130,7 @@ export default function UserInfoCard() {
               fill=""
             />
           </svg>
-          Edit
+          {t('button.edit')}
         </button>
       </div>
 
@@ -136,22 +138,22 @@ export default function UserInfoCard() {
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Personal Information
+              {t('profile.edit_profile')}
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+              {t('profile.update_details_desc')}
             </p>
           </div>
           <form onSubmit={handleSave} className="flex flex-col">
             <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
               <div className="mt-7">
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Personal Information
+                  {t('profile.personal_info')}
                 </h5>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2">
-                    <Label>Full Name</Label>
+                    <Label>{t('profile.full_name')}</Label>
                     <Input 
                       type="text" 
                       name="full_name"
@@ -161,7 +163,7 @@ export default function UserInfoCard() {
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Email Address</Label>
+                    <Label>{t('user.email')}</Label>
                     <Input 
                       type="email" 
                       name="email"
@@ -171,7 +173,7 @@ export default function UserInfoCard() {
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Phone</Label>
+                    <Label>{t('user.phone')}</Label>
                     <Input 
                       type="text" 
                       name="phone"
@@ -184,10 +186,10 @@ export default function UserInfoCard() {
             </div>
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
               <Button size="sm" variant="outline" onClick={closeModal} type="button">
-                Close
+                {t('button.close')}
               </Button>
               <Button size="sm" type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
+                {loading ? t('message.saving') : t('button.save')}
               </Button>
             </div>
           </form>

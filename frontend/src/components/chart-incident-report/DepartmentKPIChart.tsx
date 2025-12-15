@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { getDepartmentKPI, DepartmentKPIData } from "../../services/dashboard.service";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function DepartmentKPIChart() {
+  const { t } = useTranslation();
   const [data, setData] = useState<DepartmentKPIData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +18,7 @@ export default function DepartmentKPIChart() {
         console.error("Error fetching department KPI:", err);
         // Fallback data
         setData({
-          categories: ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6"],
+          categories: ["T1", "T2", "T3", "T4", "T5", "T6"],
           kpiPercentages: [0, 0, 0, 0, 0, 0],
         });
       } finally {
@@ -36,12 +38,12 @@ export default function DepartmentKPIChart() {
     },
   };
 
-  const series = [{ name: "KPI xử lý (%)", data: data?.kpiPercentages || [] }];
+  const series = [{ name: t('incident_report.department_kpi.y_axis'), data: data?.kpiPercentages || [] }];
 
   return (
     <div className="rounded-2xl border p-6 bg-white dark:bg-gray-900 dark:border-gray-800">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        KPI hiệu suất xử lý sự cố – Phòng ban
+        {t('incident_report.department_kpi.title')}
       </h3>
 
       {loading ? (

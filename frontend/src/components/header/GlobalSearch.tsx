@@ -12,6 +12,7 @@ import {
   UserIcon 
 } from '../../icons';
 import api from '../../services/api';
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface SearchResult {
   id: string | number;
@@ -70,6 +71,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className = '' }) =>
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>(undefined);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Open search with Cmd+K or Ctrl+K
   useEffect(() => {
@@ -225,7 +227,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className = '' }) =>
           ref={inputRef}
           type="text"
           value={query}
-          placeholder="Tìm kiếm nhanh..."
+          placeholder={t('header.search')}
           className="h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-900 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-600 focus:outline-hidden focus:ring-3 focus:ring-brand-600/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-brand-600 xl:w-[430px]"
           onClick={() => setIsOpen(true)}
           onChange={(e) => handleSearchChange(e.target.value)}

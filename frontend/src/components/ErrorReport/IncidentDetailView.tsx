@@ -12,6 +12,8 @@ import {
 import { Incident } from "../types"; // <-- Nhớ cập nhật type này
 import PriorityBadge from "./PriorityBadge";
 
+import { useTranslation } from "../../contexts/LanguageContext";
+
 interface IncidentDetailViewProps {
   incident: Incident | null;
   departments: string[];
@@ -27,6 +29,7 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
   onAssign,
   onResolve,
 }) => {
+  const { t } = useTranslation();
   const [isAssigning, setIsAssigning] = useState(false);
   const [showFeedbackInput, setShowFeedbackInput] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -45,10 +48,10 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
           <Check size={40} className="text-green-600 dark:text-green-300" />
         </div>
         <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-          Hàng đợi trống
+          {t('error_report.empty_queue')}
         </h3>
         <p className="mt-1 text-slate-500 dark:text-slate-400">
-          Chọn một sự cố từ danh sách để xem chi tiết.
+          {t('error_report.select_incident')}
         </p>
       </div>
     );
@@ -72,21 +75,21 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
             {incident.title}
           </h3>
           <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
-            ID: {incident.id}
+            {t('error_report.id')}: {incident.id}
           </span>
         </div>
         <div className="flex flex-col items-end gap-2">
           <PriorityBadge priority={incident.priority} />
           <span
             className={`text-xs font-semibold px-2 py-1 rounded-full ${
-              incident.status === "Chờ tiếp nhận"
+              incident.status === "pending"
                 ? "bg-yellow-100 text-yellow-800"
-                : incident.status === "Đang xử lý"
+                : incident.status === "in_progress"
                 ? "bg-blue-100 text-blue-800"
                 : "bg-green-100 text-green-800"
             }`}
           >
-            {incident.status}
+            {t(`error_report.status.${incident.status}`)}
           </span>
         </div>
       </div>

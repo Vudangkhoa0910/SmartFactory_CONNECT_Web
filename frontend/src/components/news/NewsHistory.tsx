@@ -1,7 +1,8 @@
-import React from "react";
 import { Clock } from "lucide-react";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function NewsHistory() {
+  const { t } = useTranslation();
   const history = [
     { date: "2025-11-15", title: "Thông báo nghỉ lễ 20/11" },
     { date: "2025-11-10", title: "Cải tiến kho NVL" },
@@ -10,7 +11,7 @@ export default function NewsHistory() {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm mt-6">
-      <h2 className="text-xl font-semibold mb-4">Lịch sử Tin đã đăng</h2>
+      <h2 className="text-xl font-semibold mb-4">{t('news.published_history')}</h2>
 
       <div className="space-y-3">
         {history.map((item, index) => (

@@ -9,9 +9,7 @@ import { Calendar, Clock, Users, CalendarX } from 'lucide-react';
 import PageMeta from '../components/common/PageMeta';
 import roomBookingService, { formatDate, formatTime } from '../services/room-booking.service';
 import { 
-  RoomBooking, 
-  MEETING_TYPE_LABELS,
-  BOOKING_STATUS_LABELS 
+  RoomBooking
 } from '../types/room-booking.types';
 import BookingDetailModal from '../components/room-booking/BookingDetailModal';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -63,7 +61,7 @@ const MyBookingsPage: React.FC = () => {
 
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
-        {BOOKING_STATUS_LABELS[status as keyof typeof BOOKING_STATUS_LABELS]}
+        {t(`booking.status.${status}`)}
       </span>
     );
   };
@@ -137,7 +135,7 @@ const MyBookingsPage: React.FC = () => {
             <div className="text-2xl font-bold text-gray-900">
               {stats.confirmed}
             </div>
-            <div className="text-sm text-gray-600">Đã duyệt</div>
+            <div className="text-sm text-gray-600">{t('status.confirmed')}</div>
           </div>
           <div
             onClick={() => setFilter('cancelled')}
@@ -150,7 +148,7 @@ const MyBookingsPage: React.FC = () => {
             <div className="text-2xl font-bold text-gray-900">
               {stats.cancelled}
             </div>
-            <div className="text-sm text-gray-600">Đã hủy</div>
+            <div className="text-sm text-gray-600">{t('status.cancelled')}</div>
           </div>
           <div
             onClick={() => setFilter('rejected')}
@@ -163,7 +161,7 @@ const MyBookingsPage: React.FC = () => {
             <div className="text-2xl font-bold text-gray-900">
               {stats.rejected}
             </div>
-            <div className="text-sm text-gray-600">Bị từ chối</div>
+            <div className="text-sm text-gray-600">{t('status.rejected')}</div>
           </div>
         </div>
       </div>
@@ -173,10 +171,10 @@ const MyBookingsPage: React.FC = () => {
         <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
           <CalendarX className="w-16 h-16 mx-auto mb-4 text-gray-300" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Chưa có lịch đặt phòng nào
+            {t('booking.no_bookings')}
           </h3>
           <p className="text-gray-500">
-            Bạn chưa đặt phòng họp nào. Hãy đặt phòng ngay!
+            {t('booking.no_bookings_message')}
           </p>
         </div>
       ) : (
@@ -208,7 +206,7 @@ const MyBookingsPage: React.FC = () => {
                     style={{ backgroundColor: booking.color }}
                   ></span>
                   <span className="text-sm text-gray-700">
-                    {MEETING_TYPE_LABELS[booking.meeting_type]}
+                    {t(`booking.meeting_type.${booking.meeting_type}`)}
                   </span>
                 </div>
 
@@ -224,19 +222,19 @@ const MyBookingsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    <span>{booking.attendees_count} người</span>
+                    <span>{booking.attendees_count} {t('booking.attendees_unit')}</span>
                   </div>
                 </div>
 
                 {/* Footer */}
                 <div className="pt-3 border-t border-gray-100 text-xs text-gray-500">
-                  Đặt lúc: {new Date(booking.created_at).toLocaleString('vi-VN')}
+                  {t('booking.created_at')}: {new Date(booking.created_at).toLocaleString('vi-VN')}
                 </div>
 
                 {/* Rejection Reason */}
                 {booking.status === 'rejected' && booking.rejection_reason && (
                   <div className="mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600">
-                    <strong>Lý do:</strong> {booking.rejection_reason}
+                    <strong>{t('booking.reason')}:</strong> {booking.rejection_reason}
                   </div>
                 )}
               </div>

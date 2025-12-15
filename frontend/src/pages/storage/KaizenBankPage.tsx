@@ -2,23 +2,26 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, Tag, BookOpen, Award, Lightbulb, Loader2 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import { getKaizenBank, Idea, getDifficultyLabel } from "../../services/idea.service";
-
-// Default category tags
-const DEFAULT_TAGS = [
-  "Chất lượng",
-  "Hiệu suất",
-  "An toàn",
-  "Tiết kiệm NL",
-  "5S",
-  "Lean",
-];
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function KaizenBankPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [kaizenItems, setKaizenItems] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
-  const [allTags, setAllTags] = useState<string[]>(DEFAULT_TAGS);
+  const [fetchedTags, setFetchedTags] = useState<string[]>([]);
+
+  const defaultTags = useMemo(() => [
+    t('kaizen.tags.quality'),
+    t('kaizen.tags.performance'),
+    t('kaizen.tags.safety'),
+    t('kaizen.tags.energy_saving'),
+    t('kaizen.tags.5s'),
+    t('kaizen.tags.lean'),
+  ], [t]);
+
+  const allTags = fetchedTags.length > 0 ? fetchedTags : defaultTags;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,7 +34,7 @@ export default function KaizenBankPage() {
         // Extract unique categories from data
         const categories = [...new Set(data.map(item => item.category).filter(Boolean))];
         if (categories.length > 0) {
-          setAllTags(categories as string[]);
+          setFetchedTags(categories as string[]);
         }
       } catch (error) {
         console.error("Failed to fetch Kaizen bank:", error);
@@ -68,7 +71,7 @@ export default function KaizenBankPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-        <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
+        <span className="ml-2 text-gray-600">{t('kaizen.loading')}</span>
       </div>
     );
   }
@@ -76,8 +79,8 @@ export default function KaizenBankPage() {
   return (
     <>
       <PageMeta
-        title="Kaizen Bank | SmartFactory CONNECT"
-        description="Kho lưu trữ các ý tưởng cải tiến đã được phê duyệt"
+        title={t('kaizen.page_title')}
+        description={t('kaizen.page_description')}
       />
       <div className="p-4">
         {/* Header */}
@@ -85,10 +88,10 @@ export default function KaizenBankPage() {
           <BookOpen size={28} className="text-red-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Kaizen Bank – Kho Cải Tiến
+              {t('kaizen.title')}
             </h1>
             <p className="text-gray-500 mt-0.5">
-              Thư viện các ý tưởng cải tiến đã triển khai thành công. Tra cứu – học hỏi – áp dụng cho công việc.
+              {t('kaizen.description')}
             </p>
           </div>
         </div>
@@ -100,7 +103,7 @@ export default function KaizenBankPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm kiếm theo từ khóa..."
+              placeholder={t('kaizen.search_placeholder')}
               className="w-full outline-none bg-transparent text-gray-900 placeholder-gray-400"
             />
           </div>
@@ -140,29 +143,29 @@ export default function KaizenBankPage() {
               </h3>
 
               <p className="text-xs text-gray-500 mt-1">
-                ID: {item.idea_code || item.id} •{" "}
+                {t('kaizen.id')}: {item.idea_code || item.id} •{" "}
                 {new Date(item.created_at).toLocaleDateString("vi-VN", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
                 })}
-                {item.difficulty_level && ` • Độ khó: ${getDifficultyLabel(item.difficulty_level)}`}
+                {item.difficulty_level && ` • ${t('kaizen.difficulty')}: ${getDifficultyLabel(item.difficulty_level)}`}
               </p>
 
               <div className="mt-3 text-sm text-gray-700">
                 <p>
-                  <span className="font-semibold">• Mô tả:</span>{" "}
+                  <span className="font-semibold">• {t('kaizen.desc')}:</span>{" "}
                   {item.description}
                 </p>
                 {item.expected_benefit && (
                   <p className="mt-1">
-                    <span className="font-semibold">• Lợi ích dự kiến:</span>{" "}
+                    <span className="font-semibold">• {t('kaizen.expected_benefit')}:</span>{" "}
                     {item.expected_benefit}
                   </p>
                 )}
                 {item.actual_savings && item.actual_savings > 0 && (
                   <p className="mt-1">
-                    <span className="font-semibold">• Tiết kiệm thực tế:</span>{" "}
+                    <span className="font-semibold">• {t('kaizen.actual_savings')}:</span>{" "}
                     {item.actual_savings.toLocaleString('vi-VN')} VNĐ
                   </p>
                 )}
@@ -171,8 +174,8 @@ export default function KaizenBankPage() {
               <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
                 <Award size={16} className="text-red-500" />
                 <span>
-                  Đóng góp bởi:{" "}
-                  <span className="font-medium">{item.submitter_name || 'Ẩn danh'}</span>
+                  {t('kaizen.contributed_by')}:{" "}
+                  <span className="font-medium">{item.submitter_name || t('kaizen.anonymous')}</span>
                 </span>
               </div>
 
@@ -192,8 +195,8 @@ export default function KaizenBankPage() {
             <Lightbulb size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500">
               {kaizenItems.length === 0 
-                ? "Chưa có ý tưởng nào được triển khai."
-                : "Không tìm thấy kết quả phù hợp."}
+                ? t('kaizen.no_ideas')
+                : t('kaizen.no_results')}
             </p>
           </div>
         )}

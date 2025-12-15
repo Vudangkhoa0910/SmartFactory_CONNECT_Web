@@ -1,6 +1,7 @@
 import React from "react";
 import { Shield, User, VenetianMask, Inbox } from "lucide-react";
 import { SensitiveMessage } from "./types";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface MessageListProps {
   messages: SensitiveMessage[];
@@ -13,6 +14,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   selectedMessageId,
   onSelectMessage,
 }) => {
+  const { t } = useTranslation();
+
   // Trạng thái rỗng
   if (messages.length === 0) {
     return (
@@ -20,15 +23,15 @@ export const MessageList: React.FC<MessageListProps> = ({
         <header className="p-4 border-b border-gray-200 flex items-center gap-3 shrink-0">
           <Shield size={20} className="text-red-600" />
           <h2 className="text-lg font-bold text-gray-800">
-            Hòm thư Hồng
+            {t('feedback.pink_box_title')}
           </h2>
         </header>
         <div className="flex-grow flex flex-col items-center justify-center text-center p-6 text-gray-500">
           <Inbox size={48} className="mb-4 text-gray-300" />
           <h3 className="font-semibold text-gray-700">
-            Hòm thư trống
+            {t('error_report.empty_queue')}
           </h3>
-          <p className="text-sm mt-1">Chưa có tin nhắn nào.</p>
+          <p className="text-sm mt-1">{t('message.no_data')}</p>
         </div>
       </aside>
     );
@@ -39,7 +42,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       <header className="p-4 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
         <Shield size={20} className="text-red-600" />
         <h2 className="text-lg font-bold text-gray-800">
-          Hòm thư Hồng
+          {t('feedback.pink_box_title')}
         </h2>
       </header>
 
@@ -71,21 +74,21 @@ export const MessageList: React.FC<MessageListProps> = ({
                   <User size={14} className="text-gray-500" />
                 )}
                 <span className="text-gray-600">
-                  {msg.isAnonymous ? "Ẩn danh" : msg.senderName}
+                  {msg.isAnonymous ? t('feedback.anonymous') : msg.senderName}
                 </span>
               </div>
 
               <span
                 className={`ml-auto px-2 py-0.5 text-xs rounded-full font-semibold
                   ${
-                    msg.status === "Mới"
+                    msg.status === "new"
                       ? "bg-red-100 text-red-700"
-                      : msg.status === "Đang xem xét"
+                      : msg.status === "under_review"
                       ? "bg-gray-100 text-gray-700"
                       : "bg-red-600 text-white"
                   }`}
               >
-                {msg.status}
+                {t(`feedback.status.${msg.status}`)}
               </span>
             </div>
 

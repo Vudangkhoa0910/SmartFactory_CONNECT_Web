@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, AlertTriangle, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import dashboardService from "../../services/dashboard.service";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface OverviewData {
   total_incidents: number;
@@ -10,6 +11,7 @@ interface OverviewData {
 }
 
 const IncidentOverview: React.FC = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,16 +44,16 @@ const IncidentOverview: React.FC = () => {
   }
 
   const stats = [
-    { label: "Tổng số sự cố", value: data?.total_incidents || 0, icon: AlertTriangle, color: "text-blue-600" },
-    { label: "Đang chờ xử lý", value: data?.pending_incidents || 0, icon: Clock, color: "text-yellow-600" },
-    { label: "Đã xử lý", value: data?.resolved_incidents || 0, icon: CheckCircle, color: "text-green-600" },
-    { label: "Vi phạm SLA", value: data?.sla_violations || 0, icon: AlertCircle, color: "text-red-600" },
+    { label: t('incident_report.overview.total'), value: data?.total_incidents || 0, icon: AlertTriangle, color: "text-blue-600" },
+    { label: t('incident_report.overview.pending'), value: data?.pending_incidents || 0, icon: Clock, color: "text-yellow-600" },
+    { label: t('incident_report.overview.resolved'), value: data?.resolved_incidents || 0, icon: CheckCircle, color: "text-green-600" },
+    { label: t('incident_report.overview.sla_violations'), value: data?.sla_violations || 0, icon: AlertCircle, color: "text-red-600" },
   ];
 
   return (
     <div className="rounded-xl border p-4 shadow-sm bg-white dark:bg-neutral-900">
       <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">
-        Tổng quan sự cố
+        {t('incident_report.overview.title')}
       </h2>
 
       <div className="grid grid-cols-2 gap-3">

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import api from "../../services/api";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 const ResolveTimeCard: React.FC = () => {
+  const { t } = useTranslation();
   const [avgTime, setAvgTime] = useState<string>("--");
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,7 @@ const ResolveTimeCard: React.FC = () => {
         const hours = parseFloat(response.data.data.avg_resolution_hours || 0);
         // Convert hours to minutes for display
         const minutes = Math.round(hours * 60);
-        setAvgTime(`${minutes} phút`);
+        setAvgTime(`${minutes} ${t('time.minutes_ago').replace('trước', '').replace('前', '')}`);
       } catch (error) {
         console.error("Failed to fetch resolve time:", error);
         setAvgTime("N/A");
@@ -23,15 +25,15 @@ const ResolveTimeCard: React.FC = () => {
     };
     
     fetchData();
-  }, []);
+  }, [t]);
 
   return (
     <div className="rounded-xl border p-4 shadow-sm bg-white dark:bg-neutral-900">
       <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
-        Thời gian xử lý
+        {t('incident_report.time_stats.resolve_card_title')}
       </h2>
       <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        Thời gian trung bình để hoàn tất xử lý sự cố.
+        {t('incident_report.time_stats.resolve_card_desc')}
       </p>
 
       <div className="mt-4 text-3xl font-bold text-gray-900 dark:text-white">

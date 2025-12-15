@@ -1,11 +1,13 @@
 import React, { useMemo } from "react";
 import { Priority } from "../types";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 interface PriorityBadgeProps {
   priority: Priority;
 }
 
 const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
+  const { t } = useTranslation();
   const styles = useMemo(() => {
     switch (priority) {
       case "Critical":
@@ -23,7 +25,7 @@ const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
     <span
       className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full border ${styles}`}
     >
-      {priority}
+      {t(`error_report.priority.${priority}`)}
     </span>
   );
 };

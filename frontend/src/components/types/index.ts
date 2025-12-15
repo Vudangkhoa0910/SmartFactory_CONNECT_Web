@@ -5,13 +5,14 @@
 // =======================================================
 
 export type Status =
-  | "Mới"
-  | "Đã tiếp nhận"
-  | "Đang xử lý"
-  | "Tạm dừng"
-  | "Hoàn thành"
-  | "Đã đóng"
-  | "Đã xử lý";
+  | "new"
+  | "assigned"
+  | "in_progress"
+  | "on_hold"
+  | "resolved"
+  | "closed"
+  | "processed"
+  | "pending";
 
 export type Priority = "Critical" | "High" | "Normal" | "Low";
 
