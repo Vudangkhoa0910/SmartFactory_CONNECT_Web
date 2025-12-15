@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { param } = require('express-validator');
+const { param, body } = require('express-validator');
 const notificationController = require('../controllers/notification.controller');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { validate, pagination } = require('../middlewares/validation.middleware');
+const fcmService = require('../services/fcm.service');
+const { asyncHandler } = require('../middlewares/error.middleware');
 
 const notificationIdValidation = [
   param('id').isUUID().withMessage('Invalid notification ID')
@@ -53,6 +55,91 @@ router.get(
   authenticate,
   notificationController.getUnreadCount
 );
+
+/**
+ * @route   POST /api/notifications/push
+ * @desc    Send push notification to a device (for testing)
+ * @access  Private
+ */
+router.post(
+  '/push',
+  authenticate,
+  [
+    body('token').notEmpty().withMessage('FCM token is required'),
+    body('title').notEmpty().withMessage('Title is required'),
+    body('body').notEmpty().withMessage('Body is required'),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { token, title, body: notifBody, data } = req.body;
+
+    const result = await fcmService.sendToDevice(token, title, notifBody, data);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Push notification sent successfully',
+        messageId: result.messageId
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send push notification',
+        error: result.error
+      });
+    }
+  })
+);
+
+/**
+ * @route   POST /api/notifications/push/topic
+ * @desc    Send push notification to a topic
+ * @access  Private
+ */
+router.post(
+  '/push/topic',
+  authenticate,
+  [
+    body('topic').notEmpty().withMessage('Topic is required'),
+    body('title').notEmpty().withMessage('Title is required'),
+    body('body').notEmpty().withMessage('Body is required'),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { topic, title, body: notifBody, data } = req.body;
+
+    const result = await fcmService.sendToTopic(topic, title, notifBody, data);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Push notification sent to topic: ${topic}`,
+        messageId: result.messageId
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send push notification',
+        error: result.error
+      });
+    }
+  })
+);
+
+/**
+ * @route   GET /api/notifications/push/status
+ * @desc    Check FCM service status
+ * @access  Public
+ */
+router.get('/push/status', (req, res) => {
+  res.json({
+    success: true,
+    fcmAvailable: fcmService.isAvailable(),
+    message: fcmService.isAvailable()
+      ? 'FCM is configured and ready'
+      : 'FCM not configured - firebase-service-account.json missing'
+  });
+});
 
 /**
  * @route   PUT /api/notifications/read-all
