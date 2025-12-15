@@ -8,8 +8,8 @@ import { toast } from 'react-toastify';
 import { Calendar, Clock, User, Building2 } from 'lucide-react';
 import roomBookingService, { formatDate, formatTime } from '../../services/room-booking.service';
 import { useTranslation } from "../../contexts/LanguageContext";
-import { 
-  RoomBooking, 
+import {
+  RoomBooking,
   BookingHistoryEntry
 } from '../../types/room-booking.types';
 
@@ -32,6 +32,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [confirmApprove, setConfirmApprove] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   // Get current user
   const userStr = localStorage.getItem('user');
@@ -56,8 +58,6 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   // Handle approve
   const handleApprove = async () => {
-    if (!window.confirm('Bạn có chắc muốn phê duyệt lịch đặt phòng này?')) return;
-
     setLoading(true);
     try {
       await roomBookingService.approveBooking(currentBooking.id);
@@ -69,6 +69,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       toast.error(err.response?.data?.message || 'Không thể phê duyệt');
     } finally {
       setLoading(false);
+      setConfirmApprove(false);
     }
   };
 
@@ -95,8 +96,6 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   // Handle cancel (for owner)
   const handleCancel = async () => {
-    if (!window.confirm('Bạn có chắc muốn hủy lịch đặt phòng này?')) return;
-
     setLoading(true);
     try {
       await roomBookingService.cancelBooking(currentBooking.id);
@@ -108,6 +107,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       toast.error(err.response?.data?.message || 'Không thể hủy');
     } finally {
       setLoading(false);
+      setConfirmCancel(false);
     }
   };
 
@@ -284,13 +284,32 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               <div className="space-y-3">
                 {!showRejectForm ? (
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleApprove}
-                      disabled={loading}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                    >
-                      ✓ {t('button.approve')}
-                    </button>
+                    {confirmApprove ? (
+                      <div className="flex-1 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                        <span className="text-sm text-green-700">{t('booking.confirm_approve_question')}</span>
+                        <button
+                          onClick={handleApprove}
+                          disabled={loading}
+                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {t('button.confirm')}
+                        </button>
+                        <button
+                          onClick={() => setConfirmApprove(false)}
+                          className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                        >
+                          {t('button.cancel')}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmApprove(true)}
+                        disabled={loading}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      >
+                        ✓ {t('button.approve')}
+                      </button>
+                    )}
                     <button
                       onClick={() => setShowRejectForm(true)}
                       disabled={loading}
@@ -337,16 +356,35 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             {/* Owner Cancel - Pending Status */}
             {isOwner && !adminMode && currentBooking.status === 'pending' && (
               <div className="mb-3">
-                <button
-                  onClick={handleCancel}
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {t('booking.cancel')}
-                </button>
+                {confirmCancel ? (
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    <span className="text-sm text-red-700 flex-1">{t('booking.confirm_cancel_question')}</span>
+                    <button
+                      onClick={handleCancel}
+                      disabled={loading}
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {t('button.confirm')}
+                    </button>
+                    <button
+                      onClick={() => setConfirmCancel(false)}
+                      className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                    >
+                      {t('button.back')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmCancel(true)}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors font-medium"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {t('booking.cancel')}
+                  </button>
+                )}
               </div>
             )}
 
