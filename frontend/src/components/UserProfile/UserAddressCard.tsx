@@ -3,9 +3,12 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
+  const { t } = useTranslation();
+
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
@@ -17,13 +20,13 @@ export default function UserAddressCard() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-              Address
+              {t('profile.address')}
             </h4>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Country
+                  {t('profile.country')}
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   United States.
@@ -32,7 +35,7 @@ export default function UserAddressCard() {
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  City/State
+                  {t('profile.city_state')}
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   Phoenix, Arizona, United States.
@@ -41,7 +44,7 @@ export default function UserAddressCard() {
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Postal Code
+                  {t('profile.postal_code')}
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   ERT 2489
@@ -50,7 +53,7 @@ export default function UserAddressCard() {
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  TAX ID
+                  {t('profile.tax_id')}
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   AS4568384
@@ -78,7 +81,7 @@ export default function UserAddressCard() {
                 fill=""
               />
             </svg>
-            Edit
+            {t('button.edit')}
           </button>
         </div>
       </div>
@@ -86,42 +89,42 @@ export default function UserAddressCard() {
         <div className="relative w-full p-4 overflow-y-auto bg-white no-scrollbar rounded-3xl dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Address
+              {t('profile.edit_address')}
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+              {t('profile.update_details_desc')}
             </p>
           </div>
           <form className="flex flex-col">
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <Label>Country</Label>
+                  <Label>{t('profile.country')}</Label>
                   <Input type="text" value="United States" />
                 </div>
 
                 <div>
-                  <Label>City/State</Label>
+                  <Label>{t('profile.city_state')}</Label>
                   <Input type="text" value="Arizona, United States." />
                 </div>
 
                 <div>
-                  <Label>Postal Code</Label>
+                  <Label>{t('profile.postal_code')}</Label>
                   <Input type="text" value="ERT 2489" />
                 </div>
 
                 <div>
-                  <Label>TAX ID</Label>
+                  <Label>{t('profile.tax_id')}</Label>
                   <Input type="text" value="AS4568384" />
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
               <Button size="sm" variant="outline" onClick={closeModal}>
-                Close
+                {t('button.close')}
               </Button>
               <Button size="sm" onClick={handleSave}>
-                Save Changes
+                {t('button.save')}
               </Button>
             </div>
           </form>

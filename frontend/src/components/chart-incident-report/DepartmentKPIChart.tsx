@@ -18,7 +18,7 @@ export default function DepartmentKPIChart() {
         console.error("Error fetching department KPI:", err);
         // Fallback data
         setData({
-          categories: ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6"],
+          categories: ["T1", "T2", "T3", "T4", "T5", "T6"],
           kpiPercentages: [0, 0, 0, 0, 0, 0],
         });
       } finally {

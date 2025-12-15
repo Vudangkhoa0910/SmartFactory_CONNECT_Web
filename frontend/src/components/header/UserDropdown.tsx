@@ -4,10 +4,12 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
 import UserAvatar from "../common/UserAvatar";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -68,7 +70,7 @@ export default function UserDropdown() {
             {user.email}
           </span>
           <span className="mt-1 block text-theme-xs text-brand-600 dark:text-brand-500">
-            {user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} • {user.employee_code}
+            {t(`role.${user.role}`, user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))} • {user.employee_code}
           </span>
           {user.department && (
             <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
@@ -100,7 +102,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Edit profile
+              {t('profile.edit_profile')}
             </DropdownItem>
           </li>
           <li>
@@ -125,7 +127,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Account settings
+              {t('menu.settings')}
             </DropdownItem>
           </li>
           <li>
@@ -150,7 +152,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Support
+              {t('menu.support')}
             </DropdownItem>
           </li>
         </ul>
@@ -173,7 +175,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
+          {t('menu.logout')}
         </button>
       </Dropdown>
     </div>

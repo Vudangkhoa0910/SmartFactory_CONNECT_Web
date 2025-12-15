@@ -4,6 +4,9 @@
     "tagline": "Hệ thống quản lý nhà máy thông minh",
     "platform": "SmartFactory CONNECT Web Platform"
   },
+  "card": {
+    "t1" : "so với tuần trước"
+  },
   
   "menu": {
     "dashboard": "Tổng quan",
@@ -28,10 +31,18 @@
     "management": "Quản lý",
     "profile": "Hồ sơ",
     "settings": "Cài đặt",
+    "support": "Hỗ trợ",
     "logout": "Đăng xuất",
     "queue": "Hàng đợi"
   },
 
+  "calendarf": {
+    "today": "Hôm nay",
+    "month": "Tháng",
+    "week": "Tuần",
+    "day": "Ngày",
+    "list": "Danh sách"
+  },
   "button": {
     "submit": "Gửi",
     "cancel": "Hủy",
@@ -334,7 +345,8 @@
     "go_back": "Quay lại",
     "go_home": "Về trang chủ",
     "404_message": "Không tìm thấy trang bạn đang tìm kiếm!",
-    "occurred": "Đã xảy ra lỗi"
+    "occurred": "Đã xảy ra lỗi",
+    "no_load_data": "Không tải được dữ liệu"
   },
 
   "date": {
@@ -403,6 +415,7 @@
     "description": "Mô tả",
     "manager": "Trưởng phòng",
     "parent": "Phòng ban cha",
+    "no_department": "Chưa có phòng ban",
     "employee_count": "Số nhân viên",
     "all_departments": "Tất cả phòng ban"
   },
@@ -445,7 +458,13 @@
     "employee_code": "Mã nhân viên",
     "last_login": "Đăng nhập lần cuối",
     "created_at": "Ngày tạo",
-    "never": "Chưa từng"
+    "never": "Chưa từng",
+    "country": "Quốc gia",
+    "city_state": "Thành phố/Tỉnh",
+    "postal_code": "Mã bưu chính",
+    "tax_id": "Mã số thuế",
+    "edit_address": "Sửa địa chỉ",
+    "update_details_desc": "Cập nhật thông tin chi tiết để giữ hồ sơ của bạn luôn mới nhất."
   },
 
   "filter": {
@@ -799,5 +818,6 @@
     "error_report":"Báo cáo sự cố",
     "feedback":"Hòm thư góp ý"
   }
+
 
 }

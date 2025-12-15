@@ -9,6 +9,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { DateSelectArg, EventClickArg } from '@fullcalendar/core';
+import viLocale from '@fullcalendar/core/locales/vi';
+import jaLocale from '@fullcalendar/core/locales/ja';
 import roomBookingService from '../../services/room-booking.service';
 import { useModal } from '../../hooks/useModal';
 import {
@@ -21,7 +23,7 @@ import {
 import { useTranslation } from "../../contexts/LanguageContext";
 
 const RoomBookingCalendar: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
   
@@ -151,7 +153,16 @@ const RoomBookingCalendar: React.FC = () => {
           select={handleDateSelect}
           eventClick={handleEventClick}
           eventContent={renderEventContent}
-          locale="vi"
+          locales={[viLocale, jaLocale]}
+          locale={language}
+          titleFormat={{ year: 'numeric', month: '2-digit' }}
+          buttonText={{
+            today: t('calendarf.today'),
+            month: t('calendarf.month'),
+            week: t('calendarf.week'),
+            day: t('calendarf.day'),
+            list: t('calendarf.list')
+          }}
           firstDay={1}
           weekends={true}
           height="auto"

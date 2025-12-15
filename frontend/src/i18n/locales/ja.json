@@ -4,6 +4,10 @@
     "tagline": "スマートファクトリー管理システム",
     "platform": "SmartFactory CONNECT Web Platform"
   },
+
+   "card": {
+    "t1" : "先週と比較して"
+  },
   
   "menu": {
     "dashboard": "ダッシュボード",
@@ -28,10 +32,18 @@
     "management": "管理",
     "profile": "プロフィール",
     "settings": "設定",
+    "support": "サポート",
     "logout": "ログアウト",
     "queue": "キュー"
   },
 
+  "calendarf": {
+    "today": "今日",
+    "month": "月",
+    "week": "週",
+    "day": "日",
+    "list": "リスト"
+  },
   "button": {
     "submit": "送信",
     "cancel": "キャンセル",
@@ -333,7 +345,8 @@
     "go_back": "戻る",
     "go_home": "ホームへ",
     "404_message": "お探しのページが見つかりませんでした！",
-    "occurred": "エラーが発生しました"
+    "occurred": "エラーが発生しました",
+    "no_load_data": "データを読み込めませんでした"
   },
 
   "date": {
@@ -402,6 +415,7 @@
     "description": "説明",
     "manager": "部門長",
     "parent": "親部門",
+    "no_department": "部署なし",
     "employee_count": "従業員数",
     "all_departments": "全部門"
   },
@@ -444,7 +458,13 @@
     "employee_code": "社員番号",
     "last_login": "最終ログイン",
     "created_at": "作成日",
-    "never": "未ログイン"
+    "never": "未ログイン",
+    "country": "国",
+    "city_state": "市町村/都道府県",
+    "postal_code": "郵便番号",
+    "tax_id": "納税者番号",
+    "edit_address": "住所編集",
+    "update_details_desc": "詳細を更新してプロフィールを最新の状態に保ちます。"
   },
 
   "filter": {

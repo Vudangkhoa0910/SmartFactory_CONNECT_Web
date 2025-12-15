@@ -1,8 +1,10 @@
 import { useAuth } from "../../contexts/AuthContext";
 import UserAvatar from "../common/UserAvatar";
+import { useTranslation } from "../../contexts/LanguageContext";
 
 export default function UserMetaCard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!user) return null;
 
@@ -19,11 +21,11 @@ export default function UserMetaCard() {
             </h4>
             <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.role.replace(/_/g, " ").toUpperCase()}
+                {t(`role.${user.role}`, user.role.replace(/_/g, " ").toUpperCase())}
               </p>
               <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.department?.name || "No Department"}
+                {user.department?.name || t('department.no_department')}
               </p>
               <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
               <p className="text-sm text-gray-500 dark:text-gray-400">

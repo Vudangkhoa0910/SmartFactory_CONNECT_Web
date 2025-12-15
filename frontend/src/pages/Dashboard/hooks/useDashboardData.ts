@@ -4,6 +4,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import dashboardService, { DashboardSummary, DepartmentStats, RecentActivity } from '../../../services/dashboard.service';
 import { getIncidentStats, IncidentStats } from '../../../services/incident.service';
+import { useTranslation } from "../../../contexts/LanguageContext";
 
 export interface DashboardState {
   summary: DashboardSummary | null;
@@ -15,6 +16,7 @@ export interface DashboardState {
 }
 
 export function useDashboardData() {
+  const { t } = useTranslation();
   const [state, setState] = useState<DashboardState>({
     summary: null,
     incidentStats: null,
@@ -48,7 +50,7 @@ export function useDashboardData() {
       setState(prev => ({
         ...prev,
         loading: false,
-        error: 'Không thể tải dữ liệu',
+        error: t('error.no_load_data'),
       }));
     }
   }, []);
