@@ -37,3 +37,6 @@ src/database/*.backup
 src/database/*backup*.sql
 src/database/restore_*.bat
 src/database/restore_*.ps1
+
+# Firebase Service Account
+firebase-service-account.json
