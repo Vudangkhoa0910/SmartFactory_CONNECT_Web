@@ -35,7 +35,7 @@ export async function handleCommand({
   // --- HANDLE PENDING ACTIONS ---
   if (pendingAction === 'DELETE_ALL_INCIDENTS') {
     if (lowerInput.includes('đồng ý')) {
-      setMessages(prev => [...prev, { role: 'model', text: '✅ Đã xoá toàn bộ danh sách sự cố thành công.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Đã xoá toàn bộ danh sách sự cố thành công.' }]);
       toast.success('Đã xoá dữ liệu sự cố');
     } else {
       setMessages(prev => [...prev, { role: 'model', text: 'Đã huỷ thao tác xoá.' }]);
@@ -49,7 +49,7 @@ export async function handleCommand({
     navigate('/room-booking');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '📅 Đã chuyển đến trang **Đặt phòng họp**' 
+      text: 'Đã chuyển đến trang Đặt phòng họp' 
     }]);
     return true;
   }
@@ -58,7 +58,7 @@ export async function handleCommand({
     navigate('/my-bookings');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '📅 Đã chuyển đến trang **Lịch của tôi**' 
+      text: 'Đã chuyển đến trang Lịch của tôi' 
     }]);
     return true;
   }
@@ -67,7 +67,7 @@ export async function handleCommand({
     navigate('/admin/booking-approval');
     setMessages(prev => [...prev, { 
       role: 'model', 
-      text: '✅ Đã chuyển đến trang **Duyệt đặt phòng**' 
+      text: 'Đã chuyển đến trang Duyệt đặt phòng' 
     }]);
     return true;
   }
@@ -80,14 +80,14 @@ export async function handleCommand({
   // --- HANDLE HELP COMMAND ---
   if (lowerInput.includes('hướng dẫn') || lowerInput.includes('trợ giúp') || lowerInput.includes('help') || lowerInput === 'h' || lowerInput === '?' || lowerInput.includes('từ khóa') || lowerInput.includes('lệnh')) {
     
-    let helpMessage = `📖 **HƯỚNG DẪN SỬ DỤNG CHATBOT**\n\n💡 Gõ các từ khóa sau để sử dụng:\n\n**📅 ĐẶT PHÒNG HỌP NHANH:**\n• "Đặt phòng [số người] tổ chức [mục đích] từ [giờ] đến [giờ] ngày [ngày] tháng [tháng]"\n• VD: "Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11"\n• "xem lịch phòng" - Xem tất cả phòng và lịch đặt\n\n**📅 QUẢN LÝ LỊCH ĐẶT PHÒNG:**\n• "lịch đặt phòng" - Di chuyển đến trang đặt phòng\n• "lịch của tôi" - Di chuyển đến trang lịch của tôi\n• "duyệt đặt phòng" - Di chuyển đến trang duyệt đặt phòng\n\n**🔔 QUẢN LÝ THÔNG BÁO:**\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
+    let helpMessage = `HƯỚNG DẪN SỬ DỤNG CHATBOT\n\nGõ các từ khóa sau để sử dụng:\n\nĐẶT PHÒNG HỌP NHANH:\n• "Đặt phòng [số người] tổ chức [mục đích] từ [giờ] đến [giờ] ngày [ngày] tháng [tháng]"\n• VD: "Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11"\n• "xem lịch phòng" - Xem tất cả phòng và lịch đặt\n\nQUẢN LÝ LỊCH ĐẶT PHÒNG:\n• "lịch đặt phòng" - Di chuyển đến trang đặt phòng\n• "lịch của tôi" - Di chuyển đến trang lịch của tôi\n• "duyệt đặt phòng" - Di chuyển đến trang duyệt đặt phòng\n\nQUẢN LÝ THÔNG BÁO:\n• "xem thông báo" - Xem danh sách thông báo chưa đọc\n• "xem thông báo [số]" - Xem chi tiết thông báo\n• "đã xem [số]" - Đánh dấu đã đọc 1 thông báo\n• "đã xem hết" - Đánh dấu tất cả đã đọc`;
     
     // Only show admin commands if user is admin
     if (isAdmin) {
-      helpMessage += `\n\n**🔍 TÌM KIẾM SỰ CỐ (ADMIN):**\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\n**🎯 LỌC THEO TRẠNG THÁI:**\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\n**⚡ LỌC THEO ƯU TIÊN:**\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\n**💡 TÌM KIẾM Ý TƯỞNG (ADMIN):**\n• "tìm ý tưởng" - Tìm tất cả ý tưởng\n• "tìm ý tưởng [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm hòm trắng [từ khóa]" - Tìm ý tưởng hòm trắng\n• "tìm hòm hồng [từ khóa]" - Tìm ý tưởng hòm hồng\n• "tìm ý tưởng tháng [số]" - Tìm theo tháng\n• "tìm hòm trắng cải tiến quy trình tháng 9"\n\n**🏷️ LỌC TRẠNG THÁI Ý TƯỞNG:**\n• Thêm: "chờ xử lý", "đang xem xét", "đã phê duyệt", "từ chối", "đã triển khai"\n\n**📰 TẠO TIN TỨC (ADMIN):**\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI`;
+      helpMessage += `\n\nTÌM KIẾM SỰ CỐ (ADMIN):\n• "tìm sự cố" - Hiển thị tất cả sự cố\n• "tìm sự cố [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm sự cố tháng [số]" - Tìm theo tháng\n• "tìm sự cố năm [số]" - Tìm theo năm\n• "tìm sự cố ngày [DD/MM/YYYY]" - Tìm theo ngày\n• "tìm sự cố [từ khóa] tháng 11 năm 2025"\n\nLỌC THEO TRẠNG THÁI:\n• Thêm: "đang xử lý", "chờ xử lý", "đã giải quyết", "đã đóng"\n\nLỌC THEO ƯU TIÊN:\n• Thêm: "khẩn cấp", "cao", "trung bình", "thấp"\n\nTÌM KIẾM Ý TƯỞNG (ADMIN):\n• "tìm ý tưởng" - Tìm tất cả ý tưởng\n• "tìm ý tưởng [từ khóa]" - Tìm theo tiêu đề/mô tả\n• "tìm hòm trắng [từ khóa]" - Tìm ý tưởng hòm trắng\n• "tìm hòm hồng [từ khóa]" - Tìm ý tưởng hòm hồng\n• "tìm ý tưởng tháng [số]" - Tìm theo tháng\n• "tìm hòm trắng cải tiến quy trình tháng 9"\n\nLỌC TRẠNG THÁI Ý TƯỞNG:\n• Thêm: "chờ xử lý", "đang xem xét", "đã phê duyệt", "từ chối", "đã triển khai"\n\nTẠO TIN TỨC (ADMIN):\n• "tạo tin [chủ đề]" - Tạo tin tức mới bằng AI`;
     }
     
-    helpMessage += `\n\n**🧭 ĐIỀU HƯỚNG:**\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n• "lịch đặt phòng" - Trang đặt phòng họp\n• "lịch của tôi" - Trang lịch cá nhân\n• "duyệt đặt phòng" - Trang duyệt đặt phòng\n\n**💬 TRÒ CHUYỆN:**\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
+    helpMessage += `\n\nĐIỀU HƯỚNG:\n• "dashboard" - Trang tổng quan\n• "sự cố" / "incidents" - Quản lý sự cố\n• "ý tưởng" / "ideas" - Quản lý ý tưởng\n• "tin tức" / "news" - Quản lý tin tức\n• "người dùng" / "users" - Quản lý người dùng\n• "phòng ban" / "departments" - Quản lý phòng ban\n• "thông báo" / "notifications" - Trang thông báo\n• "profile" / "hồ sơ" - Trang cá nhân\n• "lịch đặt phòng" - Trang đặt phòng họp\n• "lịch của tôi" - Trang lịch cá nhân\n• "duyệt đặt phòng" - Trang duyệt đặt phòng\n\nTRÒ CHUYỆN:\n• Gõ bất kỳ câu hỏi nào khác để trò chuyện với AI`;
     
     const actions: Array<{
       label: string;
@@ -95,7 +95,7 @@ export async function handleCommand({
       className: string;
     }> = [
       {
-        label: '📅 Ví dụ: Đặt phòng họp',
+        label: 'Ví dụ: Đặt phòng họp',
         onClick: () => {
           const exampleInput = 'Đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11 năm 2025';
           setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
@@ -112,7 +112,7 @@ export async function handleCommand({
         className: 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
       },
       {
-        label: '🔔 Ví dụ: Xem thông báo',
+        label: 'Ví dụ: Xem thông báo',
         onClick: () => {
           const exampleInput = 'xem thông báo';
           setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
@@ -129,7 +129,7 @@ export async function handleCommand({
         className: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50'
       },
       {
-        label: '🧭 Ví dụ: Đi đến Dashboard',
+        label: 'Ví dụ: Đi đến Dashboard',
         onClick: () => {
           const exampleInput = 'dashboard';
           setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
@@ -151,7 +151,7 @@ export async function handleCommand({
     if (isAdmin) {
       actions.unshift(
         {
-          label: '📋 Ví dụ: Tìm sự cố',
+          label: 'Ví dụ: Tìm sự cố',
           onClick: () => {
             const exampleInput = 'tìm sự cố máy CNC tháng 11';
             setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
@@ -168,7 +168,7 @@ export async function handleCommand({
           className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
         },
         {
-          label: '💡 Ví dụ: Tìm ý tưởng',
+          label: 'Ví dụ: Tìm ý tưởng',
           onClick: () => {
             const exampleInput = 'tìm hòm trắng cải tiến tháng 9';
             setMessages(prev => [...prev, { role: 'user', text: exampleInput }]);
@@ -204,12 +204,12 @@ export async function handleCommand({
     if (!isAdmin) {
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: '🚫 **Quyền truy cập bị từ chối**\n\nBạn không có quyền tìm kiếm ý tưởng. Chỉ Administrator mới có quyền này.' 
+        text: 'Quyền truy cập bị từ chối\n\nBạn không có quyền tìm kiếm ý tưởng. Chỉ Administrator mới có quyền này.' 
       }]);
       return true;
     }
     
-    setMessages(prev => [...prev, { role: 'model', text: '🔍 Đang tìm kiếm ý tưởng...' }]);
+    setMessages(prev => [...prev, { role: 'model', text: 'Đang tìm kiếm ý tưởng...' }]);
     
     try {
       const searchParams = new URLSearchParams();
@@ -295,35 +295,35 @@ export async function handleCommand({
       if (ideas.length === 0) {
         setMessages(prev => [...prev, { 
           role: 'model', 
-          text: '❌ Không tìm thấy ý tưởng nào phù hợp với tiêu chí tìm kiếm.' 
+          text: 'Không tìm thấy ý tưởng nào phù hợp với tiêu chí tìm kiếm.' 
         }]);
       } else {
-        let resultText = `💡 **Tìm thấy ${ideas.length} ý tưởng:`
+        let resultText = `Tìm thấy ${ideas.length} ý tưởng:`
         
         const ideaboxType = searchParams.get('ideabox_type');
         if (ideaboxType === 'white') {
-          resultText += ' (Hòm Trắng)**';
+          resultText += ' (Hòm Trắng)';
         } else if (ideaboxType === 'pink') {
-          resultText += ' (Hòm Hồng)**';
+          resultText += ' (Hòm Hồng)';
         } else {
-          resultText += '**';
+          resultText += '';
         }
         
         // Add date range info
         if (searchParams.has('date_from') && searchParams.has('date_to')) {
           const dateFrom = new Date(searchParams.get('date_from')!);
           if (fullDateMatch) {
-            resultText += `\n📅 Ngày: ${dateFrom.toLocaleDateString('vi-VN')}`;
+            resultText += `\nNgày: ${dateFrom.toLocaleDateString('vi-VN')}`;
           } else if (month && year) {
-            resultText += `\n📅 Tháng ${month}/${year}`;
+            resultText += `\nTháng ${month}/${year}`;
           } else if (month) {
-            resultText += `\n📅 Tháng ${month}/${currentYear}`;
+            resultText += `\nTháng ${month}/${currentYear}`;
           } else if (year) {
-            resultText += `\n📅 Năm ${year}`;
+            resultText += `\nNăm ${year}`;
           }
         }
         
-        resultText += '\n\n💡 Click vào card để xem chi tiết';
+        resultText += '\n\nClick vào card để xem chi tiết';
         
         setMessages(prev => [...prev, {
           role: 'model',
@@ -335,7 +335,7 @@ export async function handleCommand({
       console.error('Search ideas error:', error);
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: '❌ Có lỗi khi tìm kiếm ý tưởng. Vui lòng thử lại.' 
+        text: 'Có lỗi khi tìm kiếm ý tưởng. Vui lòng thử lại.' 
       }]);
     }
     return true;
@@ -347,7 +347,7 @@ export async function handleCommand({
   for (const key of sortedKeys) {
     if (lowerInput.includes(key)) {
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'model', text: `🚀 Đang chuyển bạn đến **${key}**...` }]);
+        setMessages(prev => [...prev, { role: 'model', text: `Đang chuyển bạn đến ${key}...` }]);
         navigate(navMap[key]);
       }, 500);
       return true;
@@ -360,9 +360,9 @@ export async function handleCommand({
   if (lowerInput.includes('đọc hết') || lowerInput.includes('đã xem hết') || lowerInput.includes('đánh dấu tất cả đã đọc') || lowerInput.includes('đã xem các thông báo')) {
     try {
       await api.put('/notifications/read-all');
-      setMessages(prev => [...prev, { role: 'model', text: '✅ Đã đánh dấu tất cả thông báo là đã đọc.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Đã đánh dấu tất cả thông báo là đã đọc.' }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'model', text: '❌ Có lỗi khi cập nhật trạng thái thông báo.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Có lỗi khi cập nhật trạng thái thông báo.' }]);
     }
     return true;
   }
@@ -379,15 +379,15 @@ export async function handleCommand({
         await api.put(`/notifications/${notification.id}/read`);
         setMessages(prev => [...prev, { 
           role: 'model', 
-          text: `✅ Đã đánh dấu thông báo **"${notification.title}"** là đã đọc.` 
+          text: `Đã đánh dấu thông báo "${notification.title}" là đã đọc.` 
         }]);
       } catch {
-        setMessages(prev => [...prev, { role: 'model', text: '❌ Có lỗi khi cập nhật trạng thái thông báo.' }]);
+        setMessages(prev => [...prev, { role: 'model', text: 'Có lỗi khi cập nhật trạng thái thông báo.' }]);
       }
     } else {
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: `❌ Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại. Vui lòng gõ "Xem thông báo" để cập nhật danh sách.` 
+        text: `Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại. Vui lòng gõ "Xem thông báo" để cập nhật danh sách.` 
       }]);
     }
     return true;
@@ -403,12 +403,12 @@ export async function handleCommand({
       const n = cachedNotifications[index];
       setMessages(prev => [...prev, {
         role: 'model',
-        text: `📄 **Chi tiết thông báo:**\n\n**${n.title}**\n${n.message || n.content || ''}`
+        text: `Chi tiết thông báo:\n\n${n.title}\n${n.message || n.content || ''}`
       }]);
     } else {
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: `❌ Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại.` 
+        text: `Không tìm thấy thông báo số ${index + 1} trong danh sách hiện tại.` 
       }]);
     }
     return true;
@@ -422,26 +422,26 @@ export async function handleCommand({
       const unread: Notification[] = Array.isArray(response.data) ? response.data : (response.data.data || []);
       
       if (unread.length === 0) {
-           setMessages(prev => [...prev, { role: 'model', text: '🎉 Bạn không có thông báo mới nào.' }]);
+           setMessages(prev => [...prev, { role: 'model', text: 'Bạn không có thông báo mới nào.' }]);
       } else {
           const actions = unread.map((n) => ({
             label: `Xem: ${n.title.length > 15 ? n.title.substring(0, 15) + '...' : n.title}`,
             onClick: () => {
                setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `📄 **Chi tiết thông báo:**\n\n**${n.title}**\n${n.message || n.content || ''}`
+                  text: `Chi tiết thông báo:\n\n${n.title}\n${n.message || n.content || ''}`
                }]);
             }
           }));
 
           setMessages(prev => [...prev, { 
               role: 'model', 
-              text: `📬 **Bạn có ${unread.length} thông báo mới:**\n\n${unread.map((n, i) => `${i+1}. ${n.title}`).join('\n')}\n\n💡 Gõ **"đã xem [số]"** để đánh dấu đã xem (ví dụ: "đã xem 1").\n(Hoặc chọn nút bên dưới để xem chi tiết)`,
+              text: `Bạn có ${unread.length} thông báo mới:\n\n${unread.map((n, i) => `${i+1}. ${n.title}`).join('\n')}\n\nGõ "đã xem [số]" để đánh dấu đã xem (ví dụ: "đã xem 1").\n(Hoặc chọn nút bên dưới để xem chi tiết)`,
               actions: actions
           }]);
       }
     } catch {
-        setMessages(prev => [...prev, { role: 'model', text: '❌ Không thể tải thông báo lúc này.' }]);
+        setMessages(prev => [...prev, { role: 'model', text: 'Không thể tải thông báo lúc này.' }]);
     }
     return true;
   }
@@ -453,12 +453,12 @@ export async function handleCommand({
     if (!isAdmin) {
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: '🚫 **Quyền truy cập bị từ chối**\n\nBạn không có quyền tìm kiếm sự cố/báo cáo. Chỉ Administrator mới có quyền này.' 
+        text: 'Quyền truy cập bị từ chối\n\nBạn không có quyền tìm kiếm sự cố/báo cáo. Chỉ Administrator mới có quyền này.' 
       }]);
       return true;
     }
     
-    setMessages(prev => [...prev, { role: 'model', text: '🔍 Đang tìm kiếm sự cố...' }]);
+    setMessages(prev => [...prev, { role: 'model', text: 'Đang tìm kiếm sự cố...' }]);
     
     try {
       // Extract search parameters from user input
@@ -551,26 +551,26 @@ export async function handleCommand({
       if (incidents.length === 0) {
         setMessages(prev => [...prev, { 
           role: 'model', 
-          text: '❌ Không tìm thấy sự cố nào phù hợp với tiêu chí tìm kiếm.' 
+          text: 'Không tìm thấy sự cố nào phù hợp với tiêu chí tìm kiếm.' 
         }]);
       } else {
-        let resultText = `🔍 **Tìm thấy ${incidents.length} sự cố:**`;
+        let resultText = `Tìm thấy ${incidents.length} sự cố:`;
         
         // Add date range info if applicable
         if (searchParams.has('date_from') && searchParams.has('date_to')) {
           const dateFrom = new Date(searchParams.get('date_from')!);
           if (fullDateMatch) {
-            resultText += `\n📅 Ngày: ${dateFrom.toLocaleDateString('vi-VN')}`;
+            resultText += `\nNgày: ${dateFrom.toLocaleDateString('vi-VN')}`;
           } else if (month && year) {
-            resultText += `\n📅 Tháng ${month}/${year}`;
+            resultText += `\nTháng ${month}/${year}`;
           } else if (month) {
-            resultText += `\n📅 Tháng ${month}/${currentYear}`;
+            resultText += `\nTháng ${month}/${currentYear}`;
           } else if (year) {
-            resultText += `\n📅 Năm ${year}`;
+            resultText += `\nNăm ${year}`;
           }
         }
         
-        resultText += '\n\n💡 Click vào card để xem chi tiết';
+        resultText += '\n\nClick vào card để xem chi tiết';
         
         setMessages(prev => [...prev, {
           role: 'model',
@@ -582,7 +582,7 @@ export async function handleCommand({
       console.error('Search incidents error:', error);
       setMessages(prev => [...prev, { 
         role: 'model', 
-        text: '❌ Có lỗi khi tìm kiếm sự cố. Vui lòng thử lại.' 
+        text: 'Có lỗi khi tìm kiếm sự cố. Vui lòng thử lại.' 
       }]);
     }
     return true;
@@ -596,12 +596,12 @@ export async function handleCommand({
      if (cleanInput.length < 5) {
         setMessages(prev => [...prev, { 
            role: 'model', 
-           text: `📝 **Hướng dẫn tạo tin tức nhanh:**\n\nHãy gõ lệnh theo cú pháp:\n\`tạo tin [nội dung chính] [tính chất]\`\n\n**Ví dụ:**\n- "Tạo tin cảnh báo cháy tại khu vực A quan trọng"\n- "Tạo tin thông báo bảo trì máy CNC ngày mai"\n- "Tạo tin chúc mừng sinh nhật tháng 11"\n\nTôi sẽ tự động phân tích nội dung, tiêu đề và mức độ ưu tiên để tạo tin tức cho bạn.` 
+           text: `Hướng dẫn tạo tin tức nhanh:\n\nHãy gõ lệnh theo cú pháp:\n'tạo tin [nội dung chính] [tính chất]'\n\nVí dụ:\n- "Tạo tin cảnh báo cháy tại khu vực A quan trọng"\n- "Tạo tin thông báo bảo trì máy CNC ngày mai"\n- "Tạo tin chúc mừng sinh nhật tháng 11"\n\nTôi sẽ tự động phân tích nội dung, tiêu đề và mức độ ưu tiên để tạo tin tức cho bạn.` 
         }]);
         return true;
      }
 
-     setMessages(prev => [...prev, { role: 'model', text: '🤖 Đang phân tích yêu cầu và soạn thảo tin tức...' }]);
+     setMessages(prev => [...prev, { role: 'model', text: 'Đang phân tích yêu cầu và soạn thảo tin tức...' }]);
      
      try {
         const generatedNews = await generateNewsContent(input);
@@ -621,17 +621,17 @@ export async function handleCommand({
                 const createdNews = response.data.data;
                 setMessages(prev => [...prev, { 
                     role: 'model', 
-                    text: `✅ **Đã tạo tin tức thành công!**\n\n**Tiêu đề:** ${createdNews.title}\n**Danh mục:** ${createdNews.category}\n**Ưu tiên:** ${createdNews.is_priority ? 'Cao 🔴' : 'Bình thường 🔵'}\n\n*Tin tức đã được xuất bản lên hệ thống.*` 
+                    text: `Đã tạo tin tức thành công!\n\nTiêu đề: ${createdNews.title}\nDanh mục: ${createdNews.category}\nƯu tiên: ${createdNews.is_priority ? 'Cao' : 'Bình thường'}\n\nTin tức đã được xuất bản lên hệ thống.` 
                 }]);
             } else {
-                 setMessages(prev => [...prev, { role: 'model', text: '❌ Có lỗi khi lưu tin tức. Vui lòng kiểm tra quyền hạn của bạn.' }]);
+                 setMessages(prev => [...prev, { role: 'model', text: 'Có lỗi khi lưu tin tức. Vui lòng kiểm tra quyền hạn của bạn.' }]);
             }
         } else {
-            setMessages(prev => [...prev, { role: 'model', text: '❌ Xin lỗi, tôi không thể tạo nội dung từ yêu cầu này. Vui lòng thử lại chi tiết hơn.' }]);
+            setMessages(prev => [...prev, { role: 'model', text: 'Xin lỗi, tôi không thể tạo nội dung từ yêu cầu này. Vui lòng thử lại chi tiết hơn.' }]);
         }
      } catch (error) {
          console.error('Create news error:', error);
-         setMessages(prev => [...prev, { role: 'model', text: '❌ Có lỗi xảy ra. Bạn cần quyền Supervisor để tạo tin tức.' }]);
+         setMessages(prev => [...prev, { role: 'model', text: 'Có lỗi xảy ra. Bạn cần quyền Supervisor để tạo tin tức.' }]);
      }
      return true;
   }

@@ -21,12 +21,12 @@ const ChatAssistant: React.FC = () => {
       text: 'Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?',
       actions: [
         {
-          label: '📖 Hướng dẫn sử dụng',
+          label: 'Hướng dẫn sử dụng',
           onClick: () => {
             setInput('hướng dẫn');
             handleSend();
           },
-          className: 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:from-blue-100 hover:to-purple-100'
+          className: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:from-red-100 hover:to-red-200'
         }
       ]
     }
@@ -82,10 +82,10 @@ const ChatAssistant: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
 
-      {/* --- CỬA SỔ CHAT (Trắng – Hồng) --- */}
+      {/* --- CỬA SỔ CHAT (Trắng – Đỏ) --- */}
       <div
-        className={`bg-white rounded-2xl shadow-2xl border border-pink-300 
-        w-[850px] max-w-[calc(100vw-48px)] overflow-hidden transition-all duration-300 
+        className={`bg-white rounded-2xl shadow-2xl border border-red-300 
+        w-[400px] max-w-[calc(100vw-48px)] overflow-hidden transition-all duration-300 
         ease-in-out origin-bottom-right 
         ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0'}`}
       >
@@ -96,7 +96,7 @@ const ChatAssistant: React.FC = () => {
           onNotificationClick={(notification) => {
             setMessages(prev => [...prev, {
               role: 'model',
-              text: `**Chi tiết thông báo:**\n\n**${notification.title}**\n\n${notification.message || notification.content || 'Không có nội dung chi tiết.'}`
+              text: `Chi tiết thông báo:\n\n${notification.title}\n\n${notification.message || notification.content || 'Không có nội dung chi tiết.'}`
             }]);
           }}
           onIncidentClick={(incident) => {
@@ -121,39 +121,39 @@ const ChatAssistant: React.FC = () => {
               other: 'Khác'
             };
             
-            let detailText = `**Chi tiết sự cố #${incident.id}**\n\n`;
-            detailText += `**${incident.title}**\n\n`;
+            let detailText = `Chi tiết sự cố #${incident.id}\n\n`;
+            detailText += `${incident.title}\n\n`;
             
             if (incident.description) {
-              detailText += `**Mô tả:** ${incident.description}\n\n`;
+              detailText += `Mô tả: ${incident.description}\n\n`;
             }
             
-            detailText += `**Trạng thái:** ${statusLabels[incident.status] || incident.status}\n`;
-            detailText += `**Mức độ ưu tiên:** ${priorityLabels[incident.priority] || incident.priority}\n`;
-            detailText += `**Loại:** ${typeLabels[incident.incident_type] || incident.incident_type}\n`;
+            detailText += `Trạng thái: ${statusLabels[incident.status] || incident.status}\n`;
+            detailText += `Mức độ ưu tiên: ${priorityLabels[incident.priority] || incident.priority}\n`;
+            detailText += `Loại: ${typeLabels[incident.incident_type] || incident.incident_type}\n`;
             
             if (incident.location) {
-              detailText += `**Vị trí:** ${incident.location}\n`;
+              detailText += `Vị trí: ${incident.location}\n`;
             }
             
             if (incident.reporter_name) {
-              detailText += `**Người báo cáo:** ${incident.reporter_name}${incident.reporter_code ? ` (${incident.reporter_code})` : ''}\n`;
+              detailText += `Người báo cáo: ${incident.reporter_name}${incident.reporter_code ? ` (${incident.reporter_code})` : ''}\n`;
             }
             
             if (incident.assigned_to_name) {
-              detailText += `**Người phụ trách:** ${incident.assigned_to_name}\n`;
+              detailText += `Người phụ trách: ${incident.assigned_to_name}\n`;
             }
             
             if (incident.department_name) {
-              detailText += `**Phòng ban:** ${incident.department_name}\n`;
+              detailText += `Phòng ban: ${incident.department_name}\n`;
             }
             
             if (incident.created_at) {
-              detailText += `**Thời gian tạo:** ${new Date(incident.created_at).toLocaleString('vi-VN')}\n`;
+              detailText += `Thời gian tạo: ${new Date(incident.created_at).toLocaleString('vi-VN')}\n`;
             }
             
             if (incident.resolved_at) {
-              detailText += `**Thời gian giải quyết:** ${new Date(incident.resolved_at).toLocaleString('vi-VN')}\n`;
+              detailText += `Thời gian giải quyết: ${new Date(incident.resolved_at).toLocaleString('vi-VN')}\n`;
             }
             
             setMessages(prev => [...prev, {
@@ -187,57 +187,57 @@ const ChatAssistant: React.FC = () => {
               other: 'Khác'
             };
             
-            let detailText = `**Chi tiết ý tưởng #${idea.id}**\n\n`;
+            let detailText = `Chi tiết ý tưởng #${idea.id}\n\n`;
             
             // Ideabox type
             detailText += idea.ideabox_type === 'white' 
-              ? `**Loại:** Hòm Trắng (White Box)\n` 
-              : `**Loại:** Hòm Hồng (Pink Box)\n`;
+              ? `Loại: Hòm Trắng (White Box)\n` 
+              : `Loại: Hòm Hồng (Pink Box)\n`;
             
             // Title
-            detailText += `\n**${idea.title}**\n\n`;
+            detailText += `\n${idea.title}\n\n`;
             
             // Status and Category
-            detailText += `**Trạng thái:** ${statusLabels[idea.status] || idea.status}\n`;
-            detailText += `**Danh mục:** ${categoryLabels[idea.category] || idea.category}\n\n`;
+            detailText += `Trạng thái: ${statusLabels[idea.status] || idea.status}\n`;
+            detailText += `Danh mục: ${categoryLabels[idea.category] || idea.category}\n\n`;
             
             // Description
             if (idea.description) {
-              detailText += `**Mô tả:**\n${idea.description}\n\n`;
+              detailText += `Mô tả:\n${idea.description}\n\n`;
             }
             
             // Expected benefit
             if (idea.expected_benefit) {
-              detailText += `**Lợi ích kỳ vọng:**\n${idea.expected_benefit}\n\n`;
+              detailText += `Lợi ích kỳ vọng:\n${idea.expected_benefit}\n\n`;
             }
             
             // Scores
             if (idea.feasibility_score !== null && idea.feasibility_score !== undefined) {
-              detailText += `**Điểm khả thi:** ${idea.feasibility_score}/10\n`;
+              detailText += `Điểm khả thi: ${idea.feasibility_score}/10\n`;
             }
             if (idea.impact_score !== null && idea.impact_score !== undefined) {
-              detailText += `**Điểm tác động:** ${idea.impact_score}/10\n`;
+              detailText += `Điểm tác động: ${idea.impact_score}/10\n`;
             }
             
             // Cost and Time
             if (idea.implementation_cost) {
-              detailText += `**Chi phí triển khai:** ${idea.implementation_cost.toLocaleString('vi-VN')} VNĐ\n`;
+              detailText += `Chi phí triển khai: ${idea.implementation_cost.toLocaleString('vi-VN')} VNĐ\n`;
             }
             if (idea.implementation_time) {
-              detailText += `**Thời gian triển khai:** ${idea.implementation_time} ngày\n`;
+              detailText += `Thời gian triển khai: ${idea.implementation_time} ngày\n`;
             }
             
             // Submitter
             detailText += `\n`;
             if (idea.is_anonymous) {
-              detailText += `**Người đề xuất:** Ẩn danh\n`;
+              detailText += `Người đề xuất: Ẩn danh\n`;
             } else if (idea.submitter_name) {
-              detailText += `**Người đề xuất:** ${idea.submitter_name}\n`;
+              detailText += `Người đề xuất: ${idea.submitter_name}\n`;
             }
             
             // Department
             if (idea.department_name) {
-              detailText += `**Phòng ban:** ${idea.department_name}\n`;
+              detailText += `Phòng ban: ${idea.department_name}\n`;
             }
             
             // Handler info
@@ -247,34 +247,34 @@ const ChatAssistant: React.FC = () => {
                 manager: 'Cấp quản lý',
                 general_manager: 'Tổng giám đốc'
               };
-              detailText += `**Cấp xử lý:** ${levelLabels[idea.handler_level] || idea.handler_level}\n`;
+              detailText += `Cấp xử lý: ${levelLabels[idea.handler_level] || idea.handler_level}\n`;
             }
             
             if (idea.assigned_to_name) {
-              detailText += `**Người phụ trách:** ${idea.assigned_to_name}\n`;
+              detailText += `Người phụ trách: ${idea.assigned_to_name}\n`;
             }
             
             // Review info
             if (idea.reviewed_by_name) {
-              detailText += `\n**Người đánh giá:** ${idea.reviewed_by_name}\n`;
+              detailText += `\nNgười đánh giá: ${idea.reviewed_by_name}\n`;
               if (idea.review_notes) {
-                detailText += `**Nhận xét:** ${idea.review_notes}\n`;
+                detailText += `Nhận xét: ${idea.review_notes}\n`;
               }
               if (idea.reviewed_at) {
-                detailText += `**Ngày đánh giá:** ${new Date(idea.reviewed_at).toLocaleString('vi-VN')}\n`;
+                detailText += `Ngày đánh giá: ${new Date(idea.reviewed_at).toLocaleString('vi-VN')}\n`;
               }
             }
             
             // Dates
             detailText += `\n`;
             if (idea.created_at) {
-              detailText += `**Thời gian tạo:** ${new Date(idea.created_at).toLocaleString('vi-VN')}\n`;
+              detailText += `Thời gian tạo: ${new Date(idea.created_at).toLocaleString('vi-VN')}\n`;
             }
             if (idea.updated_at) {
-              detailText += `**Cập nhật lần cuối:** ${new Date(idea.updated_at).toLocaleString('vi-VN')}\n`;
+              detailText += `Cập nhật lần cuối: ${new Date(idea.updated_at).toLocaleString('vi-VN')}\n`;
             }
             if (idea.implemented_at) {
-              detailText += `**Thời gian triển khai:** ${new Date(idea.implemented_at).toLocaleString('vi-VN')}\n`;
+              detailText += `Thời gian triển khai: ${new Date(idea.implemented_at).toLocaleString('vi-VN')}\n`;
             }
             
             setMessages(prev => [...prev, {
@@ -292,7 +292,7 @@ const ChatAssistant: React.FC = () => {
                     try {
                       setMessages(prev => [...prev, {
                         role: 'model',
-                        text: '⏳ Đang tải lịch sử phản hồi...'
+                        text: 'Đang tải lịch sử phản hồi...'
                       }]);
                       
                       const token = localStorage.getItem('token');
@@ -316,27 +316,27 @@ const ChatAssistant: React.FC = () => {
                       if (responses.length === 0) {
                         setMessages(prev => [...prev, {
                           role: 'model',
-                          text: '📭 **Lịch sử phản hồi**\n\nChưa có phản hồi nào cho ý tưởng này.'
+                          text: 'Lịch sử phản hồi\n\nChưa có phản hồi nào cho ý tưởng này.'
                         }]);
                       } else {
-                        const boxType = idea.ideabox_type === 'white' ? '⚪ Hòm Trắng' : '💖 Hòm Hồng';
-                        let responseText = `📜 **Lịch sử phản hồi - ${idea.title}**\n\n`;
+                        const boxType = idea.ideabox_type === 'white' ? 'Hòm Trắng' : 'Hòm Hồng';
+                        let responseText = `Lịch sử phản hồi - ${idea.title}\n\n`;
                         responseText += `${boxType}\n\n`;
-                        responseText += `📊 Tổng số phản hồi: ${responses.length}\n\n`;
+                        responseText += `Tổng số phản hồi: ${responses.length}\n\n`;
                         responseText += `---\n\n`;
                         
                         responses.forEach((resp: IdeaResponse, index: number) => {
-                          responseText += `**Phản hồi #${index + 1}**\n`;
-                          responseText += `👤 **Người phản hồi:** ${resp.user_name || 'N/A'}\n`;
-                          responseText += `🏷️ **Vai trò:** ${resp.user_role || 'N/A'}\n`;
+                          responseText += `Phản hồi #${index + 1}\n`;
+                          responseText += `Người phản hồi: ${resp.user_name || 'N/A'}\n`;
+                          responseText += `Vai trò: ${resp.user_role || 'N/A'}\n`;
                           if (resp.department_name) {
-                            responseText += `🏢 **Phòng ban:** ${resp.department_name}\n`;
+                            responseText += `Phòng ban: ${resp.department_name}\n`;
                           }
-                          responseText += `📅 **Thời gian:** ${new Date(resp.created_at).toLocaleString('vi-VN')}\n`;
-                          responseText += `\n💬 **Nội dung:**\n${resp.response}\n`;
+                          responseText += `Thời gian: ${new Date(resp.created_at).toLocaleString('vi-VN')}\n`;
+                          responseText += `\nNội dung:\n${resp.response}\n`;
                           
                           if (resp.attachments && resp.attachments.length > 0) {
-                            responseText += `\n📎 **Tệp đính kèm:** ${resp.attachments.length} file\n`;
+                            responseText += `\nTệp đính kèm: ${resp.attachments.length} file\n`;
                           }
                           
                           responseText += `\n---\n\n`;
@@ -351,7 +351,7 @@ const ChatAssistant: React.FC = () => {
                       console.error('Error fetching responses:', error);
                       setMessages(prev => [...prev, {
                         role: 'model',
-                        text: '❌ Không thể tải lịch sử phản hồi. Vui lòng thử lại sau.'
+                        text: 'Không thể tải lịch sử phản hồi. Vui lòng thử lại sau.'
                       }]);
                     }
                   },
@@ -359,12 +359,12 @@ const ChatAssistant: React.FC = () => {
                 }] : []),
                 // Action history button for white box - only for admin
                 ...(isAdmin && idea.ideabox_type === 'white' ? [{
-                  label: '📋 Lịch sử xử lý',
+                  label: 'Lịch sử xử lý',
                   onClick: async () => {
                     try {
                       setMessages(prev => [...prev, {
                         role: 'model',
-                        text: '⏳ Đang tải lịch sử xử lý...'
+                        text: 'Đang tải lịch sử xử lý...'
                       }]);
                       
                       const token = localStorage.getItem('token');
@@ -388,33 +388,33 @@ const ChatAssistant: React.FC = () => {
                       if (history.length === 0) {
                         setMessages(prev => [...prev, {
                           role: 'model',
-                          text: '📭 **Lịch sử xử lý**\n\nChưa có lịch sử xử lý nào cho ý tưởng này.'
+                          text: 'Lịch sử xử lý\n\nChưa có lịch sử xử lý nào cho ý tưởng này.'
                         }]);
                       } else {
                         const actionLabels: {[key: string]: string} = {
-                          created: '📝 Tạo mới',
-                          assigned: '👤 Chỉ định',
-                          reviewed: '🔍 Đánh giá',
-                          approved: '✅ Phê duyệt',
-                          rejected: '❌ Từ chối',
-                          implemented: '🎉 Triển khai',
-                          commented: '💬 Nhận xét'
+                          created: 'Tạo mới',
+                          assigned: 'Chỉ định',
+                          reviewed: 'Đánh giá',
+                          approved: 'Phê duyệt',
+                          rejected: 'Từ chối',
+                          implemented: 'Triển khai',
+                          commented: 'Nhận xét'
                         };
                         
-                        let historyText = `📋 **Lịch sử xử lý - ${idea.title}**\n\n`;
-                        historyText += `⚪ Hòm Trắng\n\n`;
-                        historyText += `📊 Tổng số hoạt động: ${history.length}\n\n`;
+                        let historyText = `Lịch sử xử lý - ${idea.title}\n\n`;
+                        historyText += `Hòm Trắng\n\n`;
+                        historyText += `Tổng số hoạt động: ${history.length}\n\n`;
                         historyText += `---\n\n`;
                         
                         history.forEach((entry: IdeaHistory, index: number) => {
                           const actionLabel = actionLabels[entry.action] || entry.action;
-                          historyText += `**${actionLabel}** (#${index + 1})\n`;
-                          historyText += `👤 **Thực hiện bởi:** ${entry.user_name || 'N/A'}\n`;
-                          historyText += `🏷️ **Vai trò:** ${entry.user_role || 'N/A'}\n`;
+                          historyText += `${actionLabel} (#${index + 1})\n`;
+                          historyText += `Thực hiện bởi: ${entry.user_name || 'N/A'}\n`;
+                          historyText += `Vai trò: ${entry.user_role || 'N/A'}\n`;
                           if (entry.department_name) {
-                            historyText += `🏢 **Phòng ban:** ${entry.department_name}\n`;
+                            historyText += `Phòng ban: ${entry.department_name}\n`;
                           }
-                          historyText += `📅 **Thời gian:** ${new Date(entry.created_at).toLocaleString('vi-VN')}\n`;
+                          historyText += `Thời gian: ${new Date(entry.created_at).toLocaleString('vi-VN')}\n`;
                           
                           // Display details based on action type
                           if (entry.action === 'reviewed' && entry.details) {
@@ -423,28 +423,28 @@ const ChatAssistant: React.FC = () => {
                             
                             if (entry.details.old_status && entry.details.new_status) {
                               const statusLabels: {[key: string]: string} = {
-                                pending: '⏳ Chờ xử lý',
-                                under_review: '🔍 Đang xem xét',
-                                approved: '✅ Đã phê duyệt',
-                                rejected: '❌ Từ chối',
-                                implemented: '🎉 Đã triển khai',
-                                on_hold: '⏸️ Tạm dừng'
+                                pending: 'Chờ xử lý',
+                                under_review: 'Đang xem xét',
+                                approved: 'Đã phê duyệt',
+                                rejected: 'Từ chối',
+                                implemented: 'Đã triển khai',
+                                on_hold: 'Tạm dừng'
                               };
                               
                               const oldStatus = statusLabels[entry.details.old_status as string] || entry.details.old_status;
                               const newStatus = statusLabels[entry.details.new_status as string] || entry.details.new_status;
                               
-                              historyText += `🔄 **Thay đổi trạng thái:**\n`;
+                              historyText += `Thay đổi trạng thái:\n`;
                               historyText += `   Từ: ${oldStatus}\n`;
                               historyText += `   Sang: ${newStatus}\n`;
                             }
                             
                             if (entry.details.review_notes) {
-                              historyText += `\n📝 **Nhận xét đánh giá:**\n${entry.details.review_notes}\n`;
+                              historyText += `\nNhận xét đánh giá:\n${entry.details.review_notes}\n`;
                             }
                           } else if (entry.details?.note) {
                             // For other actions, show note
-                            historyText += `\n📌 **Ghi chú:** ${entry.details.note}\n`;
+                            historyText += `\nGhi chú: ${entry.details.note}\n`;
                           }
                           
                           // Display other details if available
@@ -454,7 +454,7 @@ const ChatAssistant: React.FC = () => {
                             );
                             
                             if (otherDetails.length > 0) {
-                              historyText += `\n📋 **Thông tin bổ sung:**\n`;
+                              historyText += `\nThông tin bổ sung:\n`;
                               otherDetails.forEach(([key, value]) => {
                                 historyText += `   • ${key}: ${JSON.stringify(value)}\n`;
                               });
@@ -473,7 +473,7 @@ const ChatAssistant: React.FC = () => {
                       console.error('Error fetching history:', error);
                       setMessages(prev => [...prev, {
                         role: 'model',
-                        text: '❌ Không thể tải lịch sử xử lý. Vui lòng thử lại sau.'
+                        text: 'Không thể tải lịch sử xử lý. Vui lòng thử lại sau.'
                       }]);
                     }
                   },
@@ -486,25 +486,25 @@ const ChatAssistant: React.FC = () => {
         <ChatInput input={input} setInput={setInput} onSend={handleSend} isLoading={isLoading} />
       </div>
 
-      {/* --- NÚT FLOATING CHAT (Đỏ – Hồng) --- */}
+      {/* --- NÚT FLOATING CHAT (Đỏ) --- */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`group relative flex items-center justify-center w-16 h-16 rounded-full 
         shadow-2xl transition-all duration-300 hover:scale-110 focus:outline-none 
-        focus:ring-4 focus:ring-pink-300 
+        focus:ring-4 focus:ring-red-300 
         ${
           isOpen
-            ? 'bg-white text-pink-500 rotate-90'
-            : 'bg-gradient-to-br from-red-500 via-pink-500 to-rose-500 text-white hover:shadow-pink-500/50'
+            ? 'bg-white text-red-600 rotate-90'
+            : 'bg-red-600 text-white hover:shadow-red-500/50'
         }`}
       >
         {isOpen ? <X size={28} /> : <MessageCircle size={32} strokeWidth={2.5} />}
 
-        {/* Badge thông báo đỏ–hồng */}
+        {/* Badge thông báo đỏ */}
         {!isOpen && hasUnreadNotifications && (
           <span className="absolute top-0 right-0 flex h-5 w-5 -mt-1 -mr-1">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-300 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-5 w-5 bg-rose-500 border-2 border-white"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-5 w-5 bg-red-600 border-2 border-white"></span>
           </span>
         )}
       </button>

@@ -32,7 +32,7 @@ const ChatAssistant: React.FC = () => {
       text: 'Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?',
       actions: [
         {
-          label: '📖 Hướng dẫn sử dụng',
+          label: 'Hướng dẫn sử dụng',
           onClick: () => {
             setInput('hướng dẫn');
             handleSend();
@@ -110,7 +110,7 @@ const ChatAssistant: React.FC = () => {
         }] : []),
         // Action history button for white box - only for admin
         ...(isAdmin && idea.ideabox_type === 'white' ? [{
-          label: '📋 Lịch sử xử lý',
+          label: 'Lịch sử xử lý',
           onClick: () => fetchIdeaHistory(idea.id, idea.title, setMessages),
           className: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-700 hover:from-blue-100 hover:to-indigo-100'
         }] : [])

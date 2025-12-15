@@ -109,15 +109,15 @@ export async function handleRoomBooking(
     }
 
     // Show available rooms and conflicts
-    let responseText = `**THÔNG TIN ĐẶT PHÒNG**\n\n`;
-    responseText += `**Ngày:** ${formatDate(request.date!)}\n`;
-    responseText += `**Thời gian:** ${request.startTime} - ${request.endTime}\n`;
-    responseText += `**Số người:** ${request.attendees || 'Chưa xác định'}\n`;
-    responseText += `**Tiêu đề:** ${request.title}\n`;
-    responseText += `**Loại:** ${MEETING_TYPE_LABELS[request.meetingType || 'other']}\n\n`;
+    let responseText = `THÔNG TIN ĐẶT PHÒNG\n\n`;
+    responseText += `Ngày:*${formatDate(request.date!)}\n`;
+    responseText += `Thời gian: ${request.startTime} - ${request.endTime}\n`;
+    responseText += `Số người: ${request.attendees || 'Chưa xác định'}\n`;
+    responseText += `Tiêu đề: ${request.title}\n`;
+    responseText += `Loại: ${MEETING_TYPE_LABELS[request.meetingType || 'other']}\n\n`;
 
     // Check conflicts for each room
-    responseText += `**DANH SÁCH PHÒNG:**\n\n`;
+    responseText += `DANH SÁCH PHÒNG:\n\n`;
     
     const conflicts = await Promise.all(
       rooms.map(async (room) => {
@@ -151,11 +151,11 @@ export async function handleRoomBooking(
     );
 
     conflicts.forEach(({ room, hasConflict, bookings }) => {
-      const status = hasConflict ? '**Đã có người đặt**' : '**Còn trống**';
+      const status = hasConflict ? 'Đã có người đặt' : 'Còn trống';
       const suitableCapacity = !request.attendees || room.capacity >= request.attendees;
       const capacityNote = suitableCapacity ? '' : ` (Không đủ chỗ)`;
       
-      responseText += `${status} - **${room.room_name}** (${room.capacity} người)${capacityNote}\n`;
+      responseText += `${status} - ${room.room_name} (${room.capacity} người)${capacityNote}\n`;
       
       if (hasConflict && bookings.length > 0) {
         bookings.forEach(b => {
@@ -172,8 +172,8 @@ export async function handleRoomBooking(
     );
 
     if (availableRoom) {
-      responseText += `\n**GỢI Ý:** Phòng **${availableRoom.room.room_name}** phù hợp nhất!\n\n`;
-      responseText += `Bạn có muốn đặt phòng **${availableRoom.room.room_name}** không?`;
+      responseText += `\nGỢI Ý: Phòng ${availableRoom.room.room_name} phù hợp nhất!\n\n`;
+      responseText += `Bạn có muốn đặt phòng ${availableRoom.room.room_name} không?`;
       
       setMessages(prev => [...prev, {
         role: 'model',
@@ -197,7 +197,7 @@ export async function handleRoomBooking(
                 
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `**Đặt phòng thành công!**\n\nPhòng **${availableRoom.room.room_name}** đã được đặt vào ${formatDate(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
+                  text: `Đặt phòng thành công!\n\nPhòng ${availableRoom.room.room_name} đã được đặt vào ${formatDate(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
                   actions: [
                     {
                       label: 'Xem lịch đặt phòng',
@@ -216,7 +216,7 @@ export async function handleRoomBooking(
                 }
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `**Đặt phòng thất bại**\n\n${errorMsg}`
+                  text: `Đặt phòng thất bại\n\n${errorMsg}`
                 }]);
                 toast.error(errorMsg);
               }
@@ -257,7 +257,7 @@ export async function handleRoomBooking(
     console.error('Room booking error:', error);
     setMessages(prev => [...prev, {
       role: 'model',
-      text: '❌ **Lỗi**\n\nKhông thể xử lý yêu cầu đặt phòng. Vui lòng thử lại sau.'
+      text: 'Lỗi\n\nKhông thể xử lý yêu cầu đặt phòng. Vui lòng thử lại sau.'
     }]);
     return true;
   }

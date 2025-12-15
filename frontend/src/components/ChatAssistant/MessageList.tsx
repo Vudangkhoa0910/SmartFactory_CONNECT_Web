@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { UIMessage, Notification, Incident, Idea } from './types';
-import { Lightbulb, User, Calendar, Building2, Tag, Target, Settings2, Circle } from 'lucide-react';
+import { User, Calendar, Building2, Tag, Target, Settings2, Circle } from 'lucide-react';
 
 interface MessageListProps {
   messages: UIMessage[];
@@ -20,7 +20,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
   useEffect(scrollToBottom, [messages, isLoading]);
 
   return (
-    <div className="h-[650px] overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+    <div className="h-[450px] overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
       <div className="space-y-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -37,9 +37,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
     {msg.notificationCards.map((notif, cardIdx) => (
       <div
         key={notif.id}
-        className="bg-gradient-to-r from-pink-50 to-red-50 
-                   dark:from-pink-700 dark:to-red-700 
-                   border border-pink-200 dark:border-pink-600 
+        className="bg-gradient-to-r from-red-50 to-red-100 
+                   dark:from-red-800 dark:to-red-700 
+                   border border-red-200 dark:border-red-600 
                    rounded-lg p-3 hover:shadow-lg transition-shadow cursor-pointer"
         onClick={() => onNotificationClick && onNotificationClick(notif)}
       >
@@ -72,7 +72,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
         </div>
 
         <div className="mt-2 text-xs text-red-600 dark:text-red-200 font-medium flex items-center gap-1">
-          <Lightbulb className="w-3 h-3" /> Gõ "đã xem {cardIdx + 1}" để đánh dấu đã đọc
+           Gõ "đã xem {cardIdx + 1}" để đánh dấu đã đọc
         </div>
       </div>
     ))}
@@ -83,12 +83,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
               {msg.incidentCards && msg.incidentCards.length > 0 && (
                 <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
                   {msg.incidentCards.map((incident, cardIdx) => {
-                    // Priority color mapping
+                    // Priority color mapping (All Red Theme)
                     const priorityColors = {
-                      critical: 'bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-700',
-                      high: 'bg-orange-100 dark:bg-orange-900 border-orange-400 dark:border-orange-700',
-                      medium: 'bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-700',
-                      low: 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-700'
+                      critical: 'bg-red-100 dark:bg-red-900 border-red-500 dark:border-red-600',
+                      high: 'bg-red-50 dark:bg-red-900/50 border-red-400 dark:border-red-700',
+                      medium: 'bg-white dark:bg-slate-800 border-red-300 dark:border-red-800',
+                      low: 'bg-white dark:bg-slate-800 border-red-200 dark:border-red-900'
                     };
                     
                     // Status labels
@@ -163,7 +163,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                         </div>
 
                         <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
-                          <Lightbulb className="w-3 h-3" /> Click để xem chi tiết
+                           Click để xem chi tiết
                         </div>
                       </div>
                     );
@@ -175,25 +175,19 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
               {msg.ideaCards && msg.ideaCards.length > 0 && (
                 <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
                   {msg.ideaCards.map((idea, cardIdx) => {
-                    // Determine card color based on ideabox_type
+                    // Determine card color based on ideabox_type (Red Theme)
                     const isWhite = idea.ideabox_type === 'white';
-                    const bgColor = isWhite 
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30'
-                      : 'bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/30 dark:to-rose-900/30';
-                    const borderColor = isWhite
-                      ? 'border-blue-200 dark:border-blue-700'
-                      : 'border-pink-200 dark:border-pink-700';
-                    const badgeColor = isWhite
-                      ? 'bg-blue-500'
-                      : 'bg-pink-500';
+                    const bgColor = 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30';
+                    const borderColor = 'border-red-200 dark:border-red-700';
+                    const badgeColor = 'bg-red-600';
                     
-                    // Status badge
+                    // Status badge (Red Theme)
                     const statusColors: Record<string, string> = {
-                      'pending': 'bg-yellow-500',
-                      'under_review': 'bg-blue-500',
-                      'approved': 'bg-green-500',
-                      'rejected': 'bg-red-500',
-                      'implemented': 'bg-purple-500'
+                      'pending': 'bg-red-400',
+                      'under_review': 'bg-red-500',
+                      'approved': 'bg-red-600',
+                      'rejected': 'bg-red-700',
+                      'implemented': 'bg-red-800'
                     };
                     const statusLabels: Record<string, string> = {
                       'pending': 'Chờ xử lý',
@@ -282,7 +276,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
                         </div>
 
                         <div className="mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
-                          <Lightbulb className="w-3 h-3" /> Click để xem chi tiết
+                           Click để xem chi tiết
                         </div>
                       </div>
                     );
