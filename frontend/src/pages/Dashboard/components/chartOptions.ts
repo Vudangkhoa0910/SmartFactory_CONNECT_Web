@@ -4,14 +4,20 @@
 import { ApexOptions } from 'apexcharts';
 import { DepartmentStats } from '../../../services/dashboard.service';
 
-export function getPriorityChartOptions(totalIncidents: number): ApexOptions {
+export function getPriorityChartOptions(totalIncidents: number, t: (key: string) => string): ApexOptions {
+  
   return {
     chart: {
       type: 'donut',
       fontFamily: 'Outfit, sans-serif',
     },
     colors: ['#dc2626', '#ef4444', '#f87171', '#fca5a5'],
-    labels: ['Nghiêm trọng', 'Cao', 'Trung bình', 'Thấp'],
+    labels: [
+      t('priority.critical'), 
+      t('priority.high'), 
+      t('priority.medium'), 
+      t('priority.low')
+    ],
     legend: {
       position: 'bottom',
       fontFamily: 'Outfit, sans-serif',
@@ -27,7 +33,7 @@ export function getPriorityChartOptions(totalIncidents: number): ApexOptions {
             value: { show: true, fontSize: '24px', fontWeight: 700, color: '#111827' },
             total: {
               show: true,
-              label: 'Tổng sự cố',
+              label: t('incident.total'),
               color: '#6b7280',
               formatter: () => totalIncidents.toString(),
             },

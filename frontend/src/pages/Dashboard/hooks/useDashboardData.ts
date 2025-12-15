@@ -50,7 +50,7 @@ export function useDashboardData() {
       setState(prev => ({
         ...prev,
         loading: false,
-        error: t('error.no_load_data'),
+        // error: t('error.no_load_data'),
       }));
     }
   }, []);

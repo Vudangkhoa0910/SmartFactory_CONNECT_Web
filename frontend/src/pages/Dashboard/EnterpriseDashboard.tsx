@@ -96,7 +96,7 @@ export default function EnterpriseDashboard() {
           {/* Priority Chart */}
           <ChartSection title={t('dashboard.priority_distribution')} loading={loading}>
             <Chart
-              options={getPriorityChartOptions(values.totalIncidents)}
+              options={getPriorityChartOptions(values.totalIncidents, t)}
               series={priorityData}
               type="donut"
               height={280}
