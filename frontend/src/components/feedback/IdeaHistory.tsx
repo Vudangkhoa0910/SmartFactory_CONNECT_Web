@@ -1,142 +1,149 @@
-// src/components/IdeaList.tsx
+// src/components/feedback/IdeaHistory.tsx
 
 import React from "react";
-import { Inbox, Mail, Search, Mic, X } from "lucide-react";
-import { PublicIdea } from "./types";
+import { ActionHistory } from "./types";
 import { useTranslation } from "../../contexts/LanguageContext";
-import { DifficultyBadge } from "./DifficultySelector";
 
-interface IdeaListProps {
-  ideas: PublicIdea[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  searchTerm?: string;
-  onSearchChange?: (term: string) => void;
-  onVoiceClick?: () => void;
-  isListening?: boolean;
-  isVoiceSupported?: boolean;
+interface Department {
+  id: string;
+  name: string;
 }
 
-export const IdeaList: React.FC<IdeaListProps> = ({
-  ideas,
-  selectedId,
-  onSelect,
-  searchTerm = "",
-  onSearchChange,
-  onVoiceClick,
-  isListening = false,
-  isVoiceSupported = false,
+interface IdeaHistoryProps {
+  history: ActionHistory[];
+  departments?: Department[];
+}
+
+export const IdeaHistory: React.FC<IdeaHistoryProps> = ({ 
+  history, 
+  departments = [] 
 }) => {
   const { t } = useTranslation();
 
-  return (
-    <aside className="w-[380px] bg-gray-50 dark:bg-neutral-900 border-r border-gray-200 dark:border-neutral-800 flex flex-col h-full transition-colors">
-      {/* Header */}
-      <header className="p-5 border-b border-gray-200 dark:border-neutral-800 flex flex-col gap-4 shrink-0 bg-white dark:bg-neutral-900">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <Mail size={20} className="text-red-600 dark:text-red-400" />
-          </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {t('feedback.white_box_title')}
-          </h2>
-        </div>
-        
-        {/* Search Bar */}
-        {onSearchChange && (
-          <div className="relative w-full">
-            <Search
-              size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder={t('search.placeholder') || "Tìm kiếm..."}
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className={`w-full pl-11 ${isVoiceSupported ? 'pr-16' : 'pr-10'} py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 text-gray-900 dark:text-neutral-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all shadow-sm`}
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {isVoiceSupported && onVoiceClick && (
-                <button
-                  onClick={onVoiceClick}
-                  className={`p-1 rounded-full hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors ${
-                    isListening ? "text-red-500 animate-pulse" : "text-gray-400"
-                  }`}
-                  title="Voice Search"
-                >
-                  <Mic size={14} />
-                </button>
-              )}
-              {searchTerm && (
-                <button
-                  onClick={() => onSearchChange("")}
-                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
+  const formatHistoryNote = (note: string | undefined, departments: Department[]): string => {
+    if (!note) return '';
+    
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(note);
+      
+      // Build readable message
+      const parts: string[] = [];
+      
+      if (parsed.old_status && parsed.new_status) {
+        const statusMap: Record<string, string> = {
+          'new': 'Mới',
+          'pending': 'Chờ xử lý',
+          'under_review': 'Đang xem xét',
+          'approved': 'Đã phê duyệt',
+          'rejected': 'Đã từ chối',
+          'implemented': 'Đã triển khai',
+          'on_hold': 'Tạm dừng'
+        };
+        const oldStatus = statusMap[parsed.old_status] || parsed.old_status;
+        const newStatus = statusMap[parsed.new_status] || parsed.new_status;
+        parts.push(`Chuyển trạng thái: ${oldStatus} → ${newStatus}`);
+      }
+      
+      if (parsed.difficulty) {
+        parts.push(`Đánh giá độ khó: ${parsed.difficulty}`);
+      }
+      
+      if (parsed.review_notes) {
+        // Parse review notes to extract difficulty info
+        const diffMatch = parsed.review_notes.match(/Updated difficulty to ([A-D])/);
+        if (diffMatch && !parsed.difficulty) {
+          parts.push(`Đánh giá độ khó: ${diffMatch[1]}`);
+        } else if (!diffMatch) {
+          parts.push(parsed.review_notes);
+        }
+      }
+      
+      if (parsed.assigned_to) {
+        parts.push(`Phân công cho: ${parsed.assigned_to}`);
+      }
+      
+      if (parsed.department) {
+        parts.push(`Phòng ban: ${parsed.department}`);
+      }
+      
+      // Handle department_id - lookup department name
+      if (parsed.department_id) {
+        const dept = departments.find(d => d.id === parsed.department_id);
+        if (dept) {
+          parts.push(`Phân công phòng ban: ${dept.name}`);
+        } else {
+          parts.push(`Phân công phòng ban: ${parsed.department_id}`);
+        }
+      }
+      
+      return parts.length > 0 ? parts.join(' • ') : note;
+    } catch (e) {
+      // Not JSON, return as-is
+      return note;
+    }
+  };
 
-      {/* List */}
-      <div className="overflow-y-auto flex-1">
-        {ideas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-6 h-full">
-            <Inbox size={48} className="mb-4 text-gray-300 dark:text-gray-600" />
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-              {t('error_report.empty_queue')}
-            </h3>
-            <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">{t('message.no_data')}</p>
-          </div>
-        ) : (
-          ideas.map((idea) => (
-            <div
-              key={idea.id}
-              onClick={() => onSelect(idea.id)}
-              className={`
-                mx-2 my-2 px-4 py-3.5 rounded-xl cursor-pointer transition-all duration-200 relative
-                ${
-                  selectedId === idea.id
-                    ? "bg-white dark:bg-neutral-800 shadow-md border-2 border-red-500 dark:border-red-500 scale-[1.02]"
-                    : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 hover:shadow-md hover:border-red-300 dark:hover:border-red-800"
-                }
-              `}
-            >
-              <div className="flex justify-between items-start gap-2 mb-3">
-                <p
-                  className={`text-sm pr-2 truncate flex-1 ${
-                    !idea.isRead
-                      ? "font-bold text-gray-900 dark:text-white"
-                      : "font-semibold text-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {idea.title}
-                </p>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {idea.difficulty && <DifficultyBadge difficulty={idea.difficulty} size="sm" />}
-                  {!idea.isRead && (
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  )}
-                </div>
-              </div>
+  const formatDate = (dateValue: string | Date) => {
+    try {
+      const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'N/A';
+      }
+      
+      return date.toLocaleString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'N/A';
+    }
+  };
 
-              <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                <p className="truncate pr-2 font-medium">
-                  <span className="text-gray-700 dark:text-gray-300">{idea.senderName}</span>
-                  <span className="mx-1.5">•</span>
-                  <span>{idea.group}</span>
-                </p>
-                <p className="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">
-                  {idea.timestamp.toLocaleDateString("vi-VN")}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
+  if (!history || history.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        {t('idea.no_history')}
       </div>
-    </aside>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+        {t('idea.action_history')}
+      </h3>
+      {history.map((item, idx) => (
+        <div
+          key={idx}
+          className="bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+        >
+          <div className="flex justify-between items-start mb-2">
+            <span className="font-medium text-gray-900 dark:text-white">
+              {item.action || 'Cập nhật'}
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {formatDate(item.time)}
+            </span>
+          </div>
+          {item.note && (
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {formatHistoryNote(item.note, departments)}
+            </p>
+          )}
+          {item.by && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {t('idea.performed_by')}: {item.by}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
   );
 };
+
