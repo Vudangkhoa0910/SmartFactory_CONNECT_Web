@@ -30,7 +30,7 @@ export const PriorityBadge = ({ priority }: { priority: Priority }) => {
   const styles: Record<Priority, string> = {
     Critical: "bg-red-600 text-white",
     High: "bg-red-100 text-red-700",
-    Normal: "bg-gray-100 text-gray-700",
+    Normal: "bg-green-100 text-green-700",
     Low: "bg-gray-50 text-gray-500",
   };
   return (

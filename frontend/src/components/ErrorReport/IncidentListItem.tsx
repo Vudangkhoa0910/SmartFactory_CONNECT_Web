@@ -1,7 +1,7 @@
 import React from "react";
 import { ChevronRight } from "lucide-react";
 import { Incident } from "../types";
-import PriorityBadge from "./PriorityBadge";
+import { PriorityBadge } from "./Badges";
 import { useTranslation } from "../../contexts/LanguageContext";
 
 interface IncidentListItemProps {
@@ -16,13 +16,38 @@ const IncidentListItem: React.FC<IncidentListItemProps> = ({
   onClick,
 }) => {
   const { t } = useTranslation();
-  const timeAgo = Math.round(
-    (Date.now() - incident.timestamp.getTime()) / 60000
-  );
-  const displayTime =
-    timeAgo < 1
-      ? t("error_report.just_now")
-      : `${timeAgo} ${t("error_report.minutes_ago")}`;
+  
+  // Format timestamp
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const incidentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today.getTime() - incidentDate.getTime()) / 86400000);
+    
+    // Nếu trong ngày hôm nay, hiển thị giờ
+    if (diffDays === 0) {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    
+    // Nếu hôm qua
+    if (diffDays === 1) {
+      return 'Hôm qua';
+    }
+    
+    // Nếu trong tuần này (dưới 7 ngày)
+    if (diffDays < 7) {
+      return `${diffDays} ngày trước`;
+    }
+    
+    // Nếu lâu hơn, hiển thị ngày tháng
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
+  };
+  
+  const displayTime = formatTime(incident.createdAt);
 
   return (
     <button
@@ -41,7 +66,7 @@ const IncidentListItem: React.FC<IncidentListItemProps> = ({
         <h4 className="font-semibold text-slate-800 dark:text-slate-100 truncate pr-2">
           {incident.title}
         </h4>
-        <div className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
+        <div className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 font-medium">
           {displayTime}
         </div>
       </div>

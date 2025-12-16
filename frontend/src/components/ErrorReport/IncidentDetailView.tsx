@@ -10,7 +10,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Incident } from "../types"; // <-- Nhớ cập nhật type này
-import PriorityBadge from "./PriorityBadge";
+import { PriorityBadge } from "./Badges";
 
 import { useTranslation } from "../../contexts/LanguageContext";
 

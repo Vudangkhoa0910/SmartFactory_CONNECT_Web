@@ -77,6 +77,7 @@ const IncidentWorkspace: React.FC = () => {
             title: item.title,
             description: item.description,
             location: item.location,
+            createdAt: new Date(item.created_at),
             timestamp: new Date(item.created_at),
             priority: mapPriority(item.priority),
             status: mapStatus(item.status),
@@ -414,7 +415,7 @@ const IncidentWorkspace: React.FC = () => {
                   {[
                     { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
                     { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
-                    { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-blue-600' },
+                    { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-green-700' },
                     { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
                   ].map((priority) => (
                     <label
