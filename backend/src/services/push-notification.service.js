@@ -273,12 +273,13 @@ class PushNotificationService {
                 });
             }
 
-            // Send email notifications (non-blocking)
-            if (emailService.isAvailable()) {
-                const deptId = incident.department_id || incident.assigned_department_id;
-                emailService.sendIncidentEmail(incident, deptId)
-                    .catch(err => console.error('[PushNotification] Email send failed:', err.message));
-            }
+            // NOTE: Email is now sent from incident.controller.js when auto-assign happens
+            // This avoids sending duplicate emails (one on create, another on auto-assign)
+            // if (emailService.isAvailable()) {
+            //     const deptId = incident.department_id || incident.assigned_department_id;
+            //     emailService.sendIncidentEmail(incident, deptId)
+            //         .catch(err => console.error('[PushNotification] Email send failed:', err.message));
+            // }
 
             const duration = Date.now() - startTime;
             console.log(`[PushNotification] Incident notification completed in ${duration}ms for ${recipientUserIds.length} users`);

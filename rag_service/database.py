@@ -570,59 +570,12 @@ class Database:
     # RAG SETTINGS (backward compatible)
     # ============================================
     def get_rag_settings(self) -> Dict:
-        """Lấy RAG settings từ database"""
-        default_settings = {
+        """Lấy RAG settings từ .env (Config)"""
+        return {
             'enabled': Config.AUTO_ASSIGN_ENABLED,
             'threshold': Config.AUTO_ASSIGN_THRESHOLD,
             'min_samples': Config.AUTO_ASSIGN_MIN_SAMPLES
         }
-        try:
-            with self.cursor() as cur:
-                cur.execute("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables WHERE table_name = 'system_settings'
-                    )
-                """)
-                if not cur.fetchone()['exists']:
-                    return default_settings
-
-                cur.execute("SELECT value FROM system_settings WHERE key = 'rag_auto_assign'")
-                result = cur.fetchone()
-                if result and result['value']:
-                    settings = result['value']
-                    return {
-                        'enabled': settings.get('enabled', default_settings['enabled']),
-                        'threshold': settings.get('threshold', default_settings['threshold']),
-                        'min_samples': settings.get('min_samples', default_settings['min_samples'])
-                    }
-                return default_settings
-        except Exception as e:
-            print(f"[WARN] Error getting RAG settings: {e}")
-            return default_settings
-
-    def save_rag_settings(self, settings: Dict) -> bool:
-        """Lưu RAG settings vào database"""
-        try:
-            with self.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS system_settings (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        key VARCHAR(100) UNIQUE NOT NULL,
-                        value JSONB NOT NULL,
-                        description TEXT,
-                        updated_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                cur.execute("""
-                    INSERT INTO system_settings (key, value, description)
-                    VALUES ('rag_auto_assign', %s, 'Cấu hình tự động gán phòng ban bằng AI')
-                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-                """, (Json(settings),))
-            print(f"[OK] RAG settings saved: {settings}")
-            return True
-        except Exception as e:
-            print(f"[ERROR] Error saving RAG settings: {e}")
-            return False
 
     def should_auto_assign(self, confidence: float) -> Dict:
         """Kiểm tra xem có nên auto-assign không"""
