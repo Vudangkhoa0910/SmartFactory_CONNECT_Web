@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { toast } from "react-toastify";
 import { useTranslation } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSocketRefresh } from "../../hooks/useSocket";
 
 import { Incident, Priority } from "../../components/ErrorReport/index";
 import { useDepartments } from "../../hooks/useDepartments";
@@ -50,52 +51,65 @@ const IncidentWorkspace: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch queue data
-  useEffect(() => {
-    const fetchQueue = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/incidents/queue');
-        const mappedIncidents = (res.data.data || []).map((item: any) => {
-          // Safely parse attachments - handle invalid JSON
-          let images: string[] = [];
-          if (item.attachments) {
-            try {
-              const parsed = typeof item.attachments === 'string'
-                ? JSON.parse(item.attachments)
-                : item.attachments;
-              if (Array.isArray(parsed)) {
-                images = parsed.map((a: any) => a.path).filter(Boolean);
-              }
-            } catch (e) {
-              console.warn('Could not parse attachments for incident:', item.id);
+  // Fetch queue data - extracted to useCallback for WebSocket refresh
+  const fetchQueue = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const res = await api.get('/incidents/queue');
+      const mappedIncidents = (res.data.data || []).map((item: any) => {
+        // Safely parse attachments - handle invalid JSON
+        let images: string[] = [];
+        if (item.attachments) {
+          try {
+            const parsed = typeof item.attachments === 'string'
+              ? JSON.parse(item.attachments)
+              : item.attachments;
+            if (Array.isArray(parsed)) {
+              images = parsed.map((a: any) => a.path).filter(Boolean);
             }
+          } catch (e) {
+            console.warn('Could not parse attachments for incident:', item.id);
           }
+        }
 
-          return {
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            location: item.location,
-            createdAt: new Date(item.created_at),
-            timestamp: new Date(item.created_at),
-            priority: mapPriority(item.priority),
-            status: mapStatus(item.status),
-            reporter: item.reporter_name || 'Unknown',
-            department: item.department_name || 'General',
-            history: [],
-            images
-          };
-        });
-        setIncidents(mappedIncidents);
-      } catch (error) {
-        console.error("Failed to fetch incident queue:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchQueue();
+        return {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          location: item.location,
+          createdAt: new Date(item.created_at),
+          timestamp: new Date(item.created_at),
+          priority: mapPriority(item.priority),
+          status: mapStatus(item.status),
+          reporter: item.reporter_name || 'Unknown',
+          department: item.department_name || 'General',
+          history: [],
+          images
+        };
+      });
+      setIncidents(mappedIncidents);
+    } catch (error) {
+      console.error("Failed to fetch incident queue:", error);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchQueue(true); // Show loading only on initial load
+  }, [fetchQueue]);
+
+  // WebSocket: Auto-refresh without loading indicator when incidents change
+  const silentRefresh = useCallback(() => {
+    fetchQueue(false); // Silent refresh - no loading indicator
+  }, [fetchQueue]);
+
+  useSocketRefresh(
+    ['incident_created', 'incident_updated'],
+    silentRefresh,
+    ['incidents']
+  );
 
   // Load auto-assign setting (admin only)
   useEffect(() => {
@@ -485,8 +499,8 @@ const IncidentWorkspace: React.FC = () => {
                 onClick={clearAllFilters}
                 disabled={!searchTerm && filterPriorities.length === 0 && filterDepartments.length === 0}
                 className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${searchTerm || filterPriorities.length > 0 || filterDepartments.length > 0
-                    ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
-                    : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
+                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
                   }`}
               >
                 Xóa bộ lọc
@@ -496,8 +510,8 @@ const IncidentWorkspace: React.FC = () => {
             {/* Active Filters Display */}
             <div
               className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${filterPriorities.length > 0 || filterDepartments.length > 0
-                  ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
-                  : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
+                ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+                : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
                 }`}
             >
               {filterPriorities.map((priority) => (

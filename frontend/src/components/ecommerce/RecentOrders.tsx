@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -8,6 +8,7 @@ import {
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 import incidentService, { Incident } from "../../services/incident.service";
+import { useSocketRefresh } from "../../hooks/useSocket";
 
 // Priority and status mapping for display
 const priorityLabels: Record<string, string> = {
@@ -41,20 +42,34 @@ export default function RecentOrders() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchIncidents = async () => {
-      try {
-        setIsLoading(true);
-        const response = await incidentService.getIncidents({ limit: 5 });
-        setIncidents(response.data);
-      } catch (err) {
-        console.error('Failed to fetch recent incidents:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchIncidents();
+  // Fetch incidents - extracted to useCallback for WebSocket refresh
+  const fetchIncidents = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      const response = await incidentService.getIncidents({ limit: 5 });
+      setIncidents(response.data);
+    } catch (err) {
+      console.error('Failed to fetch recent incidents:', err);
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
   }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchIncidents(true);
+  }, [fetchIncidents]);
+
+  // WebSocket: Auto-refresh without loading when incidents change
+  const silentRefresh = useCallback(() => {
+    fetchIncidents(false);
+  }, [fetchIncidents]);
+
+  useSocketRefresh(
+    ['incident_created', 'incident_updated'],
+    silentRefresh,
+    ['incidents']
+  );
 
   if (isLoading) {
     return (

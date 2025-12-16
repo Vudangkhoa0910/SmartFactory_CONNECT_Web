@@ -8,6 +8,7 @@ import { IdeaList } from "../../components/feedback/IdeaList";
 import { IdeaDetail } from "../../components/feedback/IdeaDetail";
 import { useTranslation } from "../../contexts/LanguageContext";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { useSocketRefresh } from "../../hooks/useSocket";
 
 interface BackendHistory {
   created_at: string;
@@ -81,68 +82,80 @@ export default function PublicIdeasPage() {
     return map[status] || 'under_review';
   }, []);
 
-  // Fetch ideas from API
-  useEffect(() => {
-    const fetchIdeas = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/ideas?ideabox_type=white');
-        // Map API response to PublicIdea type
-        const mappedIdeas: PublicIdea[] = (res.data.data || []).map((item: BackendIdea) => ({
-          id: item.id,
-          senderId: item.submitter_id || 'unknown',
-          senderName: item.submitter_name || 'Anonymous',
-          group: item.department_name || 'General',
-          line: item.category || 'General',
-          title: item.title,
-          content: item.description,
-          imageUrl: (() => {
-            if (!item.attachments) return undefined;
-            try {
-              const att = typeof item.attachments === 'string' ? JSON.parse(item.attachments) : item.attachments;
-              if (Array.isArray(att) && att.length > 0 && att[0].path) {
-                return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
-              }
-            } catch (e) {
-              console.error("Error parsing attachments", e);
+  // Fetch ideas from API - extracted to useCallback for WebSocket refresh
+  const fetchIdeas = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const res = await api.get('/ideas?ideabox_type=white');
+      // Map API response to PublicIdea type
+      const mappedIdeas: PublicIdea[] = (res.data.data || []).map((item: BackendIdea) => ({
+        id: item.id,
+        senderId: item.submitter_id || 'unknown',
+        senderName: item.submitter_name || 'Anonymous',
+        group: item.department_name || 'General',
+        line: item.category || 'General',
+        title: item.title,
+        content: item.description,
+        imageUrl: (() => {
+          if (!item.attachments) return undefined;
+          try {
+            const att = typeof item.attachments === 'string' ? JSON.parse(item.attachments) : item.attachments;
+            if (Array.isArray(att) && att.length > 0 && att[0].path) {
+              return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
             }
-            return undefined;
-          })(),
-          timestamp: new Date(item.created_at),
-          status: mapStatus(item.status),
-          history: (item.history || []).map((h: BackendHistory) => ({
-            time: new Date(h.created_at),
-            by: h.performed_by_name || 'System',
-            action: h.action,
-            note: h.details
-          })),
-          chat: (item.responses || []).map((r: BackendResponse) => ({
-            id: r.id,
-            sender: r.role === 'admin' || r.role === 'manager' ? 'manager' : 'user',
-            text: r.response,
-            time: new Date(r.created_at)
-          })),
-          isRead: true
-        }));
-        
-        setIdeas(mappedIdeas);
-        if (mappedIdeas.length > 0 && !selectedId) {
-          setSelectedId(mappedIdeas[0].id);
-        }
-      } catch (error) {
-        console.error("Failed to fetch public ideas:", error);
-      } finally {
-        setLoading(false);
+          } catch (e) {
+            console.error("Error parsing attachments", e);
+          }
+          return undefined;
+        })(),
+        timestamp: new Date(item.created_at),
+        status: mapStatus(item.status),
+        history: (item.history || []).map((h: BackendHistory) => ({
+          time: new Date(h.created_at),
+          by: h.performed_by_name || 'System',
+          action: h.action,
+          note: h.details
+        })),
+        chat: (item.responses || []).map((r: BackendResponse) => ({
+          id: r.id,
+          sender: r.role === 'admin' || r.role === 'manager' ? 'manager' : 'user',
+          text: r.response,
+          time: new Date(r.created_at)
+        })),
+        isRead: true
+      }));
+
+      setIdeas(mappedIdeas);
+      if (mappedIdeas.length > 0 && !selectedId) {
+        setSelectedId(mappedIdeas[0].id);
       }
-    };
-    fetchIdeas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Keep empty dependency array to run only once
+    } catch (error) {
+      console.error("Failed to fetch public ideas:", error);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [mapStatus, selectedId]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchIdeas(true);
+  }, [fetchIdeas]);
+
+  // WebSocket: Auto-refresh without loading indicator when ideas change
+  const silentRefresh = useCallback(() => {
+    fetchIdeas(false);
+  }, [fetchIdeas]);
+
+  useSocketRefresh(
+    ['idea_created', 'idea_updated', 'idea_response'],
+    silentRefresh,
+    ['ideas']
+  );
 
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) || null;
 
   // Filter ideas based on search term
-  const filteredIdeas = ideas.filter(idea => 
+  const filteredIdeas = ideas.filter(idea =>
     idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     idea.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     idea.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,7 +165,7 @@ export default function PublicIdeasPage() {
   // Cập nhật trạng thái và ghi chú (note)
   const handleUpdateStatus = async (status: string, note?: string) => {
     if (!selectedIdea) return;
-    
+
     try {
       // Handle Escalation
       if (status === 'Escalate') {
@@ -169,10 +182,10 @@ export default function PublicIdeasPage() {
         status: backendStatus,
         review_notes: note || `Updated status to ${status}`
       };
-      
+
       // Call review API
       await api.put(`/ideas/${selectedIdea.id}/review`, payload);
-      
+
       // Update local state
       if (backendStatus === 'rejected') {
         // If rejected, remove from list as per requirement
@@ -183,18 +196,18 @@ export default function PublicIdeasPage() {
           prev.map((idea) =>
             idea.id === selectedIdea.id
               ? {
-                  ...idea,
-                  status: status as StatusType,
-                  history: [
-                    ...idea.history,
-                    {
-                      time: new Date(),
-                      by: "Me", // Should be current user name
-                      action: status,
-                      note,
-                    },
-                  ],
-                }
+                ...idea,
+                status: status as StatusType,
+                history: [
+                  ...idea.history,
+                  {
+                    time: new Date(),
+                    by: "Me", // Should be current user name
+                    action: status,
+                    note,
+                  },
+                ],
+              }
               : idea
           )
         );
@@ -209,18 +222,18 @@ export default function PublicIdeasPage() {
   // Thêm phản hồi chat
   const handleSendChat = async (text: string) => {
     if (!selectedIdea || !text.trim()) return;
-    
+
     try {
       const payload = { response: text.trim() };
       const res = await api.post(`/ideas/${selectedIdea.id}/responses`, payload);
-      
+
       const newMsg = {
         id: res.data.data.id || Date.now().toString(),
         sender: "manager" as const,
         text: text.trim(),
         time: new Date(),
       };
-      
+
       setIdeas((prev) =>
         prev.map((idea) =>
           idea.id === selectedIdea.id
@@ -262,15 +275,15 @@ export default function PublicIdeasPage() {
         />
 
         {/* Chi tiết ý tưởng */}
-      {selectedIdea && (
-        <IdeaDetail
-          key={selectedIdea.id}
-          idea={selectedIdea}
-          onUpdateStatus={handleUpdateStatus}
-          onSendChat={handleSendChat}
-          showForwardButton={isNotAdmin}
-        />
-      )}
+        {selectedIdea && (
+          <IdeaDetail
+            key={selectedIdea.id}
+            idea={selectedIdea}
+            onUpdateStatus={handleUpdateStatus}
+            onSendChat={handleSendChat}
+            showForwardButton={isNotAdmin}
+          />
+        )}
       </div>
     </>
   );

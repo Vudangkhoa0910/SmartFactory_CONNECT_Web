@@ -1,5 +1,5 @@
 // src/pages/SensitiveInbox/index.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { useDepartments } from "../../hooks/useDepartments";
@@ -13,13 +13,14 @@ import { MessageList } from "../../components/feedback/MessageList";
 import { MessageDetailView } from "../../components/feedback/MessageDetailView";
 import { useTranslation } from "../../contexts/LanguageContext";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { useSocketRefresh } from "../../hooks/useSocket";
 
 // Helper to map API status to UI status
 const mapStatus = (apiStatus: string): MessageStatus => {
   switch (apiStatus) {
     case 'pending': return 'new';
     case 'under_review': return 'under_review';
-    case 'approved': 
+    case 'approved':
     case 'rejected':
     case 'implemented':
       return 'processed';
@@ -41,7 +42,7 @@ const mapIdeaToMessage = (idea: any): SensitiveMessage => {
       try {
         const att = typeof idea.attachments === 'string' ? JSON.parse(idea.attachments) : idea.attachments;
         if (Array.isArray(att) && att.length > 0 && att[0].path) {
-           return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
+          return `${import.meta.env.VITE_API_URL?.replace('/api', '')}/${att[0].path}`;
         }
       } catch (e) {
         console.error("Error parsing attachments", e);
@@ -51,9 +52,9 @@ const mapIdeaToMessage = (idea: any): SensitiveMessage => {
     timestamp: new Date(idea.created_at),
     status: mapStatus(idea.status),
     history: (idea.history || []).map((h: any) => ({
-      action: h.action === 'submitted' ? 'CREATED' : 
-              h.action === 'assigned' ? 'FORWARDED' : 
-              h.action === 'responded' ? 'REPLIED' : 'CREATED',
+      action: h.action === 'submitted' ? 'CREATED' :
+        h.action === 'assigned' ? 'FORWARDED' :
+          h.action === 'responded' ? 'REPLIED' : 'CREATED',
       timestamp: new Date(h.created_at),
       details: h.details ? (typeof h.details === 'string' ? h.details : JSON.stringify(h.details)) : '',
       actor: h.performed_by_name || 'System'
@@ -82,26 +83,39 @@ export default function SensitiveInboxPage() {
     },
   });
 
-  // Fetch list of ideas
-  useEffect(() => {
-    const fetchIdeas = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/ideas?ideabox_type=pink');
-        const ideasData = res.data.data || [];
-        const mappedIdeas = ideasData.map(mapIdeaToMessage);
-        setMessages(mappedIdeas);
-        if (mappedIdeas.length > 0 && !selectedMessageId) {
-          setSelectedMessageId(mappedIdeas[0].id);
-        }
-      } catch (error) {
-        console.error("Failed to fetch ideas:", error);
-      } finally {
-        setLoading(false);
+  // Fetch list of ideas - extracted to useCallback for WebSocket refresh
+  const fetchIdeas = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const res = await api.get('/ideas?ideabox_type=pink');
+      const ideasData = res.data.data || [];
+      const mappedIdeas = ideasData.map(mapIdeaToMessage);
+      setMessages(mappedIdeas);
+      if (mappedIdeas.length > 0 && !selectedMessageId) {
+        setSelectedMessageId(mappedIdeas[0].id);
       }
-    };
-    fetchIdeas();
-  }, []);
+    } catch (error) {
+      console.error("Failed to fetch ideas:", error);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [selectedMessageId]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchIdeas(true);
+  }, [fetchIdeas]);
+
+  // WebSocket: Auto-refresh without loading indicator when ideas change
+  const silentRefresh = useCallback(() => {
+    fetchIdeas(false);
+  }, [fetchIdeas]);
+
+  useSocketRefresh(
+    ['idea_created', 'idea_updated', 'idea_response'],
+    silentRefresh,
+    ['ideas']
+  );
 
   // Fetch full details when a message is selected
   useEffect(() => {
@@ -112,8 +126,8 @@ export default function SensitiveInboxPage() {
         const res = await api.get(`/ideas/${selectedMessageId}`);
         const fullIdea = res.data.data;
         const mappedIdea = mapIdeaToMessage(fullIdea);
-        
-        setMessages(prev => prev.map(m => 
+
+        setMessages(prev => prev.map(m =>
           m.id === selectedMessageId ? { ...m, ...mappedIdea } : m
         ));
       } catch (error) {
@@ -127,7 +141,7 @@ export default function SensitiveInboxPage() {
   const selectedMessage = messages.find((m) => m.id === selectedMessageId);
 
   // Filter messages based on search term
-  const filteredMessages = messages.filter(msg => 
+  const filteredMessages = messages.filter(msg =>
     msg.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     msg.fullContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
     msg.senderName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -140,22 +154,22 @@ export default function SensitiveInboxPage() {
   ) => {
     try {
       setLoading(true);
-      
+
       // Use assign endpoint
       await api.put(`/ideas/${messageId}/assign`, {
         department_id: departmentId,
         review_notes: note
       });
-      
+
       // Then add a review note if needed, or just rely on the assign
       // Ideally we should have a single endpoint or call both
-      
+
       // We need to refetch to get the full mapped object or manually update
       // Let's just update the status locally for now
-      
-      setMessages(prev => prev.map(m => 
-        m.id === messageId ? { 
-          ...m, 
+
+      setMessages(prev => prev.map(m =>
+        m.id === messageId ? {
+          ...m,
           status: 'under_review',
           history: [...m.history, {
             action: 'FORWARDED',
@@ -165,7 +179,7 @@ export default function SensitiveInboxPage() {
           }]
         } : m
       ));
-      
+
       // Show success message (could be a toast)
       toast.success(t('feedback.messages.forward_success'));
     } catch (error: any) {
@@ -182,12 +196,12 @@ export default function SensitiveInboxPage() {
       // Note: If we need to support file uploads later, we should use FormData
       // For now, the UI only sends text content
       const payload = { response: content };
-      
+
       const res = await api.post(`/ideas/${messageId}/responses`, payload);
-      
+
       // The backend returns the created response object
       const newResponse = res.data.data;
-      
+
       setMessages(prev => prev.map(m => {
         if (m.id === messageId) {
           return {
@@ -209,7 +223,7 @@ export default function SensitiveInboxPage() {
         }
         return m;
       }));
-      
+
       toast.success(t('feedback.messages.reply_success'));
     } catch (error: any) {
       console.error("Reply failed:", error);

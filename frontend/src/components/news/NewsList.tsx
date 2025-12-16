@@ -1,11 +1,12 @@
 // components/news/NewsList.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "../../contexts/LanguageContext";
 import NewsCard from "./NewsCard";
 import NewsDetailModal from "./NewsDetailModal";
 import api from "../../services/api";
 import { toast } from "react-toastify";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { useSocketRefresh } from "../../hooks/useSocket";
 import { Mic, Search, X } from "lucide-react";
 
 interface NewsItem {
@@ -43,12 +44,13 @@ export default function NewsList() {
     },
   });
 
-  const fetchNews = async () => {
+  // Fetch news - extracted to useCallback for WebSocket refresh
+  const fetchNews = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await api.get('/news');
       const allNews = res.data.data || [];
-      
+
       const today = new Date().toISOString().split('T')[0];
       const todayList: NewsItem[] = [];
       const historyList: NewsItem[] = [];
@@ -76,20 +78,32 @@ export default function NewsList() {
     } catch (error) {
       console.error("Failed to fetch news:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchNews();
   }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchNews(true);
+  }, [fetchNews]);
+
+  // WebSocket: Auto-refresh without loading indicator when news changes
+  const silentRefresh = useCallback(() => {
+    fetchNews(false);
+  }, [fetchNews]);
+
+  useSocketRefresh(
+    ['news_created', 'news_updated', 'news_deleted'],
+    silentRefresh,
+    ['news']
+  );
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn xoá tin tức này?")) return;
-    
+
     try {
       await api.delete(`/news/${id}`);
-      
+
       // Update local state
       if (activeTab === "today") {
         setNews((prev) => ({
@@ -119,7 +133,7 @@ export default function NewsList() {
       // Fetch full details to get content and increment view count
       const res = await api.get(`/news/${item.id}`);
       const detail = res.data.data;
-      
+
       setSelectedNews({
         ...item,
         content: detail.content || item.content || '',
@@ -135,7 +149,7 @@ export default function NewsList() {
     }
   };
 
-  const listToDisplay = (activeTab === "today" ? news.today : news.history).filter(item => 
+  const listToDisplay = (activeTab === "today" ? news.today : news.history).filter(item =>
     item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.excerpt && item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -159,9 +173,8 @@ export default function NewsList() {
           {isSupported && (
             <button
               onClick={startListening}
-              className={`text-gray-400 hover:text-red-500 transition-colors ${
-                isListening ? "text-red-500 animate-pulse" : ""
-              }`}
+              className={`text-gray-400 hover:text-red-500 transition-colors ${isListening ? "text-red-500 animate-pulse" : ""
+                }`}
               title="Click to speak"
             >
               <Mic size={16} />
@@ -182,21 +195,19 @@ export default function NewsList() {
       <div className="flex border-b border-gray-200 dark:border-neutral-800 mb-4">
         <button
           onClick={() => setActiveTab("today")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "today"
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === "today"
               ? "border-b-2 border-red-600 text-red-600 dark:text-red-500"
               : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          }`}
+            }`}
         >
           {t('news.recent_news')}
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "history"
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === "history"
               ? "border-b-2 border-red-600 text-red-600 dark:text-red-500"
               : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          }`}
+            }`}
         >
           {t('news.history')}
         </button>

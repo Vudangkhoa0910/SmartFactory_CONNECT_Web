@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -7,25 +7,40 @@ import {
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
 import dashboardService, { DashboardSummary } from "../../services/dashboard.service";
+import { useSocketRefresh } from "../../hooks/useSocket";
 
 export default function EcommerceMetrics() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setIsLoading(true);
-        const data = await dashboardService.getDashboardSummary();
-        setSummary(data);
-      } catch (err) {
-        console.error('Failed to fetch dashboard summary:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSummary();
+  // Fetch summary - extracted to useCallback for WebSocket refresh
+  const fetchSummary = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      const data = await dashboardService.getDashboardSummary();
+      setSummary(data);
+    } catch (err) {
+      console.error('Failed to fetch dashboard summary:', err);
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
   }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchSummary(true);
+  }, [fetchSummary]);
+
+  // WebSocket: Auto-refresh without loading when incidents change (affects metrics)
+  const silentRefresh = useCallback(() => {
+    fetchSummary(false);
+  }, [fetchSummary]);
+
+  useSocketRefresh(
+    ['incident_created', 'incident_updated'],
+    silentRefresh,
+    ['incidents']
+  );
 
   if (isLoading) {
     return (
@@ -51,8 +66,8 @@ export default function EcommerceMetrics() {
   const activeUsers = summary?.active_users || 0;
   const totalIncidents = summary?.total_incidents || 0;
   const pendingIncidents = summary?.pending_incidents || 0;
-  const resolvedRate = totalIncidents > 0 
-    ? Math.round((summary?.resolved_incidents || 0) / totalIncidents * 100) 
+  const resolvedRate = totalIncidents > 0
+    ? Math.round((summary?.resolved_incidents || 0) / totalIncidents * 100)
     : 100;
 
   return (
