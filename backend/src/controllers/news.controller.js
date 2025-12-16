@@ -18,6 +18,7 @@ const createNews = asyncHandler(async (req, res) => {
     excerpt_ja,
     target_audience,
     target_departments,
+    target_users,
     is_priority,
     publish_at
   } = req.body;
@@ -63,11 +64,12 @@ const createNews = asyncHandler(async (req, res) => {
       author_id,
       target_audience,
       target_departments,
+      target_users,
       is_priority,
       publish_at,
       attachments,
       status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *
   `;
 
@@ -82,6 +84,7 @@ const createNews = asyncHandler(async (req, res) => {
     author_id,
     target_audience || 'all',
     target_departments ? JSON.stringify(target_departments) : null,
+    target_users ? JSON.stringify(target_users) : null,
     is_priority || false,
     finalPublishAt || null,
     JSON.stringify(attachments),
@@ -127,7 +130,8 @@ const createNews = asyncHandler(async (req, res) => {
           await pushNotificationService.sendNewsPublishedNotification(
             news,
             target_audience,
-            target_departments
+            target_departments,
+            target_users
           );
         } catch (err) {
           console.error('[News] Error sending push notification:', err.message);
@@ -172,16 +176,24 @@ const getNews = asyncHandler(async (req, res) => {
   }
 
   // 2. Targeting Filter
-  // Admin (1) and Factory Manager (2) see ALL
+  // Admin (1) and Factory Manager (2) see ALL news
   if (userLevel > 2) {
+    // Regular users see:
+    // - target_audience = 'all'
+    // - target_audience = 'departments' AND their department is in target_departments
+    // - target_audience = 'users' AND they are in target_users
     conditions.push(`(
         n.target_audience = 'all' OR
-        n.target_audience = $${paramIndex} OR
-        (n.target_departments IS NOT NULL AND 
-         n.target_departments::jsonb @> $${paramIndex + 1}::jsonb)
+        (n.target_audience = 'departments' AND n.target_departments IS NOT NULL AND 
+         n.target_departments::jsonb @> $${paramIndex}::jsonb) OR
+        (n.target_audience = 'users' AND n.target_users IS NOT NULL AND 
+         n.target_users::jsonb @> $${paramIndex + 1}::jsonb)
       )`);
     // If user has no department, pass a dummy value to avoid matching empty array
-    params.push(userRole, JSON.stringify(userDepartmentId ? [userDepartmentId] : ["__no_dept__"]));
+    params.push(
+      JSON.stringify(userDepartmentId ? [userDepartmentId] : ["__no_dept__"]),
+      JSON.stringify([userId])
+    );
     paramIndex += 2;
   }
 
@@ -660,27 +672,47 @@ const getNewsStats = asyncHandler(async (req, res) => {
  */
 const getUnreadCount = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const userRole = req.user.role;
+  const userLevel = req.user.level;
   const userDepartmentId = req.user.department_id;
+
+  const conditions = [];
+  const params = [];
+  let paramIndex = 1;
+
+  // Base conditions
+  conditions.push(`n.status = 'published'`);
+  conditions.push(`(n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)`);
+
+  // Targeting filter (same logic as getNews)
+  if (userLevel > 2) {
+    conditions.push(`(
+        n.target_audience = 'all' OR
+        (n.target_audience = 'departments' AND n.target_departments IS NOT NULL AND 
+         n.target_departments::jsonb @> $${paramIndex}::jsonb) OR
+        (n.target_audience = 'users' AND n.target_users IS NOT NULL AND 
+         n.target_users::jsonb @> $${paramIndex + 1}::jsonb)
+      )`);
+    params.push(
+      JSON.stringify(userDepartmentId ? [userDepartmentId] : ["__no_dept__"]),
+      JSON.stringify([userId])
+    );
+    paramIndex += 2;
+  }
+
+  // Not read by current user
+  conditions.push(`NOT EXISTS (
+      SELECT 1 FROM news_read_receipts 
+      WHERE news_id = n.id AND user_id = $${paramIndex}
+    )`);
+  params.push(userId);
 
   const query = `
     SELECT COUNT(*) as unread_count
     FROM news n
-    WHERE n.status = 'published'
-      AND (n.publish_at IS NULL OR n.publish_at <= CURRENT_TIMESTAMP)
-      AND (
-        n.target_audience = 'all' OR
-        n.target_audience = $1 OR
-        (n.target_departments IS NOT NULL AND 
-         n.target_departments::jsonb @> $2::jsonb)
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM news_read_receipts 
-        WHERE news_id = n.id AND user_id = $3
-      )
+    WHERE ${conditions.join(' AND ')}
   `;
 
-  const result = await db.query(query, [userRole, JSON.stringify([userDepartmentId]), userId]);
+  const result = await db.query(query, params);
 
   res.json({
     success: true,

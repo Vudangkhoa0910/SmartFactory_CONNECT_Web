@@ -6,6 +6,39 @@ const { authenticate, authorizeLevel } = require('../middlewares/auth.middleware
 const { uploadNewsFiles } = require('../middlewares/upload.middleware');
 const { validate, pagination, parseSort, parseFilters } = require('../middlewares/validation.middleware');
 
+// Middleware to parse JSON strings from FormData
+const parseNewsFormData = (req, res, next) => {
+  try {
+    console.log('🔍 Before parsing:', {
+      target_departments: typeof req.body.target_departments,
+      target_users: typeof req.body.target_users,
+      is_priority: typeof req.body.is_priority
+    });
+    
+    // Parse target_departments if it's a JSON string
+    if (req.body.target_departments && typeof req.body.target_departments === 'string') {
+      req.body.target_departments = JSON.parse(req.body.target_departments);
+    }
+    // Parse target_users if it's a JSON string
+    if (req.body.target_users && typeof req.body.target_users === 'string') {
+      req.body.target_users = JSON.parse(req.body.target_users);
+    }
+    // Parse is_priority if it's a string
+    if (req.body.is_priority && typeof req.body.is_priority === 'string') {
+      req.body.is_priority = req.body.is_priority === 'true';
+    }
+    
+    console.log('✅ After parsing:', {
+      target_departments: Array.isArray(req.body.target_departments) ? 'array' : typeof req.body.target_departments,
+      target_users: Array.isArray(req.body.target_users) ? 'array' : typeof req.body.target_users,
+      is_priority: typeof req.body.is_priority
+    });
+  } catch (error) {
+    console.error('❌ Error parsing FormData JSON:', error);
+  }
+  next();
+};
+
 // Validation rules
 const createNewsValidation = [
   body('category')
@@ -40,15 +73,36 @@ const createNewsValidation = [
     .withMessage('Excerpt must not exceed 500 characters'),
   body('target_audience')
     .optional()
-    .isIn(['all', 'admin', 'factory_manager', 'production_manager', 'supervisor', 'team_leader', 'operator', 'technician', 'qc_inspector', 'maintenance_manager', 'maintenance_staff', 'viewer'])
+    .isIn(['all', 'departments', 'users'])
     .withMessage('Invalid target audience'),
   body('target_departments')
     .optional()
-    .isArray()
+    .custom((value, { req }) => {
+      if (req.body.target_audience === 'departments') {
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          throw new Error('Target departments are required when target_audience is "departments"');
+        }
+      }
+      return true;
+    })
     .withMessage('Target departments must be an array'),
+  body('target_users')
+    .optional()
+    .custom((value, { req }) => {
+      if (req.body.target_audience === 'users') {
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          throw new Error('Target users are required when target_audience is "users"');
+        }
+      }
+      return true;
+    })
+    .withMessage('Target users must be an array'),
   body('is_priority')
     .optional()
-    .isBoolean()
+    .custom((value) => {
+      // Accept both boolean and string 'true'/'false' from FormData
+      return value === true || value === false || value === 'true' || value === 'false';
+    })
     .withMessage('is_priority must be a boolean'),
   body('publish_at')
     .optional()
@@ -89,15 +143,36 @@ const updateNewsValidation = [
     .withMessage('Excerpt must not exceed 500 characters'),
   body('target_audience')
     .optional()
-    .isIn(['all', 'admin', 'factory_manager', 'production_manager', 'supervisor', 'team_leader', 'operator', 'technician', 'qc_inspector', 'maintenance_manager', 'maintenance_staff', 'viewer'])
+    .isIn(['all', 'departments', 'users'])
     .withMessage('Invalid target audience'),
   body('target_departments')
     .optional()
-    .isArray()
+    .custom((value, { req }) => {
+      if (req.body.target_audience === 'departments') {
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          throw new Error('Target departments are required when target_audience is "departments"');
+        }
+      }
+      return true;
+    })
     .withMessage('Target departments must be an array'),
+  body('target_users')
+    .optional()
+    .custom((value, { req }) => {
+      if (req.body.target_audience === 'users') {
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          throw new Error('Target users are required when target_audience is "users"');
+        }
+      }
+      return true;
+    })
+    .withMessage('Target users must be an array'),
   body('is_priority')
     .optional()
-    .isBoolean()
+    .custom((value) => {
+      // Accept both boolean and string 'true'/'false' from FormData
+      return value === true || value === false || value === 'true' || value === 'false';
+    })
     .withMessage('is_priority must be a boolean'),
   body('publish_at')
     .optional()
@@ -144,6 +219,7 @@ router.post(
   authenticate,
   authorizeLevel(3), // Supervisor and above
   uploadNewsFiles,
+  parseNewsFormData,
   createNewsValidation,
   validate,
   newsController.createNews
@@ -211,6 +287,7 @@ router.put(
   authenticate,
   authorizeLevel(3), // Supervisor and above
   uploadNewsFiles,
+  parseNewsFormData,
   updateNewsValidation,
   validate,
   newsController.updateNews

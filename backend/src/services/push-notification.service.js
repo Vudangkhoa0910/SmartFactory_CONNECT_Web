@@ -22,10 +22,11 @@ class PushNotificationService {
     /**
      * Send notification when news is published
      * @param {Object} news - News object with id, title, title_ja, excerpt, excerpt_ja, category
-     * @param {string} targetAudience - 'all', 'admin', 'managers', etc.
+     * @param {string} targetAudience - 'all', 'departments', 'users'
      * @param {Array} targetDepartments - Array of department IDs (optional)
+     * @param {Array} targetUsers - Array of user IDs (optional)
      */
-    async sendNewsPublishedNotification(news, targetAudience = 'all', targetDepartments = null) {
+    async sendNewsPublishedNotification(news, targetAudience = 'all', targetDepartments = null, targetUsers = null) {
         const startTime = Date.now();
         console.log(`[PushNotification] Sending news notification for: ${news.title}`);
 
@@ -39,21 +40,19 @@ class PushNotificationService {
                     'SELECT id FROM users WHERE is_active = true'
                 );
                 recipientUserIds = usersResult.rows.map(r => r.id);
-            } else if (targetDepartments && targetDepartments.length > 0) {
+            } else if (targetAudience === 'departments' && targetDepartments && targetDepartments.length > 0) {
                 // Get users in target departments
+                const deptIds = typeof targetDepartments === 'string' ? JSON.parse(targetDepartments) : targetDepartments;
                 const usersResult = await db.query(
                     'SELECT id FROM users WHERE department_id = ANY($1) AND is_active = true',
-                    [targetDepartments]
+                    [deptIds]
                 );
                 recipientUserIds = usersResult.rows.map(r => r.id);
-            } else if (targetAudience === 'managers') {
-                // Get managers and above (level <= 3)
-                const usersResult = await db.query(
-                    'SELECT id FROM users WHERE level <= 3 AND is_active = true'
-                );
-                recipientUserIds = usersResult.rows.map(r => r.id);
+            } else if (targetAudience === 'users' && targetUsers && targetUsers.length > 0) {
+                // Use specific user IDs
+                recipientUserIds = typeof targetUsers === 'string' ? JSON.parse(targetUsers) : targetUsers;
             } else {
-                // Default: all users
+                // Default: all users (fallback)
                 const usersResult = await db.query(
                     'SELECT id FROM users WHERE is_active = true'
                 );
