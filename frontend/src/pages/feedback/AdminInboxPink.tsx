@@ -37,6 +37,7 @@ const mapIdeaToMessage = (idea: any): SensitiveMessage => {
     senderId: idea.submitter_code,
     title: idea.title,
     fullContent: idea.description,
+    difficulty: idea.difficulty,
     imageUrl: (() => {
       if (!idea.attachments) return undefined;
       try {
@@ -190,9 +191,23 @@ export default function SensitiveInboxPage() {
     }
   };
 
-  const handleReply = async (messageId: string, content: string) => {
+  const handleReply = async (messageId: string, content: string, difficulty?: string) => {
     try {
       setLoading(true);
+      
+      // Update difficulty if provided
+      if (difficulty) {
+        const selectedMessage = messages.find(m => m.id === messageId);
+        if (selectedMessage) {
+          const diffPayload = {
+            status: selectedMessage.status === 'new' ? 'under_review' : 'under_review',
+            review_notes: `Updated difficulty to ${difficulty}`,
+            difficulty: difficulty
+          };
+          await api.put(`/ideas/${messageId}/review`, diffPayload);
+        }
+      }
+      
       // Note: If we need to support file uploads later, we should use FormData
       // For now, the UI only sends text content
       const payload = { response: content };

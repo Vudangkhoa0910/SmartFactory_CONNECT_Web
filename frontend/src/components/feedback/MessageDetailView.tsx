@@ -7,11 +7,15 @@ import {
   MessageSquare,
   ArrowRight,
   CornerDownRight,
+  Save,
 } from "lucide-react";
-import { SensitiveMessage, HistoryAction } from "./types";
+import { SensitiveMessage, HistoryAction, DifficultyLevel } from "./types";
 import { ActionPanel } from "./ActionPanel";
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from '../form/input/TextArea';
+import { DifficultyBadge, DifficultySelector } from "./DifficultySelector";
+import { toast } from "react-toastify";
+import api from "../../services/api";
 
 interface Department {
   id: string;
@@ -23,7 +27,7 @@ interface MessageDetailViewProps {
   departments?: Department[];
   loading?: boolean;
   onForward: (messageId: string, departmentId: string, note: string) => Promise<void> | void;
-  onReply: (messageId: string, content: string) => void;
+  onReply: (messageId: string, content: string, difficulty?: DifficultyLevel) => void;
 }
 
 export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
@@ -36,6 +40,33 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
   const { t } = useTranslation();
   const [activePanel, setActivePanel] = useState<"none" | "forward">("none");
   const [replyContent, setReplyContent] = useState("");
+  const [difficulty, setDifficulty] = useState<DifficultyLevel | undefined>(message?.difficulty);
+  const [savingDifficulty, setSavingDifficulty] = useState(false);
+
+  const handleSaveDifficulty = async () => {
+    if (!message || !difficulty || difficulty === message.difficulty) {
+      toast.info(t('difficulty.no_change'));
+      return;
+    }
+
+    try {
+      setSavingDifficulty(true);
+      const payload = {
+        status: message.status === 'new' ? 'under_review' : 'under_review',
+        review_notes: `Updated difficulty to ${difficulty}`,
+        difficulty: difficulty
+      };
+      await api.put(`/ideas/${message.id}/review`, payload);
+      toast.success(t('difficulty.save_success'));
+      // Cập nhật message.difficulty để tránh lưu lại
+      message.difficulty = difficulty;
+    } catch (error: any) {
+      console.error('Save difficulty failed:', error);
+      toast.error(`${t('difficulty.save_error')}: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setSavingDifficulty(false);
+    }
+  };
 
   if (!message) {
     return (
@@ -53,7 +84,9 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
 
   const handleReply = () => {
     if (!replyContent.trim()) return;
-    onReply(message.id, replyContent);
+    // Chỉ gửi difficulty nếu nó khác với giá trị ban đầu
+    const changedDifficulty = difficulty !== message?.difficulty ? difficulty : undefined;
+    onReply(message.id, replyContent, changedDifficulty);
     setReplyContent("");
   };
 
@@ -68,12 +101,78 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
     }
   };
 
+  // Helper function to format history details
+  const formatHistoryDetails = (details: string): string => {
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(details);
+      
+      // Build readable message
+      const parts: string[] = [];
+      
+      if (parsed.old_status && parsed.new_status) {
+        const statusMap: Record<string, string> = {
+          'new': 'Mới',
+          'pending': 'Chờ xử lý',
+          'under_review': 'Đang xem xét',
+          'approved': 'Đã phê duyệt',
+          'rejected': 'Đã từ chối',
+          'implemented': 'Đã triển khai',
+          'on_hold': 'Tạm dừng'
+        };
+        const oldStatus = statusMap[parsed.old_status] || parsed.old_status;
+        const newStatus = statusMap[parsed.new_status] || parsed.new_status;
+        parts.push(`Chuyển trạng thái: ${oldStatus} → ${newStatus}`);
+      }
+      
+      if (parsed.difficulty) {
+        parts.push(`Đánh giá độ khó: ${parsed.difficulty}`);
+      }
+      
+      if (parsed.review_notes) {
+        // Parse review notes to extract difficulty info
+        const diffMatch = parsed.review_notes.match(/Updated difficulty to ([A-D])/);
+        if (diffMatch && !parsed.difficulty) {
+          parts.push(`Đánh giá độ khó: ${diffMatch[1]}`);
+        } else if (!diffMatch) {
+          parts.push(parsed.review_notes);
+        }
+      }
+      
+      if (parsed.assigned_to) {
+        parts.push(`Phân công cho: ${parsed.assigned_to}`);
+      }
+      
+      if (parsed.department) {
+        parts.push(`Phòng ban: ${parsed.department}`);
+      }
+      
+      // Handle department_id - lookup department name
+      if (parsed.department_id) {
+        const dept = departments.find(d => d.id === parsed.department_id);
+        if (dept) {
+          parts.push(`Phân công phòng ban: ${dept.name}`);
+        } else {
+          parts.push(`Phân công phòng ban: ${parsed.department_id}`);
+        }
+      }
+      
+      return parts.length > 0 ? parts.join(' • ') : details;
+    } catch (e) {
+      // If not JSON or parse fails, return as-is
+      return details;
+    }
+  };
+
   return (
     <main className="flex-1 flex flex-col bg-gray-50 dark:bg-neutral-900 relative transition-colors">
       <header className="p-4 border-b border-gray-200 dark:border-neutral-800 flex justify-between items-center bg-white dark:bg-neutral-900 flex-shrink-0">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-          {message.title}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {message.title}
+          </h2>
+          {message.difficulty && <DifficultyBadge difficulty={message.difficulty} />}
+        </div>
         <div className="flex items-center gap-2">
           <button className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors text-gray-700 dark:text-gray-300">
             <Archive size={14} /> {t('feedback.archive')}
@@ -118,6 +217,26 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
         </div>
         <div className="bg-white dark:bg-neutral-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700">
           <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-white">{t('feedback.reply_title')}</h4>
+          
+          {/* Đánh giá độ khó */}
+          <div className="mb-4 pb-4 border-b border-gray-200 dark:border-neutral-700">
+            <DifficultySelector
+              value={difficulty}
+              onChange={setDifficulty}
+              label="Đánh giá độ khó xử lý"
+            />
+            {difficulty !== message?.difficulty && (
+              <button
+                onClick={handleSaveDifficulty}
+                disabled={savingDifficulty}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 flex items-center gap-2 transition-colors text-sm"
+              >
+                <Save size={16} />
+                {savingDifficulty ? t('difficulty.saving') : t('difficulty.save_button')}
+              </button>
+            )}
+          </div>
+
           <TextArea
             value={replyContent}
             onChange={(value) => setReplyContent(value)}
@@ -140,15 +259,23 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
           <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-white">{t('feedback.history_title')}</h4>
           <ul className="space-y-3">
             {message.history.map((entry, index) => (
-              <li key={index} className="flex items-start gap-3 text-sm">
-                <div className="mt-1">{getActionIcon(entry.action)}</div>
-                <div>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    {entry.details} -{" "}
-                    <span className="font-semibold">{entry.actor}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {entry.timestamp.toLocaleString("vi-VN")}
+              <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-700 hover:shadow-sm transition-shadow">
+                <div className="mt-1 flex-shrink-0">{getActionIcon(entry.action)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2 mb-1">
+                    <span className="font-semibold text-sm text-gray-900 dark:text-white">{entry.actor}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                      {entry.timestamp.toLocaleString("vi-VN", { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                    {formatHistoryDetails(entry.details)}
                   </p>
                 </div>
               </li>

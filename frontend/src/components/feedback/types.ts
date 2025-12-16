@@ -3,6 +3,9 @@
    - Các định nghĩa type và interface dùng chung
 ======================================================= */
 
+/** Độ khó của ý tưởng */
+export type DifficultyLevel = 'A' | 'B' | 'C' | 'D';
+
 /** Trạng thái của ý tưởng / góp ý */
 export type StatusType =
   | "new"
@@ -45,6 +48,7 @@ export interface SensitiveMessage {
   imageUrl?: string;
   timestamp: Date;
   status: MessageStatus;
+  difficulty?: DifficultyLevel;
   history: HistoryEntry[];
   replies: Reply[];
 }
@@ -67,7 +71,6 @@ export interface ActionHistory {
   action: string; // Ví dụ: "Đã duyệt", "Đã từ chối"
   note?: string; // Phương hướng giải quyết hoặc ghi chú
 }
-
 /** Ý tưởng / góp ý */
 export interface PublicIdea {
   id: string;
@@ -80,6 +83,7 @@ export interface PublicIdea {
   imageUrl?: string; // Hình ảnh nếu có
   timestamp: Date; // Thời gian gửi
   status: StatusType; // Trạng thái hiện tại
+  difficulty?: DifficultyLevel; // Độ khó
   history: ActionHistory[];
   chat: ChatMessage[];
   isRead: boolean; // Đã đọc hay chưa

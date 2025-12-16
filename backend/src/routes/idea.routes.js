@@ -179,6 +179,10 @@ const createIdeaValidation = [
   body('expected_benefit')
     .optional()
     .trim(),
+  body('difficulty')
+    .optional()
+    .isIn(['A', 'B', 'C', 'D'])
+    .withMessage('Invalid difficulty. Must be A, B, C, or D'),
   body('department_id')
     .optional()
     .isUUID()
@@ -211,9 +215,8 @@ const reviewIdeaValidation = [
     .isIn(['under_review', 'approved', 'rejected', 'implemented', 'on_hold'])
     .withMessage('Invalid status'),
   body('review_notes')
-    .trim()
-    .notEmpty()
-    .withMessage('Review notes are required'),
+    .optional()
+    .trim(),
   body('feasibility_score')
     .optional()
     .isInt({ min: 1, max: 10 })
@@ -221,7 +224,11 @@ const reviewIdeaValidation = [
   body('impact_score')
     .optional()
     .isInt({ min: 1, max: 10 })
-    .withMessage('Impact score must be between 1 and 10')
+    .withMessage('Impact score must be between 1 and 10'),
+  body('difficulty')
+    .optional()
+    .isIn(['A', 'B', 'C', 'D'])
+    .withMessage('Invalid difficulty')
 ];
 
 const implementIdeaValidation = [

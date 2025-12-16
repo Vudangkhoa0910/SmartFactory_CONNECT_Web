@@ -19,7 +19,8 @@ const createIdea = asyncHandler(async (req, res) => {
     description_ja,
     expected_benefit,
     expected_benefit_ja,
-    department_id
+    department_id,
+    difficulty
   } = req.body;
 
   const submitter_id = req.user.id;
@@ -58,9 +59,8 @@ const createIdea = asyncHandler(async (req, res) => {
       attachments,
       status,
       handler_level,
-      difficulty_level,
-      priority
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12, 'B', 'medium')
+      difficulty
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', $13, $14)
     RETURNING *
   `;
 
@@ -77,7 +77,8 @@ const createIdea = asyncHandler(async (req, res) => {
     department_id || null,
     is_anonymous,
     JSON.stringify(attachments),
-    handler_level
+    handler_level,
+    difficulty || null
   ];
 
   const result = await db.query(query, values);
@@ -332,9 +333,49 @@ const getIdeas = asyncHandler(async (req, res) => {
     }
   });
 
+  // Fetch history and responses for each idea
+  const ideasWithDetails = await Promise.all(result.rows.map(async (idea) => {
+    // Get responses for this idea
+    const responsesQuery = `
+      SELECT 
+        r.*,
+        COALESCE(${lang === 'ja' ? 'r.response_ja' : 'NULL'}, r.response) as response,
+        u.full_name as responder_name,
+        u.employee_code,
+        u.role
+      FROM idea_responses r
+      LEFT JOIN users u ON r.user_id = u.id
+      WHERE r.idea_id = $1
+      ORDER BY r.created_at ASC
+    `;
+    const responsesResult = await db.query(responsesQuery, [idea.id]);
+    
+    // Get history for this idea (only for authorized users)
+    let historyResult = { rows: [] };
+    if (userLevel <= 4 || idea.submitter_id === userId) {
+      const historyQuery = `
+        SELECT 
+          h.*,
+          u.full_name as performed_by_name,
+          u.role
+        FROM idea_history h
+        LEFT JOIN users u ON h.performed_by = u.id
+        WHERE h.idea_id = $1
+        ORDER BY h.created_at DESC
+      `;
+      historyResult = await db.query(historyQuery, [idea.id]);
+    }
+    
+    return {
+      ...idea,
+      responses: responsesResult.rows,
+      history: historyResult.rows
+    };
+  }));
+
   res.json({
     success: true,
-    data: result.rows,
+    data: ideasWithDetails,
     pagination: {
       page: pagination.page,
       limit: pagination.limit,
@@ -601,7 +642,7 @@ const addResponse = asyncHandler(async (req, res) => {
  */
 const reviewIdea = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status, review_notes, feasibility_score, impact_score } = req.body;
+  const { status, review_notes, feasibility_score, impact_score, difficulty } = req.body;
   const userId = req.user.id;
 
   // Get idea
@@ -613,17 +654,6 @@ const reviewIdea = asyncHandler(async (req, res) => {
 
   const oldStatus = idea.rows[0].status;
 
-  // If status is rejected, delete the idea (as per requirement for White Box)
-  if (status === 'rejected') {
-    await db.query('DELETE FROM ideas WHERE id = $1', [id]);
-
-    return res.json({
-      success: true,
-      message: 'Idea rejected and deleted successfully',
-      data: { id, status: 'rejected' }
-    });
-  }
-
   // Update idea
   const query = `
     UPDATE ideas
@@ -632,10 +662,11 @@ const reviewIdea = asyncHandler(async (req, res) => {
       review_notes = $2,
       feasibility_score = $3,
       impact_score = $4,
-      reviewed_by = $5,
+      difficulty = $5,
+      reviewed_by = $6,
       reviewed_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $6
+    WHERE id = $7
     RETURNING *
   `;
 
@@ -644,15 +675,31 @@ const reviewIdea = asyncHandler(async (req, res) => {
     review_notes,
     feasibility_score || null,
     impact_score || null,
+    difficulty || null,
     userId,
     id
   ]);
 
   // Log history
+  const historyDetails = { 
+    old_status: oldStatus, 
+    new_status: status
+  };
+  
+  // Only add review_notes if provided and not just a difficulty update message
+  if (review_notes && !review_notes.startsWith('Updated difficulty to')) {
+    historyDetails.review_notes = review_notes;
+  }
+  
+  // Add difficulty if provided
+  if (difficulty) {
+    historyDetails.difficulty = difficulty;
+  }
+  
   await db.query(
     `INSERT INTO idea_history (idea_id, action, performed_by, details)
      VALUES ($1, 'reviewed', $2, $3)`,
-    [id, userId, JSON.stringify({ old_status: oldStatus, new_status: status, review_notes })]
+    [id, userId, JSON.stringify(historyDetails)]
   );
 
   // TODO: Send notification to submitter

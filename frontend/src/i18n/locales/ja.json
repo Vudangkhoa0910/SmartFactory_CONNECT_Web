@@ -866,5 +866,17 @@
     "btn_incident": "インシデント検索",
     "btn_idea": "アイデア検索",
     "btn_news": "ニュース作成"
+  },
+   "difficulty": {
+    "label": "難易度",
+    "A": "難しい",
+    "B": "普通",
+    "C": "簡単",
+    "D": "とても簡単",
+    "save_button": "難易度を保存",
+    "saving": "保存中...",
+    "save_success": "難易度を保存しました",
+    "save_error": "保存に失敗しました",
+    "no_change": "変更がありません"
   }
 }

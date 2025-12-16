@@ -9,6 +9,7 @@ import { IdeaDetail } from "../../components/feedback/IdeaDetail";
 import { useTranslation } from "../../contexts/LanguageContext";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
 import { useSocketRefresh } from "../../hooks/useSocket";
+import { useDepartments } from "../../hooks/useDepartments";
 
 interface BackendHistory {
   created_at: string;
@@ -32,6 +33,7 @@ interface BackendIdea {
   category: string;
   title: string;
   description: string;
+  difficulty?: string;
   attachments: string | null;
   created_at: string;
   status: string;
@@ -46,6 +48,7 @@ export default function PublicIdeasPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const { departments } = useDepartments();
 
   const { isListening, startListening, isSupported } = useSpeechToText({
     onResult: (text) => {
@@ -96,6 +99,7 @@ export default function PublicIdeasPage() {
         line: item.category || 'General',
         title: item.title,
         content: item.description,
+        difficulty: item.difficulty,
         imageUrl: (() => {
           if (!item.attachments) return undefined;
           try {
@@ -114,7 +118,7 @@ export default function PublicIdeasPage() {
           time: new Date(h.created_at),
           by: h.performed_by_name || 'System',
           action: h.action,
-          note: h.details
+          note: typeof h.details === 'string' ? h.details : JSON.stringify(h.details)
         })),
         chat: (item.responses || []).map((r: BackendResponse) => ({
           id: r.id,
@@ -163,7 +167,7 @@ export default function PublicIdeasPage() {
   );
 
   // Cập nhật trạng thái và ghi chú (note)
-  const handleUpdateStatus = async (status: string, note?: string) => {
+  const handleUpdateStatus = async (status: string, note?: string, solutionStatus?: string, difficulty?: string) => {
     if (!selectedIdea) return;
 
     try {
@@ -178,40 +182,22 @@ export default function PublicIdeasPage() {
       }
 
       const backendStatus = mapToBackendStatus(status);
-      const payload = {
+      const payload: any = {
         status: backendStatus,
         review_notes: note || `Updated status to ${status}`
       };
 
-      // Call review API
-      await api.put(`/ideas/${selectedIdea.id}/review`, payload);
-
-      // Update local state
-      if (backendStatus === 'rejected') {
-        // If rejected, remove from list as per requirement
-        setIdeas((prev) => prev.filter((idea) => idea.id !== selectedIdea.id));
-        setSelectedId(null);
-      } else {
-        setIdeas((prev) =>
-          prev.map((idea) =>
-            idea.id === selectedIdea.id
-              ? {
-                ...idea,
-                status: status as StatusType,
-                history: [
-                  ...idea.history,
-                  {
-                    time: new Date(),
-                    by: "Me", // Should be current user name
-                    action: status,
-                    note,
-                  },
-                ],
-              }
-              : idea
-          )
-        );
+      // Add difficulty if provided and changed
+      if (difficulty) {
+        payload.difficulty = difficulty;
       }
+
+      // Call review API
+      const response = await api.put(`/ideas/${selectedIdea.id}/review`, payload);
+
+      // Refresh to get updated data from server including history
+      await fetchIdeas(false);
+      
       toast.success(t('feedback.messages.update_status_success'));
     } catch (error: any) {
       console.error("Update status failed:", error);
@@ -282,6 +268,8 @@ export default function PublicIdeasPage() {
             onUpdateStatus={handleUpdateStatus}
             onSendChat={handleSendChat}
             showForwardButton={isNotAdmin}
+            departments={departments}
+            onRefresh={() => fetchIdeas(false)}
           />
         )}
       </div>

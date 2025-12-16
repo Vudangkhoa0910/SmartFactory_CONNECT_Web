@@ -865,5 +865,18 @@
     "btn_incident": "Tìm kiếm sự cố",
     "btn_idea": "Tìm kiếm ý tưởng",
     "btn_news": "Tạo tin tức"
+  },
+   "difficulty": {
+    "label": "Đánh giá độ khó",
+    "A": "Khó",
+    "B": "Trung bình",
+    "C": "Dễ",
+    "D": "Rất dễ",
+    "save_button": "Lưu độ khó",
+    "saving": "Đang lưu...",
+    "save_success": "Đã lưu độ khó thành công",
+    "save_error": "Lưu thất bại",
+    "no_change": "Không có thay đổi"
   }
+
 }
