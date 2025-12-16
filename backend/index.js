@@ -25,7 +25,7 @@ const dashboardRoutes = require('./src/routes/dashboard.routes');
 const chatRoutes = require('./src/routes/chat.routes');
 const roomBookingRoutes = require('./src/routes/room-booking.routes');
 const settingsRoutes = require('./src/routes/settings.routes');
-const anomalyRoutes = require('./src/routes/anomaly.routes');
+// const anomalyRoutes = require('./src/routes/anomaly.routes'); // Commented out - file does not exist
 const mediaRoutes = require('./src/routes/media.routes');
 const emailRoutes = require('./src/routes/email.routes');
 
@@ -202,7 +202,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/room-bookings', roomBookingRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/anomalies', anomalyRoutes);
+// app.use('/api/anomalies', anomalyRoutes); // Commented out - file does not exist
 app.use('/api/media', mediaRoutes);
 app.use('/api/email', emailRoutes);
 
