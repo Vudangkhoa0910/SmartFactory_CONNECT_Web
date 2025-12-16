@@ -8,29 +8,33 @@ const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const getDepartments = asyncHandler(async (req, res) => {
   const { pagination, sort } = req;
   const { parent_id } = req.query;
-  
+
   let whereClause = '';
   const params = [];
-  
+
   if (parent_id) {
     whereClause = 'WHERE d.parent_id = $1';
     params.push(parent_id);
   } else if (parent_id === 'null') {
     whereClause = 'WHERE d.parent_id IS NULL';
   }
-  
+
   // Get total count
   const countQuery = `SELECT COUNT(*) FROM departments d ${whereClause}`;
   const countResult = await db.query(countQuery, params);
   const totalItems = parseInt(countResult.rows[0].count);
-  
-  // Get departments
+
+  // Department names are treated as proper nouns / master-data and are not translated.
   const query = `
     SELECT 
       d.id,
       d.code,
-      d.name,
-      d.description,
+      d.name as name,
+      d.description as description,
+      d.name as name_vi,
+      NULL as name_ja,
+      d.description as description_vi,
+      NULL as description_ja,
       d.parent_id,
       d.manager_id,
       d.is_active,
@@ -46,11 +50,11 @@ const getDepartments = asyncHandler(async (req, res) => {
     ORDER BY ${sort.sortBy} ${sort.sortOrder}
     LIMIT $${params.length + 1} OFFSET $${params.length + 2}
   `;
-  
+
   params.push(pagination.limit, pagination.offset);
-  
+
   const result = await db.query(query, params);
-  
+
   res.json({
     success: true,
     data: result.rows,
@@ -85,10 +89,10 @@ const getDepartmentTree = asyncHandler(async (req, res) => {
     WHERE d.is_active = true
     ORDER BY d.name
   `;
-  
+
   const result = await db.query(query);
   const departments = result.rows;
-  
+
   // Build tree structure
   const buildTree = (parentId = null) => {
     return departments
@@ -98,9 +102,9 @@ const getDepartmentTree = asyncHandler(async (req, res) => {
         children: buildTree(dept.id)
       }));
   };
-  
+
   const tree = buildTree(null);
-  
+
   res.json({
     success: true,
     data: tree
@@ -113,7 +117,7 @@ const getDepartmentTree = asyncHandler(async (req, res) => {
  */
 const getDepartmentById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   const query = `
     SELECT 
       d.id,
@@ -135,25 +139,25 @@ const getDepartmentById = asyncHandler(async (req, res) => {
     LEFT JOIN users u ON d.manager_id = u.id
     WHERE d.id = $1
   `;
-  
+
   const result = await db.query(query, [id]);
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Department not found', 404);
   }
-  
+
   const department = result.rows[0];
-  
+
   // Get child departments
   const childrenQuery = `
     SELECT id, code, name
     FROM departments
     WHERE parent_id = $1 AND is_active = true
   `;
-  
+
   const childrenResult = await db.query(childrenQuery, [id]);
   department.children = childrenResult.rows;
-  
+
   res.json({
     success: true,
     data: department
@@ -166,47 +170,47 @@ const getDepartmentById = asyncHandler(async (req, res) => {
  */
 const createDepartment = asyncHandler(async (req, res) => {
   const { code, name, description, parent_id, manager_id } = req.body;
-  
+
   // Check if code already exists
   const existingDept = await db.query(
     'SELECT id FROM departments WHERE code = $1',
     [code]
   );
-  
+
   if (existingDept.rows.length > 0) {
     throw new AppError('Department code already exists', 409);
   }
-  
+
   // Verify parent department if provided
   if (parent_id) {
     const parent = await db.query(
       'SELECT id FROM departments WHERE id = $1',
       [parent_id]
     );
-    
+
     if (parent.rows.length === 0) {
       throw new AppError('Parent department not found', 404);
     }
   }
-  
+
   // Verify manager if provided
   if (manager_id) {
     const manager = await db.query(
       'SELECT id FROM users WHERE id = $1',
       [manager_id]
     );
-    
+
     if (manager.rows.length === 0) {
       throw new AppError('Manager not found', 404);
     }
   }
-  
+
   const query = `
     INSERT INTO departments (code, name, description, parent_id, manager_id, is_active)
     VALUES ($1, $2, $3, $4, $5, true)
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [
     code,
     name,
@@ -214,7 +218,7 @@ const createDepartment = asyncHandler(async (req, res) => {
     parent_id || null,
     manager_id || null
   ]);
-  
+
   res.status(201).json({
     success: true,
     message: 'Department created successfully',
@@ -229,55 +233,55 @@ const createDepartment = asyncHandler(async (req, res) => {
 const updateDepartment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { code, name, description, parent_id, manager_id, is_active } = req.body;
-  
+
   // Check if department exists
   const dept = await db.query('SELECT * FROM departments WHERE id = $1', [id]);
-  
+
   if (dept.rows.length === 0) {
     throw new AppError('Department not found', 404);
   }
-  
+
   // Check if code is already taken by another department
   if (code) {
     const existingDept = await db.query(
       'SELECT id FROM departments WHERE code = $1 AND id != $2',
       [code, id]
     );
-    
+
     if (existingDept.rows.length > 0) {
       throw new AppError('Department code already exists', 409);
     }
   }
-  
+
   // Prevent circular reference in parent_id
   if (parent_id === id) {
     throw new AppError('Department cannot be its own parent', 400);
   }
-  
+
   // Verify parent department if provided
   if (parent_id) {
     const parent = await db.query(
       'SELECT id FROM departments WHERE id = $1',
       [parent_id]
     );
-    
+
     if (parent.rows.length === 0) {
       throw new AppError('Parent department not found', 404);
     }
   }
-  
+
   // Verify manager if provided
   if (manager_id) {
     const manager = await db.query(
       'SELECT id FROM users WHERE id = $1',
       [manager_id]
     );
-    
+
     if (manager.rows.length === 0) {
       throw new AppError('Manager not found', 404);
     }
   }
-  
+
   const query = `
     UPDATE departments
     SET 
@@ -291,7 +295,7 @@ const updateDepartment = asyncHandler(async (req, res) => {
     WHERE id = $7
     RETURNING *
   `;
-  
+
   const result = await db.query(query, [
     code,
     name,
@@ -301,7 +305,7 @@ const updateDepartment = asyncHandler(async (req, res) => {
     is_active,
     id
   ]);
-  
+
   res.json({
     success: true,
     message: 'Department updated successfully',
@@ -315,40 +319,40 @@ const updateDepartment = asyncHandler(async (req, res) => {
  */
 const deleteDepartment = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   // Check if department exists
   const dept = await db.query('SELECT * FROM departments WHERE id = $1', [id]);
-  
+
   if (dept.rows.length === 0) {
     throw new AppError('Department not found', 404);
   }
-  
+
   // Check if department has employees
   const employees = await db.query(
     'SELECT COUNT(*) FROM users WHERE department_id = $1',
     [id]
   );
-  
+
   if (parseInt(employees.rows[0].count) > 0) {
     throw new AppError('Cannot delete department with employees', 400);
   }
-  
+
   // Check if department has child departments
   const children = await db.query(
     'SELECT COUNT(*) FROM departments WHERE parent_id = $1',
     [id]
   );
-  
+
   if (parseInt(children.rows[0].count) > 0) {
     throw new AppError('Cannot delete department with child departments', 400);
   }
-  
+
   // Soft delete
   await db.query(
     'UPDATE departments SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
     [id]
   );
-  
+
   res.json({
     success: true,
     message: 'Department deleted successfully'
@@ -361,14 +365,14 @@ const deleteDepartment = asyncHandler(async (req, res) => {
  */
 const getDepartmentEmployees = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   // Check if department exists
   const dept = await db.query('SELECT * FROM departments WHERE id = $1', [id]);
-  
+
   if (dept.rows.length === 0) {
     throw new AppError('Department not found', 404);
   }
-  
+
   const query = `
     SELECT 
       id,
@@ -385,9 +389,9 @@ const getDepartmentEmployees = asyncHandler(async (req, res) => {
     WHERE department_id = $1
     ORDER BY full_name
   `;
-  
+
   const result = await db.query(query, [id]);
-  
+
   res.json({
     success: true,
     data: result.rows

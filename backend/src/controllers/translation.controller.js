@@ -1,6 +1,5 @@
 const TranslationService = require('../services/translation.service');
 const { asyncHandler, AppError } = require('../middlewares/error.middleware');
-const db = require('../config/database');
 
 /**
  * Get all static translations for a language
@@ -12,35 +11,16 @@ const getTranslationsByLanguage = asyncHandler(async (req, res) => {
   if (!['vi', 'ja'].includes(lang)) {
     throw new AppError('Invalid language. Supported: vi, ja', 400);
   }
-  
-  // Try to get from database first
-  try {
-    const query = 'SELECT key, vi, ja FROM translations';
-    const result = await db.query(query);
-    
-    const translations = {};
-    result.rows.forEach(row => {
-      translations[row.key] = lang === 'ja' ? row.ja : row.vi;
-    });
-    
-    res.json({
-      success: true,
-      data: translations,
-      count: Object.keys(translations).length
-    });
-    
-  } catch (error) {
-    // Fallback to mock translations if database not ready
-    console.warn('Database translations not available, using mock data');
-    const translations = TranslationService.getAllStaticTranslations(lang);
-    
-    res.json({
-      success: true,
-      data: translations,
-      count: Object.keys(translations).length,
-      source: 'mock'
-    });
-  }
+
+  // Static UI translations are served from code (not database)
+  const translations = TranslationService.getAllStaticTranslations(lang);
+
+  res.json({
+    success: true,
+    data: translations,
+    count: Object.keys(translations).length,
+    source: 'code'
+  });
 });
 
 /**
