@@ -165,8 +165,8 @@ class EmailService {
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <!-- Header -->
                     <tr>
-                        <td style="padding: 30px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">🔔 ${t.header}</h1>
+                        <td style="padding: 30px 40px; background-color: #dc2626; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">${t.header}</h1>
                         </td>
                     </tr>
                     
@@ -227,6 +227,7 @@ class EmailService {
                     <tr>
                         <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; text-align: center;">
                             <p style="margin: 0; color: #9ca3af; font-size: 12px;">${t.footer}</p>
+                            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 11px;">Đây là email tự động, vui lòng không trả lời.</p>
                         </td>
                     </tr>
                 </table>
@@ -286,7 +287,7 @@ class EmailService {
         const priorityBadge = news.is_priority ? `
             <div style="margin-bottom: 16px;">
                 <span style="display: inline-block; padding: 4px 12px; background-color: #dc2626; color: #ffffff; border-radius: 4px; font-size: 12px; font-weight: bold;">
-                    ⭐ ${language === 'ja' ? '重要' : 'Quan trọng'}
+                    ${language === 'ja' ? '重要' : 'QUAN TRỌNG'}
                 </span>
             </div>
         ` : '';
@@ -306,8 +307,8 @@ class EmailService {
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <!-- Header -->
                     <tr>
-                        <td style="padding: 30px 40px; background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); border-radius: 8px 8px 0 0;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">📰 ${t.header}</h1>
+                        <td style="padding: 30px 40px; background-color: #0ea5e9; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">${t.header}</h1>
                         </td>
                     </tr>
                     
@@ -322,7 +323,7 @@ class EmailService {
                             <!-- Meta Info -->
                             <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #e5e7eb;">
                                 <span style="display: inline-block; margin-right: 16px; color: #6b7280; font-size: 14px;">
-                                    📁 ${t.category}: <strong>${categoryLabel}</strong>
+                                    ${t.category}: <strong>${categoryLabel}</strong>
                                 </span>
                             </div>
                             
@@ -347,6 +348,7 @@ class EmailService {
                     <tr>
                         <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; text-align: center;">
                             <p style="margin: 0; color: #9ca3af; font-size: 12px;">${t.footer}</p>
+                            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 11px;">Đây là email tự động, vui lòng không trả lời.</p>
                         </td>
                     </tr>
                 </table>
@@ -397,7 +399,7 @@ class EmailService {
                 const msg = {
                     to: recipientsByLanguage.vi.map(r => r.email),
                     from: fromEmail,
-                    subject: `🔴 Thông báo sự cố mới: ${incident.title || 'Cần xử lý'}`,
+                    subject: `Thông báo sự cố mới: ${incident.title || 'Cần xử lý'}`,
                     html: html
                 };
                 emailPromises.push(sgMail.send(msg));
@@ -409,7 +411,7 @@ class EmailService {
                 const msg = {
                     to: recipientsByLanguage.ja.map(r => r.email),
                     from: fromEmail,
-                    subject: `🔴 新規インシデント通知: ${incident.title_ja || incident.title || '処理が必要'}`,
+                    subject: `新規インシデント通知: ${incident.title_ja || incident.title || '処理が必要'}`,
                     html: html
                 };
                 emailPromises.push(sgMail.send(msg));
@@ -488,11 +490,10 @@ class EmailService {
             // Send Vietnamese emails
             if (recipientsByLanguage.vi.length > 0) {
                 const html = this.generateNewsEmailHTML(news, 'vi');
-                const priorityPrefix = news.is_priority ? '⭐ ' : '';
                 const msg = {
                     to: recipientsByLanguage.vi.map(r => r.email),
                     from: fromEmail,
-                    subject: `${priorityPrefix}📰 Tin mới: ${news.title}`,
+                    subject: `${news.is_priority ? '[QUAN TRỌNG] ' : ''}Tin mới: ${news.title}`,
                     html: html
                 };
                 emailPromises.push(sgMail.send(msg));
@@ -501,11 +502,10 @@ class EmailService {
             // Send Japanese emails
             if (recipientsByLanguage.ja.length > 0) {
                 const html = this.generateNewsEmailHTML(news, 'ja');
-                const priorityPrefix = news.is_priority ? '⭐ ' : '';
                 const msg = {
                     to: recipientsByLanguage.ja.map(r => r.email),
                     from: fromEmail,
-                    subject: `${priorityPrefix}📰 新着ニュース: ${news.title_ja || news.title}`,
+                    subject: `${news.is_priority ? '[重要] ' : ''}新着ニュース: ${news.title_ja || news.title}`,
                     html: html
                 };
                 emailPromises.push(sgMail.send(msg));

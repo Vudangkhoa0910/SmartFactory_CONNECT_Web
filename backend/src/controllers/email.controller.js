@@ -33,15 +33,15 @@ const sendTestEmail = asyncHandler(async (req, res) => {
         text: message || 'This is a test email.',
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                    <h2 style="margin: 0;">📧 ${subject || 'Test Email'}</h2>
+                <div style="background-color: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0;">${subject || 'Thông báo từ SmartFactory CONNECT'}</h2>
                 </div>
                 <div style="background: white; padding: 30px; border: 1px solid #e5e7eb;">
-                    <p style="color: #374151; line-height: 1.6;">${message || 'This is a test email from SmartFactory CONNECT.'}</p>
-                    <p style="color: #9ca3af; font-size: 12px; margin-top: 30px;">Sent by: ${req.user.full_name || req.user.email}</p>
+                    <p style="color: #374151; line-height: 1.6;">${message || 'Đây là email thông báo từ hệ thống SmartFactory CONNECT.'}</p>
+                    <p style="color: #9ca3af; font-size: 12px; margin-top: 30px;">Gửi bởi: ${req.user.full_name || req.user.email}</p>
                 </div>
                 <div style="background: #f9fafb; padding: 15px; text-align: center; color: #9ca3af; font-size: 12px; border-radius: 0 0 8px 8px;">
-                    SmartFactory CONNECT - Email System
+                    SmartFactory CONNECT - Hệ thống Email
                 </div>
             </div>
         `

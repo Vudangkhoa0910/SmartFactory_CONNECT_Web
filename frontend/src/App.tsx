@@ -38,6 +38,7 @@ import RoomBookingPage from "./pages/RoomBookingPage";
 import AdminApprovalPage from "./pages/AdminApprovalPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import LargeChatPage from "./pages/Chat/LargeChatPage";
+import EmailManagementPage from "./pages/Settings/EmailManagementPage";
 
 export default function App() {
   return (
@@ -112,31 +113,41 @@ export default function App() {
             {/* Room Booking */}
             <Route path="/room-booking" element={<RoomBookingPage />} />
             <Route path="/my-bookings" element={<MyBookingsPage />} />
-            <Route 
-              path="/admin/booking-approval" 
+            <Route
+              path="/admin/booking-approval"
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminApprovalPage />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             {/* User Management - Admin Only */}
-            <Route 
-              path="/users" 
+            <Route
+              path="/users"
               element={
                 <ProtectedRoute requireAdmin>
                   <UserList />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/departments" 
+            <Route
+              path="/departments"
               element={
                 <ProtectedRoute requireAdmin>
                   <DepartmentList />
                 </ProtectedRoute>
-              } 
+              }
+            />
+
+            {/* Email Management - Admin Only */}
+            <Route
+              path="/settings/email"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <EmailManagementPage />
+                </ProtectedRoute>
+              }
             />
 
             {/* Others Page */}
