@@ -5,7 +5,7 @@ import api from "../../services/api";
 import UserAvatar from "../../components/common/UserAvatar";
 import PageBreadCrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
-import { ChevronDown, ChevronUp, Users, Crown } from "lucide-react";
+import { ChevronDown, ChevronUp, Users, Crown, Pencil, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface User {
@@ -72,6 +72,9 @@ export default function UserManagement() {
     role: "operator",
     department_id: ""
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!canManageUsers()) {
@@ -208,6 +211,7 @@ export default function UserManagement() {
 
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
+    setSubmitting(true);
     try {
       await api.put(`/users/${selectedUser.id}`, {
         full_name: editUser.full_name,
@@ -223,6 +227,32 @@ export default function UserManagement() {
     } catch (error: any) {
       console.error("Failed to update user:", error);
       toast.error(error.response?.data?.message || t('message.update_error'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setDeletingUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return;
+    setSubmitting(true);
+    try {
+      await api.delete(`/users/${deletingUser.id}`);
+      toast.success(t('message.delete_success'));
+      setShowDeleteModal(false);
+      setDeletingUser(null);
+      setShowEditModal(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Failed to delete user:", error);
+      toast.error(error.response?.data?.message || t('message.delete_error'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -401,16 +431,7 @@ export default function UserManagement() {
                               </div>
 
                               {/* Actions */}
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <button
-                                  onClick={() =>
-                                    toggleUserStatus(user.id, user.is_active)
-                                  }
-                                  className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline"
-                                >
-                                  {user.is_active ? t('status.inactive') : t('status.active')}
-                                </button>
-                                <span className="text-gray-300 dark:text-gray-600">|</span>
+                              <div className="flex items-center gap-1 flex-shrink-0">
                                 <button
                                   onClick={() => {
                                     setSelectedUser(user);
@@ -423,9 +444,19 @@ export default function UserManagement() {
                                     });
                                     setShowEditModal(true);
                                   }}
-                                  className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:underline"
+                                  className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20"
+                                  title={t('button.edit')}
                                 >
-                                  Chỉnh sửa
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  onClick={() => toggleUserStatus(user.id, user.is_active)}
+                                  className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${user.is_active
+                                    ? 'text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20'
+                                    : 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
+                                    }`}
+                                >
+                                  {user.is_active ? t('button.deactivate') : t('button.activate')}
                                 </button>
                               </div>
                             </div>
@@ -648,28 +679,80 @@ export default function UserManagement() {
                       </select>
                     </div>
                   </div>
-                  <div className="flex gap-3 mt-6">
+                  <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
+                    {/* Delete button */}
                     <button
                       onClick={() => {
                         setShowEditModal(false);
-                        setSelectedUser(null);
+                        handleDeleteClick(selectedUser);
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                      className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
                     >
-                      Hủy
+                      <Trash2 size={16} />
+                      {t('button.delete')}
                     </button>
-                    <button
-                      onClick={handleUpdateUser}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-                    >
-                      Cập nhật
-                    </button>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setSelectedUser(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                      >
+                        {t('button.cancel')}
+                      </button>
+                      <button
+                        onClick={handleUpdateUser}
+                        disabled={submitting}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? t('button.saving') : t('button.update')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           )
         }
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && deletingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-md mx-4">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white mb-2">
+                  {t('user.delete_confirm')}
+                </h3>
+                <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-6">
+                  {t('user.delete_warning')} <strong>{deletingUser.full_name}</strong>?
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeletingUser(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                  >
+                    {t('button.cancel')}
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    disabled={submitting}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? t('button.deleting') : t('button.delete')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div >
     </>
   );

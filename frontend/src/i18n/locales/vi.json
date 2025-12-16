@@ -5,9 +5,8 @@
     "platform": "SmartFactory CONNECT Web Platform"
   },
   "card": {
-    "t1" : "so với tuần trước"
+    "t1": "so với tuần trước"
   },
-  
   "menu": {
     "dashboard": "Tổng quan",
     "overview": "Tổng quan",
@@ -36,7 +35,6 @@
     "queue": "Hàng đợi",
     "chat_assistant": "Trợ lý AI"
   },
-
   "calendarf": {
     "today": "Hôm nay",
     "month": "Tháng",
@@ -80,9 +78,12 @@
     "clear": "Xóa",
     "apply": "Áp dụng",
     "select_all": "Chọn tất cả",
-    "deselect_all": "Bỏ chọn tất cả"
+    "deselect_all": "Bỏ chọn tất cả",
+    "activate": "Kích hoạt",
+    "deactivate": "Vô hiệu hóa",
+    "saving": "Đang lưu...",
+    "deleting": "Đang xóa..."
   },
-
   "status": {
     "confirmed": "Đã duyệt",
     "pending": "Đang chờ",
@@ -101,7 +102,6 @@
     "new": "Mới",
     "completed": "Hoàn thành"
   },
-
   "priority": {
     "low": "Thấp",
     "normal": "Bình thường",
@@ -109,7 +109,6 @@
     "high": "Cao",
     "critical": "Khẩn cấp"
   },
-
   "incident": {
     "title": "Quản lý sự cố",
     "create": "Tạo sự cố mới",
@@ -131,7 +130,6 @@
       "other": "Khác"
     }
   },
-
   "idea": {
     "title": "Quản lý ý kiến",
     "create": "Tạo ý kiến",
@@ -155,8 +153,7 @@
     "chat_placeholder": "Nhập phản hồi...",
     "discussion": "Trao đổi"
   },
-
-   "news": {
+  "news": {
     "post_button": "Đăng tin tức",
     "title": "Quản lý tin tức",
     "create": "Tạo tin tức",
@@ -192,9 +189,6 @@
     "published_history": "Lịch sử tin tức đã đăng",
     "description": "Quản lý tin tức công ty"
   },
-
-
-
   "user": {
     "title": "Quản lý người dùng",
     "list": "Danh sách người dùng",
@@ -206,9 +200,10 @@
     "phone": "Số điện thoại",
     "role": "Vai trò",
     "department": "Phòng ban",
-    "employee_id": "Mã nhân viên"
+    "employee_id": "Mã nhân viên",
+    "delete_confirm": "Xác nhận xóa người dùng",
+    "delete_warning": "Bạn có chắc chắn muốn xóa người dùng"
   },
-
   "label": {
     "title": "Tiêu đề",
     "description": "Mô tả",
@@ -236,7 +231,6 @@
     "summary": "Tóm tắt",
     "image": "Hình ảnh"
   },
-
   "message": {
     "success": "Thành công",
     "error": "Lỗi",
@@ -262,7 +256,6 @@
     "invalid_phone": "Số điện thoại không hợp lệ",
     "welcome": "Chào mừng"
   },
-
   "auth": {
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
@@ -285,7 +278,6 @@
     "no_web_access": "Tài khoản này không có quyền truy cập web",
     "login_failed": "Đăng nhập thất bại. Vui lòng kiểm tra thông tin xác thực."
   },
-
   "dashboard": {
     "title": "Tổng quan",
     "welcome": "Chào mừng",
@@ -315,7 +307,6 @@
     "book_room": "Đặt phòng họp",
     "view_news": "Xem tin tức"
   },
-
   "table": {
     "showing": "Hiển thị",
     "of": "trong",
@@ -327,7 +318,6 @@
     "page": "Trang",
     "rows_per_page": "Số dòng/trang"
   },
-
   "search": {
     "placeholder": "Tìm kiếm...",
     "no_results": "Không tìm thấy kết quả",
@@ -336,7 +326,6 @@
     "search_ideas": "Tìm kiếm ý kiến...",
     "search_users": "Tìm kiếm người dùng..."
   },
-
   "notification": {
     "title": "Thông báo",
     "mark_all_read": "Đánh dấu tất cả đã đọc",
@@ -344,7 +333,6 @@
     "view_all": "Xem tất cả thông báo",
     "new": "Thông báo mới"
   },
-
   "error": {
     "page_not_found": "Không tìm thấy trang",
     "access_denied": "Truy cập bị từ chối",
@@ -356,7 +344,6 @@
     "occurred": "Đã xảy ra lỗi",
     "no_load_data": "Không tải được dữ liệu"
   },
-
   "date": {
     "today": "Hôm nay",
     "yesterday": "Hôm qua",
@@ -367,7 +354,6 @@
     "last_week": "Tuần trước",
     "last_month": "Tháng trước"
   },
-
   "time": {
     "hours_ago": "giờ trước",
     "minutes_ago": "phút trước",
@@ -375,7 +361,6 @@
     "just_now": "Vừa xong",
     "days_ago": "ngày trước"
   },
-
   "common": {
     "yes": "Có",
     "no": "Không",
@@ -388,17 +373,14 @@
     "no_activities": "Không có hoạt động",
     "no_department_data": "Không có dữ liệu phòng ban"
   },
-
   "sidebar": {
     "error_report": "Báo cáo lỗi",
     "feedback": "Phản hồi",
     "storage": "Lưu trữ"
   },
-
   "footer": {
     "copyright": "© 2025 - SmartFactory CONNECT"
   },
-
   "role": {
     "admin": "Quản trị viên",
     "factory_manager": "Giám đốc nhà máy",
@@ -412,7 +394,6 @@
     "maintenance_staff": "Nhân viên bảo trì",
     "viewer": "Người xem"
   },
-
   "department": {
     "title": "Quản lý phòng ban",
     "list": "Danh sách phòng ban",
@@ -425,9 +406,12 @@
     "parent": "Phòng ban cha",
     "no_department": "Chưa có phòng ban",
     "employee_count": "Số nhân viên",
-    "all_departments": "Tất cả phòng ban"
+    "all_departments": "Tất cả phòng ban",
+    "delete_confirm": "Xác nhận xóa phòng ban",
+    "delete_warning": "Bạn có chắc chắn muốn xóa phòng ban",
+    "activated": "Đã kích hoạt phòng ban",
+    "deactivated": "Đã vô hiệu hóa phòng ban"
   },
-
   "calendar": {
     "title": "Lịch",
     "event": "Sự kiện",
@@ -453,7 +437,6 @@
       "other": "Khác"
     }
   },
-
   "profile": {
     "title": "Hồ sơ",
     "user_profile": "Hồ sơ người dùng",
@@ -474,7 +457,6 @@
     "edit_address": "Sửa địa chỉ",
     "update_details_desc": "Cập nhật thông tin chi tiết để giữ hồ sơ của bạn luôn mới nhất."
   },
-
   "filter": {
     "all_roles": "Tất cả vai trò",
     "all_departments": "Tất cả phòng ban",
@@ -482,7 +464,6 @@
     "all_priorities": "Tất cả mức độ",
     "search_placeholder": "Tìm kiếm theo tên, email hoặc mã nhân viên..."
   },
-
   "page": {
     "user_management": "Quản lý người dùng",
     "department_management": "Quản lý phòng ban",
@@ -502,7 +483,7 @@
     "my_bookings": "Đặt phòng của tôi",
     "approval": "Phê duyệt đặt phòng",
     "approver": "Người phê duyệt",
-     "attendees": "Người tham dự",
+    "attendees": "Người tham dự",
     "purpose": "Mục đích",
     "notes": "Ghi chú",
     "date": "Ngày",
@@ -729,7 +710,7 @@
     "resolve_failed": "Xử lý thất bại",
     "resolved_via_command_room": "Đã xử lý qua Phòng Điều Hành",
     "location": "Vị trí",
-    "table":{
+    "table": {
       "title": "Tiêu đề",
       "priority": "Mức độ ưu tiên",
       "status": "Trạng thái",
@@ -841,15 +822,15 @@
       "energy_saving": "Tiết kiệm năng lượng",
       "environment": "Môi trường",
       "other": "Khác"
-  }
+    }
   },
-  "header":{
-    "search":"Tìm kiếm nhanh ..."
+  "header": {
+    "search": "Tìm kiếm nhanh ..."
   },
-  "sidebart":{
-    "menu":"Menu",
-    "error_report":"Báo cáo sự cố",
-    "feedback":"Hòm thư góp ý"
+  "sidebart": {
+    "menu": "Menu",
+    "error_report": "Báo cáo sự cố",
+    "feedback": "Hòm thư góp ý"
   },
   "chat": {
     "welcome_message": "Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?",

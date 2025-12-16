@@ -4,11 +4,9 @@
     "tagline": "スマートファクトリー管理システム",
     "platform": "SmartFactory CONNECT Web Platform"
   },
-
-   "card": {
-    "t1" : "先週と比較して"
+  "card": {
+    "t1": "先週と比較して"
   },
-  
   "menu": {
     "dashboard": "ダッシュボード",
     "overview": "概要",
@@ -37,7 +35,6 @@
     "queue": "キュー",
     "chat_assistant": "AIアシスタント"
   },
-
   "calendarf": {
     "today": "今日",
     "month": "月",
@@ -80,9 +77,12 @@
     "apply": "適用",
     "select_all": "すべて選択",
     "deselect_all": "選択解除",
-    "book": "予約する"
+    "book": "予約する",
+    "activate": "有効化",
+    "deactivate": "無効化",
+    "saving": "保存中...",
+    "deleting": "削除中..."
   },
-
   "status": {
     "confirmed": "承認済み",
     "pending": "保留中",
@@ -101,7 +101,6 @@
     "new": "新規",
     "completed": "完了"
   },
-
   "priority": {
     "low": "低",
     "normal": "通常",
@@ -109,7 +108,6 @@
     "high": "高",
     "critical": "緊急"
   },
-
   "incident": {
     "title": "インシデント管理",
     "create": "新規インシデント作成",
@@ -131,7 +129,6 @@
       "other": "その他"
     }
   },
-
   "idea": {
     "title": "提案管理",
     "create": "提案を作成",
@@ -155,9 +152,6 @@
     "chat_placeholder": "返信を入力...",
     "discussion": "ディスカッション"
   },
-
- 
-
   "news": {
     "post_button": "ニュース投稿",
     "title": "ニュース",
@@ -194,7 +188,6 @@
     "published_history": "投稿済みニュース履歴",
     "description": "会社ニュース管理"
   },
-
   "user": {
     "title": "ユーザー管理",
     "list": "ユーザー一覧",
@@ -206,9 +199,10 @@
     "phone": "電話番号",
     "role": "役割",
     "department": "部門",
-    "employee_id": "社員番号"
+    "employee_id": "社員番号",
+    "delete_confirm": "ユーザー削除の確認",
+    "delete_warning": "本当にこのユーザーを削除しますか"
   },
-
   "label": {
     "title": "タイトル",
     "description": "説明",
@@ -236,7 +230,6 @@
     "summary": "概要",
     "image": "画像"
   },
-
   "message": {
     "success": "成功",
     "error": "エラー",
@@ -262,7 +255,6 @@
     "invalid_phone": "無効な電話番号",
     "welcome": "ようこそ"
   },
-
   "auth": {
     "login": "ログイン",
     "logout": "ログアウト",
@@ -285,7 +277,6 @@
     "no_web_access": "このアカウントにはWebアクセス権限がありません",
     "login_failed": "ログインに失敗しました。認証情報を確認してください。"
   },
-
   "dashboard": {
     "title": "ダッシュボード",
     "welcome": "ようこそ",
@@ -315,7 +306,6 @@
     "book_room": "会議室予約",
     "view_news": "ニュース表示"
   },
-
   "table": {
     "showing": "表示",
     "of": "/",
@@ -327,7 +317,6 @@
     "page": "ページ",
     "rows_per_page": "表示件数"
   },
-
   "search": {
     "placeholder": "検索...",
     "no_results": "結果が見つかりません",
@@ -336,7 +325,6 @@
     "search_ideas": "提案を検索...",
     "search_users": "ユーザーを検索..."
   },
-
   "notification": {
     "title": "通知",
     "mark_all_read": "すべて既読にする",
@@ -344,7 +332,6 @@
     "view_all": "すべての通知を表示",
     "new": "新しい通知"
   },
-
   "error": {
     "page_not_found": "ページが見つかりません",
     "access_denied": "アクセスが拒否されました",
@@ -356,7 +343,6 @@
     "occurred": "エラーが発生しました",
     "no_load_data": "データを読み込めませんでした"
   },
-
   "date": {
     "today": "今日",
     "yesterday": "昨日",
@@ -367,7 +353,6 @@
     "last_week": "先週",
     "last_month": "先月"
   },
-
   "time": {
     "hours_ago": "時間前",
     "minutes_ago": "分前",
@@ -375,7 +360,6 @@
     "just_now": "たった今",
     "days_ago": "日前"
   },
-
   "common": {
     "yes": "はい",
     "no": "いいえ",
@@ -388,17 +372,14 @@
     "no_activities": "アクティビティがありません",
     "no_department_data": "部門データがありません"
   },
-
   "sidebar": {
     "error_report": "エラー報告",
     "feedback": "フィードバック",
     "storage": "ストレージ"
   },
-
   "footer": {
     "copyright": "© 2025 - SmartFactory CONNECT"
   },
-
   "role": {
     "admin": "管理者",
     "factory_manager": "工場長",
@@ -412,7 +393,6 @@
     "maintenance_staff": "保全スタッフ",
     "viewer": "閲覧者"
   },
-
   "department": {
     "title": "部門管理",
     "list": "部門一覧",
@@ -425,9 +405,12 @@
     "parent": "親部門",
     "no_department": "部署なし",
     "employee_count": "従業員数",
-    "all_departments": "全部門"
+    "all_departments": "全部門",
+    "delete_confirm": "部門削除の確認",
+    "delete_warning": "本当にこの部門を削除しますか",
+    "activated": "部門を有効化しました",
+    "deactivated": "部門を無効化しました"
   },
-
   "calendar": {
     "title": "カレンダー",
     "event": "イベント",
@@ -453,7 +436,6 @@
       "other": "その他"
     }
   },
-
   "profile": {
     "title": "プロフィール",
     "user_profile": "ユーザープロフィール",
@@ -474,7 +456,6 @@
     "edit_address": "住所編集",
     "update_details_desc": "詳細を更新してプロフィールを最新の状態に保ちます。"
   },
-
   "filter": {
     "all_roles": "全役割",
     "all_departments": "全部門",
@@ -482,7 +463,6 @@
     "all_priorities": "全優先度",
     "search_placeholder": "氏名、メールアドレス、社員番号で検索..."
   },
-
   "page": {
     "user_management": "ユーザー管理",
     "department_management": "部門管理",
@@ -499,7 +479,7 @@
     "attendees_unit": "人",
     "title": "会議室予約",
     "create_new": "会議室予約",
-        "create": "新規予約",
+    "create": "新規予約",
     "my_bookings": "自分の予約",
     "approval": "予約承認",
     "approver": "承認者",
@@ -511,7 +491,7 @@
     "description": "柔軟な時間枠で会議室を予約",
     "my_bookings_desc": "予約の閲覧・管理",
     "load_error": "予約一覧の読み込みに失敗しました",
-      "room": "会議室",
+    "room": "会議室",
     "date": "日付",
     "time": "時間",
     "start_time": "開始時刻",
@@ -730,7 +710,7 @@
     "resolve_failed": "処理に失敗しました",
     "resolved_via_command_room": "指令室経由で解決済み",
     "location": "場所",
-    "table":{
+    "table": {
       "title": "タイトル",
       "priority": "優先度",
       "status": "ステータス",
@@ -800,7 +780,7 @@
   },
   "feedback_dashboard": {
     "no_data": "フィードバックデータがありません",
-    "error_loading" : "データを読み込めません",
+    "error_loading": "データを読み込めません",
     "title": "提案統計 | SmartFactory CONNECT",
     "description": "提案の統計と分析の概要ページ。",
     "loading": "統計を読み込み中...",
@@ -835,7 +815,7 @@
       "hard": "難しい",
       "very_hard": "非常に難しい"
     },
-    "tags":{
+    "tags": {
       "quality": "品質",
       "performance": "パフォーマンス",
       "safety": "安全",
@@ -845,13 +825,13 @@
       "other": "その他"
     }
   },
-  "header" : {
+  "header": {
     "search": "クイック検索..."
   },
-  "sidebart":{
-    "menu":"メニュー",
-    "error_report":"インシデント報告",
-    "feedback":"フィードバックボックス"
+  "sidebart": {
+    "menu": "メニュー",
+    "error_report": "インシデント報告",
+    "feedback": "フィードバックボックス"
   },
   "chat": {
     "welcome_message": "こんにちは！SmartFactory AIアシスタントです。今日はどのようなお手伝いができますか？",
@@ -864,7 +844,6 @@
     "quick_news": "新着通知を見る",
     "quick_booking": "会議室を予約する",
     "input_placeholder": "メッセージを入力..."
-    
   },
   "help": {
     "menu_title": "チャットボットの使い方\n\n詳細な手順を表示するには、以下のトピックを選択してください：",
