@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { PublicIdea, DifficultyLevel } from "./types";
-import { IdeaHistory } from "./IdeaHistory";
+import { IdeaList, IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
 import { Check, X, ArrowUpRight, Send, Save } from "lucide-react";
 import { useTranslation } from "../../contexts/LanguageContext";
