@@ -365,6 +365,19 @@ router.get(
 );
 
 /**
+ * @route   GET /api/ideas/kaizen-bank
+ * @desc    Get archived (implemented) ideas for Kaizen Bank
+ * @access  Private
+ */
+router.get(
+  '/kaizen-bank',
+  authenticate,
+  pagination,
+  parseFilters(['category', 'ideabox_type']),
+  ideaController.getKaizenBank
+);
+
+/**
  * @route   GET /api/ideas/:id/responses
  * @desc    Get idea responses history
  * @access  Private
