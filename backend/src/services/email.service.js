@@ -525,6 +525,173 @@ class EmailService {
             return { success: false, error: error.message };
         }
     }
+
+    /**
+     * Send email notification to admin when incident is auto-assigned
+     * @param {Object} data - Auto-assign data
+     */
+    async sendAutoAssignNotificationEmail(data) {
+        if (!this.isAvailable()) {
+            console.log('[EmailService] Email service not configured, skipping auto-assign email');
+            return { success: false, reason: 'not_configured' };
+        }
+
+        try {
+            // Get admin users (level <= 2: Admin, Factory Manager)
+            const admins = await this.getEmailRecipients(2);
+
+            if (admins.length === 0) {
+                console.log('[EmailService] No admin recipients found for auto-assign notification');
+                return { success: true, recipientCount: 0 };
+            }
+
+            const fromEmail = process.env.EMAIL_FROM || 'smartfactoryconnect@gmail.com';
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+            const priorityLabels = {
+                'critical': 'Nghiêm trọng',
+                'high': 'Cao',
+                'medium': 'Trung bình',
+                'low': 'Thấp'
+            };
+
+            const typeLabels = {
+                'machine': 'Máy móc',
+                'quality': 'Chất lượng',
+                'safety': 'An toàn',
+                'environment': 'Môi trường',
+                'other': 'Khác'
+            };
+
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo gán tự động</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: Arial, sans-serif;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #dc2626; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Sự cố được gán tự động</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <!-- Title -->
+                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">${data.title || 'Sự cố mới'}</h2>
+                            
+                            <!-- Auto-assign Badge -->
+                            <div style="margin-bottom: 20px;">
+                                <span style="display: inline-block; padding: 6px 12px; background-color: #16a34a; color: #ffffff; border-radius: 4px; font-size: 14px; font-weight: bold;">
+                                    AI Auto-Assign: ${(data.confidence * 100).toFixed(0)}% độ tin cậy
+                                </span>
+                            </div>
+                            
+                            <!-- Details Table -->
+                            <table style="width: 100%; margin-bottom: 24px; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 12px; background-color: #fef2f2; border-bottom: 1px solid #fecaca; font-weight: bold; color: #991b1b; width: 35%;">
+                                        Phòng ban được gán
+                                    </td>
+                                    <td style="padding: 12px; background-color: #fef2f2; border-bottom: 1px solid #fecaca; color: #991b1b; font-weight: bold;">
+                                        ${data.department_name}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">
+                                        Loại sự cố
+                                    </td>
+                                    <td style="padding: 12px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+                                        ${typeLabels[data.incident_type] || data.incident_type || 'Khác'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">
+                                        Mức độ ưu tiên
+                                    </td>
+                                    <td style="padding: 12px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+                                        ${priorityLabels[data.priority] || data.priority || 'Trung bình'}
+                                    </td>
+                                </tr>
+                                ${data.location ? `
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">
+                                        Vị trí
+                                    </td>
+                                    <td style="padding: 12px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+                                        ${data.location}
+                                    </td>
+                                </tr>
+                                ` : ''}
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">
+                                        Người báo cáo
+                                    </td>
+                                    <td style="padding: 12px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; color: #6b7280;">
+                                        ${data.reporter_name || 'Không rõ'}
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Description -->
+                            ${data.description ? `
+                            <div style="margin-bottom: 24px;">
+                                <h3 style="margin: 0 0 12px 0; color: #374151; font-size: 16px; font-weight: bold;">Mô tả</h3>
+                                <p style="margin: 0; color: #6b7280; line-height: 1.6;">${data.description.substring(0, 500)}${data.description.length > 500 ? '...' : ''}</p>
+                            </div>
+                            ` : ''}
+                            
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin-top: 32px;">
+                                <a href="${frontendUrl}/incident-queue" 
+                                   style="display: inline-block; padding: 12px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                                    Xem hàng đợi sự cố
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">Email này được gửi tự động từ hệ thống SmartFactory CONNECT</p>
+                            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 11px;">Đây là email tự động, vui lòng không trả lời.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `;
+
+            const msg = {
+                to: admins.map(a => a.email),
+                from: fromEmail,
+                subject: `[Auto-Assign] Sự cố mới: ${data.title || 'Cần xử lý'} → ${data.department_name}`,
+                html: html
+            };
+
+            await sgMail.send(msg);
+
+            console.log(`[EmailService] Auto-assign notification sent to ${admins.length} admins`);
+            return { success: true, recipientCount: admins.length };
+
+        } catch (error) {
+            console.error('[EmailService] Error sending auto-assign email:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 // Export singleton instance
