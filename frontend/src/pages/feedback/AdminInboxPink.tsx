@@ -144,7 +144,7 @@ export default function SensitiveInboxPage() {
   const filteredMessages = messages.filter(msg =>
     msg.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     msg.fullContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    msg.senderName.toLowerCase().includes(searchTerm.toLowerCase())
+    (msg.senderName || t('feedback.anonymous')).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleForward = async (
