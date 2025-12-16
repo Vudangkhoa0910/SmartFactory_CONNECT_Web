@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const ExcelJS = require('exceljs');
 const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
+const emailService = require('../services/email.service');
 const { isAutoAssignEnabled } = require('./settings.controller');
 const { getLanguageFromRequest } = require('../utils/i18n.helper');
 const { uploadFilesToGridFS, updateFilesRelatedId } = require('../utils/media-upload.helper');
@@ -44,11 +45,23 @@ async function suggestDepartmentFromRAG(description, location = null, incident_t
     console.log('[RAG] Suggestion result:', JSON.stringify(data));
 
     if (data.success && data.suggestion) {
+      // Extract similar_incidents (limit to top 5)
+      const similarIncidents = (data.similar_incidents || []).slice(0, 5).map(inc => ({
+        id: inc.id,
+        title: inc.main_text || inc.title || '',
+        description: inc.description || '',
+        similarity: inc.similarity || 0,
+        status: inc.status || 'unknown',
+        department_name: inc.department_name || '',
+        created_at: inc.created_at
+      }));
+
       return {
         department_id: data.suggestion.department_id,
         department_name: data.suggestion.department_name,
         confidence: data.suggestion.confidence,
-        auto_assign: data.suggestion.auto_assign
+        auto_assign: data.suggestion.auto_assign,
+        similar_incidents: similarIncidents
       };
     }
     return null;
@@ -107,6 +120,38 @@ async function processRAGInBackground(incidentId, description, location, inciden
 
       const statusMsg = rag_suggestion.auto_assign ? '→ assigned' : '(suggest only)';
       console.log(`[RAG-BG] Incident ${incidentId} updated: ${rag_suggestion.department_name} (${(rag_suggestion.confidence * 100).toFixed(0)}%) ${statusMsg}`);
+
+      // Send email to admin when auto-assigned
+      if (rag_suggestion.auto_assign && emailService.isAvailable()) {
+        try {
+          // Get incident details for email
+          const incidentResult = await db.query(
+            `SELECT i.*, u.full_name as reporter_name 
+             FROM incidents i 
+             LEFT JOIN users u ON i.reporter_id = u.id 
+             WHERE i.id = $1`,
+            [incidentId]
+          );
+
+          if (incidentResult.rows.length > 0) {
+            const incident = incidentResult.rows[0];
+            await emailService.sendAutoAssignNotificationEmail({
+              incident_id: incidentId,
+              title: incident.title,
+              description: incident.description,
+              incident_type: incident.incident_type,
+              priority: incident.priority,
+              location: incident.location,
+              reporter_name: incident.reporter_name,
+              department_name: rag_suggestion.department_name,
+              confidence: rag_suggestion.confidence
+            });
+            console.log(`[RAG-BG] Auto-assign email sent for incident ${incidentId}`);
+          }
+        } catch (emailError) {
+          console.error(`[RAG-BG] Failed to send auto-assign email:`, emailError.message);
+        }
+      }
     } else {
       console.log(`[RAG-BG] No suggestion for incident ${incidentId}`);
     }

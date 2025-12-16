@@ -515,7 +515,7 @@ async def get_rag_settings():
     settings = db.get_rag_settings()
     stats = db.count_embeddings(ContentType.INCIDENT)
     current = stats["with_embedding"]
-
+    
     if current < settings["min_samples"]:
         rec = f"Cần thêm {settings['min_samples'] - current} mẫu"
     elif not settings["enabled"]:
@@ -536,13 +536,13 @@ async def get_rag_settings():
 async def update_rag_settings(request: RAGSettingsRequest):
     """Cập nhật cấu hình RAG auto-assign"""
     settings = {"enabled": request.enabled, "threshold": request.threshold, "min_samples": request.min_samples}
-
+    
     if not db.save_rag_settings(settings):
         raise HTTPException(status_code=500, detail="Failed to save settings")
 
     stats = db.count_embeddings(ContentType.INCIDENT)
     current = stats["with_embedding"]
-
+    
     if current < request.min_samples:
         rec = f"Cần thêm {request.min_samples - current} mẫu"
     elif not request.enabled:

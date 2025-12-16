@@ -175,12 +175,15 @@ class IncidentRouter:
                         'department_name': c.get('department_name', 'Unknown')
                     }
 
-        # Use MAX of top 3 scores (not weighted average)
+        # Use BALANCED approach: 50% max + 50% avg
+        # This ensures we consider both best match AND consistency across samples
         dept_max_scores = {}
         for dept_id, scores in dept_scores.items():
             top_scores = sorted(scores, reverse=True)[:3]
-            # Average of top 3 (or less if fewer)
-            dept_max_scores[dept_id] = sum(top_scores) / len(top_scores)
+            # Balanced: 50% highest score + 50% average of top 3
+            max_score = top_scores[0]
+            avg_score = sum(top_scores) / len(top_scores)
+            dept_max_scores[dept_id] = 0.5 * max_score + 0.5 * avg_score
 
         print(f"[{ts}] Department Scores (max of top 3):")
         for did, score in sorted(dept_max_scores.items(), key=lambda x: x[1], reverse=True)[:3]:
@@ -198,38 +201,90 @@ class IncidentRouter:
 
         # Select best
         best_dept_id = max(dept_max_scores, key=dept_max_scores.get)
-        best_score = dept_max_scores[best_dept_id]
+        raw_score = dept_max_scores[best_dept_id]
         best_name = dept_info[best_dept_id]['department_name']
         vote_count = len(dept_scores[best_dept_id])
 
-        decision = db.should_auto_assign(best_score)
+        # ===== CONFIDENCE ADJUSTMENT =====
+        # Modest adjustments to avoid over-confidence
+        adjusted_score = raw_score
+        adjustments = []
+
+        # Score-based adjustment (reduced bonuses)
+        if raw_score >= 0.75:
+            # High confidence: small boost
+            adjusted_score += 0.05
+            adjustments.append("+5% (excellent match)")
+        elif raw_score >= 0.60:
+            # Good confidence: tiny boost
+            adjusted_score += 0.02
+            adjustments.append("+2% (good match)")
+        elif raw_score >= 0.40:
+            # Medium confidence: keep as-is
+            adjustments.append("0% (fair match)")
+        else:
+            # Low confidence: penalty
+            adjusted_score -= 0.05
+            adjustments.append("-5% (weak match)")
+        
+        # Bonus for strong consensus (many votes) - reduced
+        if vote_count >= 5:
+            adjusted_score += 0.03
+            adjustments.append("+3% (strong consensus)")
+        
+        # Bonus for dominant department - reduced
+        total_votes = sum(len(scores) for scores in dept_scores.values())
+        vote_ratio = vote_count / total_votes if total_votes > 0 else 0
+        if vote_ratio >= 0.60:
+            adjusted_score += 0.02
+            adjustments.append("+2% (dominant dept)")
+        
+        # Cap between 5% and 95% (never 100% confident)
+        final_confidence = max(0.05, min(adjusted_score, 0.95))
+        
+        print(f"[{ts}] RAW SCORE: {raw_score*100:.1f}%")
+        if adjustments:
+            print(f"[{ts}] ADJUSTMENTS: {', '.join(adjustments)}")
+        print(f"[{ts}] FINAL CONFIDENCE: {final_confidence*100:.1f}%")
+
+        decision = db.should_auto_assign(final_confidence)
         auto_assign = decision['auto_assign']
 
-        print(f"[{ts}] SUGGESTED: {best_name} ({best_score*100:.1f}%)")
+        print(f"[{ts}] SUGGESTED: {best_name} ({final_confidence*100:.1f}%)")
         print(f"[{ts}] AUTO_ASSIGN: {'YES' if auto_assign else 'NO'}")
         print(f"[{ts}] =====================================\n")
 
         if auto_assign:
-            msg = f'Tu dong gan: {best_name} ({best_score*100:.0f}%)'
+            msg = f'Tu dong gan: {best_name} ({final_confidence*100:.0f}%)'
         else:
-            msg = f'Goi y: {best_name} ({best_score*100:.0f}%)'
+            msg = f'Goi y: {best_name} ({final_confidence*100:.0f}%)'
+
+        # Prepare top 3 similar incidents for history reference
+        similar_history = []
+        for c in valid_candidates[:3]:
+            similar_history.append({
+                'id': str(c.get('id', '')),
+                'title': c.get('main_text', '')[:100],
+                'description': c.get('description', '')[:200] if c.get('description') else None,
+                'location': c.get('location'),
+                'incident_type': c.get('incident_type'),
+                'status': c.get('status'),
+                'department_name': c.get('department_name'),
+                'similarity': float(c['similarity'])
+            })
 
         return {
             'success': True,
             'suggestion': {
                 'department_id': best_dept_id,
                 'department_name': best_name,
-                'confidence': best_score,
+                'confidence': final_confidence,
                 'vote_count': vote_count,
                 'auto_assign': auto_assign
             },
-            'similar_incidents': valid_candidates[:5],
+            'similar_incidents': similar_history,
             'message': msg,
-            'auto_assign_info': decision,
-            'department_scores': {
-                dept_info[did]['department_name']: {'score': score, 'votes': len(dept_scores[did])}
-                for did, score in dept_max_scores.items()
-            }
+            'auto_assign_info': decision
         }
 
     def find_similar_incidents(self, description: str, limit: int = 5) -> Dict:
