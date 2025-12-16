@@ -3,6 +3,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import { ChatMessage } from "./types";
 import { Send } from "lucide-react";
+import { useTranslation } from "../../contexts/LanguageContext";
+import Input from "../form/input/InputField";
 
 interface IdeaChatProps {
   chat: ChatMessage[];
@@ -10,6 +12,7 @@ interface IdeaChatProps {
 }
 
 export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
+  const { t } = useTranslation();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
 
@@ -35,7 +38,7 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
 
   return (
     <div>
-      <div className="h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <div className="h-48 overflow-y-auto bg-gray-50 dark:bg-neutral-900 p-3 rounded-lg border border-gray-200 dark:border-neutral-700">
         {chat.map((msg) => (
           <div
             key={msg.id}
@@ -47,7 +50,7 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
               className={`px-3 py-2 rounded-lg max-w-xs text-sm ${
                 msg.sender === "manager"
                   ? "bg-red-600 text-white"
-                  : "bg-gray-200 text-gray-800"
+                  : "bg-white dark:bg-neutral-800 text-gray-800 dark:text-white border border-gray-200 dark:border-neutral-700"
               }`}
             >
               {msg.text}
@@ -57,20 +60,28 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
         {/* Mốc để cuộn tới */}
         <div ref={chatEndRef} />
       </div>
-      <div className="flex mt-3 gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Nhập phản hồi..."
-          className="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 focus:ring-2 focus:ring-red-500 focus:border-transparent focus:outline-none"
-        />
+      <div className="flex mt-3 gap-2 items-center">
+        <div className="flex-1">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={t('idea.chat_placeholder')}
+            className="bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 focus:ring-red-500 focus:border-transparent dark:text-white"
+            enableSpeech={true}
+          />
+        </div>
         <button
           onClick={handleSend}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 transition-colors"
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 transition-colors h-[44px]"
           disabled={!text.trim()}
         >
-          <Send size={16} /> Gửi
+          <Send size={16} /> {t('button.submit')}
         </button>
       </div>
     </div>

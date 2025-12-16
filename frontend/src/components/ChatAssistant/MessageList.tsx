@@ -21,11 +21,11 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, onNotifi
   useEffect(scrollToBottom, [messages, isLoading]);
 
   return (
-    <div className={`overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 ${className || 'h-[450px]'}`}>
+    <div className={`overflow-y-auto p-5 bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-600 ${className || 'h-[450px]'}`}>
       <div className="space-y-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-2xl text-base leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-slate-700'}`}>
+            <div className={`max-w-[80%] p-4 rounded-2xl text-base leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 rounded-tl-none border border-gray-100 dark:border-neutral-700'}`}>
               {msg.text.split('\n').map((line, i) => (
                 <p key={i} className={i > 0 ? 'mt-1' : ''}>
                   {line.startsWith('**') ? <strong>{line.replace(/\*\*/g, '')}</strong> : line}

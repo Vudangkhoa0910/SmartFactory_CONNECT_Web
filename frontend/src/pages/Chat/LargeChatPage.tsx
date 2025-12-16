@@ -84,16 +84,16 @@ const LargeChatPage: React.FC = () => {
   const isInitialState = messages.length <= 1;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-75px)] bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative">
+    <div className="flex flex-col h-[calc(100vh-75px)] bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden relative">
       
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 bg-white dark:bg-slate-900">
+      <div className="p-4 border-b border-gray-200 dark:border-neutral-700 flex items-center gap-3 bg-white dark:bg-neutral-900">
         <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
           <MessageCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-white">{t('chat.title')}</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{t('chat.subtitle')}</p>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white">{t('chat.title')}</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('chat.subtitle')}</p>
         </div>
       </div>
 
@@ -102,7 +102,7 @@ const LargeChatPage: React.FC = () => {
         
         {/* Messages - Hide if initial state to show centered input view */}
         {!isInitialState && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-neutral-900">
              <MessageList 
               messages={messages} 
               isLoading={isLoading}
@@ -127,14 +127,14 @@ const LargeChatPage: React.FC = () => {
 
         {/* Initial State View - Centered */}
         {isInitialState && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-neutral-900">
             <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
               <MessageCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
               {t('chat.help_title')}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
               {t('chat.help_subtitle')}
             </p>
             
@@ -152,19 +152,19 @@ const LargeChatPage: React.FC = () => {
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button 
                 onClick={() => { setInput('hướng dẫn'); handleSend(); }}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300 transition-colors"
+                className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-full text-sm text-gray-700 dark:text-gray-300 transition-colors"
               >
                 {t('chat.quick_guide')}
               </button>
               <button 
                 onClick={() => { setInput('xem thông báo'); handleSend(); }}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300 transition-colors"
+                className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-full text-sm text-gray-700 dark:text-gray-300 transition-colors"
               >
                 {t('chat.quick_news')}
               </button>
               <button 
                 onClick={() => { setInput('đặt phòng họp'); handleSend(); }}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-sm text-slate-700 dark:text-slate-300 transition-colors"
+                className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-full text-sm text-gray-700 dark:text-gray-300 transition-colors"
               >
                 {t('chat.quick_booking')}
               </button>
@@ -174,7 +174,7 @@ const LargeChatPage: React.FC = () => {
 
         {/* Bottom Input - Show only if NOT initial state */}
         {!isInitialState && (
-          <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+          <div className="p-4 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-700">
             <div className="max-w-4xl mx-auto">
               <ChatInput 
                 input={input} 

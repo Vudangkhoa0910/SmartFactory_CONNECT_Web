@@ -7,6 +7,7 @@ import { PublicIdea, StatusType } from "../../components/feedback/types";
 import { IdeaList } from "../../components/feedback/IdeaList";
 import { IdeaDetail } from "../../components/feedback/IdeaDetail";
 import { useTranslation } from "../../contexts/LanguageContext";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
 
 interface BackendHistory {
   created_at: string;
@@ -43,6 +44,14 @@ export default function PublicIdeasPage() {
   const [ideas, setIdeas] = useState<PublicIdea[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   const isNotAdmin = user?.level !== 1;
 
@@ -131,6 +140,14 @@ export default function PublicIdeasPage() {
   }, []); // Keep empty dependency array to run only once
 
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) || null;
+
+  // Filter ideas based on search term
+  const filteredIdeas = ideas.filter(idea => 
+    idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    idea.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    idea.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    idea.group.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Cập nhật trạng thái và ghi chú (note)
   const handleUpdateStatus = async (status: string, note?: string) => {
@@ -231,12 +248,17 @@ export default function PublicIdeasPage() {
         title={`${t('menu.public_ideas')} | SmartFactory CONNECT`}
         description={t('idea.description')}
       />
-      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white text-gray-900">
+      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white dark:bg-neutral-900 text-gray-900 dark:text-white">
         {/* Danh sách ý tưởng */}
         <IdeaList
-          ideas={ideas}
+          ideas={filteredIdeas}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onVoiceClick={startListening}
+          isListening={isListening}
+          isVoiceSupported={isSupported}
         />
 
         {/* Chi tiết ý tưởng */}

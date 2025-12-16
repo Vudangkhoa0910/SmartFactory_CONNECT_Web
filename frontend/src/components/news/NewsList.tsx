@@ -5,6 +5,8 @@ import NewsCard from "./NewsCard";
 import NewsDetailModal from "./NewsDetailModal";
 import api from "../../services/api";
 import { toast } from "react-toastify";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { Mic, Search, X } from "lucide-react";
 
 interface NewsItem {
   id: string;
@@ -32,6 +34,14 @@ export default function NewsList() {
   const [news, setNews] = useState<{ today: NewsItem[]; history: NewsItem[] }>({ today: [], history: [] });
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   const fetchNews = async () => {
     try {
@@ -125,18 +135,57 @@ export default function NewsList() {
     }
   };
 
-  const listToDisplay = activeTab === "today" ? news.today : news.history;
+  const listToDisplay = (activeTab === "today" ? news.today : news.history).filter(item => 
+    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.excerpt && item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800">
+      {/* Search Bar */}
+      <div className="mb-4 relative">
+        <Search
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+        <input
+          type="text"
+          placeholder={t('search.placeholder') || "Tìm kiếm tin tức..."}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`w-full pl-10 ${isSupported ? 'pr-20' : 'pr-10'} py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors`}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {isSupported && (
+            <button
+              onClick={startListening}
+              className={`text-gray-400 hover:text-red-500 transition-colors ${
+                isListening ? "text-red-500 animate-pulse" : ""
+              }`}
+              title="Click to speak"
+            >
+              <Mic size={16} />
+            </button>
+          )}
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-gray-200 dark:border-neutral-800 mb-4">
         <button
           onClick={() => setActiveTab("today")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "today"
-              ? "border-b-2 border-red-600 text-red-600"
-              : "text-gray-500 hover:text-gray-800"
+              ? "border-b-2 border-red-600 text-red-600 dark:text-red-500"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           }`}
         >
           {t('news.recent_news')}
@@ -145,8 +194,8 @@ export default function NewsList() {
           onClick={() => setActiveTab("history")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "history"
-              ? "border-b-2 border-red-600 text-red-600"
-              : "text-gray-500 hover:text-gray-800"
+              ? "border-b-2 border-red-600 text-red-600 dark:text-red-500"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           }`}
         >
           {t('news.history')}
@@ -170,7 +219,7 @@ export default function NewsList() {
             />
           ))
         ) : (
-          <p className="text-center text-gray-500 py-8">
+          <p className="text-center text-gray-500 dark:text-gray-400 py-8">
             {t('news.no_news')}
           </p>
         )}

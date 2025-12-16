@@ -1,5 +1,7 @@
 import type React from "react";
 import type { FC } from "react";
+import { useSpeechToText } from "../../../hooks/useSpeechToText";
+import { MicrophoneIcon } from "../../../icons";
 
 interface InputProps {
   type?: "text" | "number" | "email" | "password" | "date" | "time" | string;
@@ -16,6 +18,8 @@ interface InputProps {
   success?: boolean;
   error?: boolean;
   hint?: string;
+  enableSpeech?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const Input: FC<InputProps> = ({
@@ -33,8 +37,30 @@ const Input: FC<InputProps> = ({
   success = false,
   error = false,
   hint,
+  enableSpeech = false,
+  onKeyDown,
 }) => {
-  let inputClasses = ` h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 ${className}`;
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      if (onChange) {
+        const newValue = value ? `${value} ${text}` : text;
+        const syntheticEvent = {
+          target: { value: newValue, name: name || id, type },
+          currentTarget: { value: newValue, name: name || id, type },
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        onChange(syntheticEvent);
+      }
+    },
+  });
+
+  let inputClasses = ` h-11 w-full rounded-lg border appearance-none py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 ${className}`;
+  
+  // Adjust padding for microphone icon
+  if (enableSpeech && isSupported) {
+    inputClasses += " pl-4 pr-10";
+  } else {
+    inputClasses += " px-4";
+  }
 
   if (disabled) {
     inputClasses += ` text-gray-500 border-gray-300 opacity-40 bg-gray-100 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 opacity-40`;
@@ -60,7 +86,21 @@ const Input: FC<InputProps> = ({
         step={step}
         disabled={disabled}
         className={inputClasses}
+        onKeyDown={onKeyDown}
       />
+
+      {enableSpeech && isSupported && (
+        <button
+          type="button"
+          onClick={startListening}
+          className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-500 transition-colors ${
+            isListening ? "text-brand-500 animate-pulse" : ""
+          }`}
+          title="Click to speak"
+        >
+          <MicrophoneIcon className="w-5 h-5" />
+        </button>
+      )}
 
       {hint && (
         <p

@@ -136,7 +136,7 @@ const RoomBookingCalendar: React.FC = () => {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="rounded-2xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm transition-colors">
       <div className="custom-calendar">
         <FullCalendar
           ref={calendarRef}

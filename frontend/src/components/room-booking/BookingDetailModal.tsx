@@ -12,6 +12,7 @@ import {
   RoomBooking,
   BookingHistoryEntry
 } from '../../types/room-booking.types';
+import TextArea from '../form/input/TextArea';
 
 interface BookingDetailModalProps {
   booking: RoomBooking;
@@ -323,12 +324,13 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {t('booking.reject_reason')}
                     </label>
-                    <textarea
+                    <TextArea
                       value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
+                      onChange={(value) => setRejectionReason(value)}
                       placeholder={t('booking.reject_reason_placeholder')}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      className="dark:bg-gray-700 dark:text-white"
+                      enableSpeech={true}
                     />
                     <div className="flex items-center gap-2">
                       <button
