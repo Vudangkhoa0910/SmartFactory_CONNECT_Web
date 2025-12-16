@@ -27,6 +27,7 @@ const roomBookingRoutes = require('./src/routes/room-booking.routes');
 const settingsRoutes = require('./src/routes/settings.routes');
 const anomalyRoutes = require('./src/routes/anomaly.routes');
 const mediaRoutes = require('./src/routes/media.routes');
+const emailRoutes = require('./src/routes/email.routes');
 
 // Import Socket.io and Services
 const initializeSocket = require('./src/config/socket');
@@ -203,6 +204,7 @@ app.use('/api/room-bookings', roomBookingRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/anomalies', anomalyRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/email', emailRoutes);
 
 // Translation routes
 const translationRoutes = require('./src/routes/translation.routes');

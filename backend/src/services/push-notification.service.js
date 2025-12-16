@@ -11,6 +11,7 @@
 
 const db = require('../config/database');
 const fcmService = require('./fcm.service');
+const emailService = require('./email.service');
 const { getUserFcmTokens, getMultipleUsersFcmTokens, getDepartmentFcmTokens, cleanupInvalidTokens } = require('../controllers/fcm-token.controller');
 
 class PushNotificationService {
@@ -131,6 +132,12 @@ class PushNotificationService {
                         action_url: `/news/${news.id}`
                     });
                 });
+            }
+
+            // Send email notifications (non-blocking)
+            if (emailService.isAvailable()) {
+                emailService.sendNewsEmail(news, targetAudience, targetDepartments)
+                    .catch(err => console.error('[PushNotification] Email send failed:', err.message));
             }
 
             const duration = Date.now() - startTime;
@@ -264,6 +271,13 @@ class PushNotificationService {
                         action_url: `/incidents/${incident.id}`
                     });
                 });
+            }
+
+            // Send email notifications (non-blocking)
+            if (emailService.isAvailable()) {
+                const deptId = incident.department_id || incident.assigned_department_id;
+                emailService.sendIncidentEmail(incident, deptId)
+                    .catch(err => console.error('[PushNotification] Email send failed:', err.message));
             }
 
             const duration = Date.now() - startTime;
