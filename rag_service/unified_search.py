@@ -81,17 +81,27 @@ class UnifiedSearchService:
                 filters=filters
             )
 
-            # Enrich results với type info
+            # Enrich results với type info (không hiển thị similarity cho AI)
             for r in results:
                 r['content_type'] = ct.value
-                r['similarity'] = float(r['similarity'])
+                # Giữ similarity để sort, sẽ xóa trước khi trả về
+                r['_similarity'] = float(r['similarity'])
+                del r['similarity']
 
             all_results.extend(results)
             stats[ct.value] = len(results)
 
-        # Sort by similarity
-        all_results.sort(key=lambda x: x['similarity'], reverse=True)
+        # Sort by similarity (internal use only)
+        all_results.sort(key=lambda x: x['_similarity'], reverse=True)
         final_results = all_results[:limit]
+
+        # Xóa _similarity trước khi trả về (không cần hiển thị cho AI)
+        clean_results = []
+        for r in final_results:
+            result = dict(r)
+            if '_similarity' in result:
+                del result['_similarity']
+            clean_results.append(result)
 
         print(f"[{ts}] Found: {len(final_results)} results")
         for ct_val, count in stats.items():
@@ -100,8 +110,8 @@ class UnifiedSearchService:
 
         return {
             "success": True,
-            "message": f"Tìm thấy {len(final_results)} kết quả",
-            "results": [dict(r) for r in final_results],
+            "message": f"Tìm thấy {len(clean_results)} kết quả",
+            "results": clean_results,
             "stats": stats,
             "total": len(all_results)
         }
@@ -174,7 +184,13 @@ class UnifiedSearchService:
             min_similarity=threshold
         )
 
-        duplicates = [dict(r) for r in results if r['similarity'] >= threshold]
+        # Lọc và xóa similarity khỏi kết quả
+        duplicates = []
+        for r in results:
+            if r['similarity'] >= threshold:
+                dup = dict(r)
+                del dup['similarity']  # Không hiển thị % cho AI
+                duplicates.append(dup)
 
         return {
             "success": True,

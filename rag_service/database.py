@@ -42,7 +42,7 @@ TABLE_CONFIG = {
         "text_fields": ["description"],  # Chỉ embedding tiếng Việt
         "join_dept": "LEFT JOIN departments d ON t.assigned_department_id = d.id",
         "dept_field": "assigned_department_id",
-        "extra_fields": ["title", "location", "incident_type", "priority", "status"],
+        "extra_fields": ["title", "description", "location", "incident_type", "priority", "status", "assigned_department_id"],
     },
     ContentType.IDEA: {
         "table": "ideas",
@@ -428,13 +428,13 @@ class Database:
         """Thống kê tổng quan cho chatbot"""
         try:
             with self.cursor() as cur:
-                # Incidents stats
+                # Incidents stats - dùng đúng enum values
                 cur.execute("""
                     SELECT 
                         COUNT(*) as total,
-                        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+                        COUNT(CASE WHEN status IN ('pending', 'assigned') THEN 1 END) as pending,
                         COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
-                        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
+                        COUNT(CASE WHEN status IN ('resolved', 'closed') THEN 1 END) as resolved,
                         COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as this_week
                     FROM incidents
                 """)
@@ -462,15 +462,38 @@ class Database:
                 """)
                 news = dict(cur.fetchone())
 
+                # Departments count
+                cur.execute("SELECT COUNT(*) as total FROM departments")
+                departments = dict(cur.fetchone())
+
+                # Return format cho rag.service.js
                 return {
-                    "incidents": incidents,
-                    "ideas": ideas,
-                    "news": news,
-                    "embeddings": self.count_embeddings()
+                    "success": True,
+                    "stats": {
+                        "total_incidents": incidents['total'],
+                        "pending_incidents": incidents['pending'],
+                        "in_progress_incidents": incidents['in_progress'],
+                        "resolved_incidents": incidents['resolved'],
+                        "incidents_this_week": incidents['this_week'],
+                        "total_ideas": ideas['total'],
+                        "pending_ideas": ideas['pending'],
+                        "approved_ideas": ideas['approved'],
+                        "implemented_ideas": ideas['implemented'],
+                        "ideas_this_week": ideas['this_week'],
+                        "total_news": news['total'],
+                        "published_news": news['published'],
+                        "news_this_week": news['this_week'],
+                        "total_departments": departments['total']
+                    },
+                    "details": {
+                        "incidents": incidents,
+                        "ideas": ideas,
+                        "news": news
+                    }
                 }
         except Exception as e:
             print(f"[ERROR] Error getting overview stats: {e}")
-            return {}
+            return {"success": False, "error": str(e)}
 
     def get_stats_by_department(self) -> List[Dict]:
         """Thống kê theo phòng ban"""

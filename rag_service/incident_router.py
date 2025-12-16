@@ -186,6 +186,16 @@ class IncidentRouter:
         for did, score in sorted(dept_max_scores.items(), key=lambda x: x[1], reverse=True)[:3]:
             print(f"[{ts}]   {dept_info[did]['department_name']}: {score:.4f} ({len(dept_scores[did])} votes)")
 
+        # Check if any department was found
+        if not dept_max_scores:
+            print(f"[{ts}] NO DEPARTMENTS FOUND in candidates")
+            return {
+                'success': True,
+                'suggestion': None,
+                'similar_incidents': valid_candidates[:5],
+                'message': 'Khong tim thay phong ban phu hop (incidents chua duoc gan department).'
+            }
+
         # Select best
         best_dept_id = max(dept_max_scores, key=dept_max_scores.get)
         best_score = dept_max_scores[best_dept_id]
