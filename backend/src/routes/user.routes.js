@@ -32,7 +32,7 @@ const createUserValidation = [
     .isLength({ max: 100 })
     .withMessage('Full name must not exceed 100 characters'),
   body('phone')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .matches(/^[0-9+\-\s()]+$/)
     .withMessage('Invalid phone number format'),
@@ -76,7 +76,7 @@ const updateUserValidation = [
     .isLength({ max: 100 })
     .withMessage('Full name must not exceed 100 characters'),
   body('phone')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .matches(/^[0-9+\-\s()]+$/)
     .withMessage('Invalid phone number format'),

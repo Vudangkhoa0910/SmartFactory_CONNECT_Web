@@ -165,22 +165,22 @@ const IncidentWorkspace: React.FC = () => {
       .filter((inc) => {
         // Filter by status
         if (inc.status === "processed") return false;
-        
+
         // Filter by search term
-        const matchesSearch = searchTerm === "" || 
+        const matchesSearch = searchTerm === "" ||
           inc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           inc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           inc.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           inc.reporter?.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         if (!matchesSearch) return false;
-        
+
         // Filter by priority (multi-select)
         if (filterPriorities.length > 0 && !filterPriorities.includes(inc.priority)) return false;
-        
+
         // Filter by department (multi-select)
-        if (filterDepartments.length > 0 && !filterDepartments.includes(inc.department)) return false;
-        
+        if (filterDepartments.length > 0 && !filterDepartments.includes(inc.department || '')) return false;
+
         return true;
       })
       .sort((a, b) => {
@@ -199,7 +199,7 @@ const IncidentWorkspace: React.FC = () => {
   // Helper functions for multi-select
   const togglePriority = (priority: Priority) => {
     setFilterPriorities(prev => {
-      const newFilters = prev.includes(priority) 
+      const newFilters = prev.includes(priority)
         ? prev.filter(p => p !== priority)
         : [...prev, priority];
       console.log('Toggle priority:', priority, 'New filters:', newFilters);
@@ -209,7 +209,7 @@ const IncidentWorkspace: React.FC = () => {
 
   const toggleDepartment = (department: string) => {
     setFilterDepartments(prev => {
-      const newFilters = prev.includes(department) 
+      const newFilters = prev.includes(department)
         ? prev.filter(d => d !== department)
         : [...prev, department];
       console.log('Toggle department:', department, 'New filters:', newFilters);
@@ -339,138 +339,138 @@ const IncidentWorkspace: React.FC = () => {
         {/* Header - Fixed */}
         <div className="flex-shrink-0 p-4 pb-0">
           <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{t('menu.queue')}</h1>
-            <p className="text-gray-500 mt-1 text-sm">{t('incident.select_to_process')}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Auto-Assign Toggle - Admin only */}
-            {isAdmin && (
-              <button
-                onClick={handleToggleAutoAssign}
-                disabled={autoAssignLoading}
-                className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${autoAssignEnabled
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{t('menu.queue')}</h1>
+              <p className="text-gray-500 mt-1 text-sm">{t('incident.select_to_process')}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Auto-Assign Toggle - Admin only */}
+              {isAdmin && (
+                <button
+                  onClick={handleToggleAutoAssign}
+                  disabled={autoAssignLoading}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${autoAssignEnabled
                     ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
                     : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                  } ${autoAssignLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {autoAssignLoading
-                  ? 'Đang xử lý...'
-                  : autoAssignEnabled
-                    ? 'Tự động điều phối: BẬT'
-                    : 'Tự động điều phối: TẮT'
-                }
-              </button>
-            )}
-            <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 px-3 py-1.5 rounded-full">
-              <BellRing size={16} />
-              <span>{activeIncidents.length} {t('incident.waiting')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filter Controls - Fixed */}
-        <div className="mb-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
-            {/* Search Box */}
-            <div className="relative flex-1">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder={t('error_report.search_placeholder') || 'Tìm kiếm theo tiêu đề, mô tả, vị trí...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    } ${autoAssignLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <X size={16} />
+                  {autoAssignLoading
+                    ? 'Đang xử lý...'
+                    : autoAssignEnabled
+                      ? 'Tự động điều phối: BẬT'
+                      : 'Tự động điều phối: TẮT'
+                  }
                 </button>
               )}
+              <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 px-3 py-1.5 rounded-full">
+                <BellRing size={16} />
+                <span>{activeIncidents.length} {t('incident.waiting')}</span>
+              </div>
             </div>
+          </div>
 
-            {/* Priority Filter - Multi Select */}
-            <div className="relative" ref={priorityDropdownRef}>
-              <button
-                onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
-              >
-                <Filter size={16} className="absolute left-3 text-gray-400" />
-                <span className="flex-1 text-left">
-                  {filterPriorities.length === 0 
-                    ? 'Mức độ' 
-                    : `Mức độ (${filterPriorities.length})`}
-                </span>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showPriorityDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
-                  {[
-                    { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
-                    { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
-                    { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-green-700' },
-                    { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
-                  ].map((priority) => (
-                    <label
-                      key={priority.value}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filterPriorities.includes(priority.value)}
-                        onChange={() => togglePriority(priority.value)}
-                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                      />
-                      <span className={`text-sm font-medium ${priority.color}`}>
-                        {priority.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Search and Filter Controls - Fixed */}
+          <div className="mb-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
+              {/* Search Box */}
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder={t('error_report.search_placeholder') || 'Tìm kiếm theo tiêu đề, mô tả, vị trí...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
 
-            {/* Department Filter - Multi Select */}
-            <div className="relative" ref={departmentDropdownRef}>
-              <button
-                onClick={() => setShowDepartmentDropdown(!showDepartmentDropdown)}
-                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
-              >
-                <Filter size={16} className="absolute left-3 text-gray-400" />
-                <span className="flex-1 text-left">
-                  {filterDepartments.length === 0 
-                    ? 'Phòng ban' 
-                    : `Phòng ban (${filterDepartments.length})`}
-                </span>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showDepartmentDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showDepartmentDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                  {departmentNames.map((dept) => (
-                    <label
-                      key={dept}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filterDepartments.includes(dept)}
-                        onChange={() => toggleDepartment(dept)}
-                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                      />
-                      <span className="text-sm text-gray-700">{dept}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+              {/* Priority Filter - Multi Select */}
+              <div className="relative" ref={priorityDropdownRef}>
+                <button
+                  onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
+                >
+                  <Filter size={16} className="absolute left-3 text-gray-400" />
+                  <span className="flex-1 text-left">
+                    {filterPriorities.length === 0
+                      ? 'Mức độ'
+                      : `Mức độ (${filterPriorities.length})`}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showPriorityDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {[
+                      { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
+                      { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
+                      { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-green-700' },
+                      { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
+                    ].map((priority) => (
+                      <label
+                        key={priority.value}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filterPriorities.includes(priority.value)}
+                          onChange={() => togglePriority(priority.value)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className={`text-sm font-medium ${priority.color}`}>
+                          {priority.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Department Filter - Multi Select */}
+              <div className="relative" ref={departmentDropdownRef}>
+                <button
+                  onClick={() => setShowDepartmentDropdown(!showDepartmentDropdown)}
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
+                >
+                  <Filter size={16} className="absolute left-3 text-gray-400" />
+                  <span className="flex-1 text-left">
+                    {filterDepartments.length === 0
+                      ? 'Phòng ban'
+                      : `Phòng ban (${filterDepartments.length})`}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showDepartmentDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showDepartmentDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {departmentNames.map((dept) => (
+                      <label
+                        key={dept}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filterDepartments.includes(dept)}
+                          onChange={() => toggleDepartment(dept)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className="text-sm text-gray-700">{dept}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* Sort Button */}
               <button
                 onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
@@ -480,58 +480,56 @@ const IncidentWorkspace: React.FC = () => {
                 <ArrowUpDown size={16} />
                 {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
               </button>
-            {/* Clear Filters Button */}
-            <button
-              onClick={clearAllFilters}
-              disabled={!searchTerm && filterPriorities.length === 0 && filterDepartments.length === 0}
-              className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${
-                searchTerm || filterPriorities.length > 0 || filterDepartments.length > 0
-                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
-                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
-              }`}
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
+              {/* Clear Filters Button */}
+              <button
+                onClick={clearAllFilters}
+                disabled={!searchTerm && filterPriorities.length === 0 && filterDepartments.length === 0}
+                className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${searchTerm || filterPriorities.length > 0 || filterDepartments.length > 0
+                    ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
+                    : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                  }`}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
 
-          {/* Active Filters Display */}
-          <div 
-            className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
-              filterPriorities.length > 0 || filterDepartments.length > 0
-                ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
-                : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
-            }`}
-          >
-            {filterPriorities.map((priority) => (
-              <span
-                key={priority}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
-              >
-                {priority}
-                <button
-                  onClick={() => togglePriority(priority)}
-                  className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+            {/* Active Filters Display */}
+            <div
+              className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${filterPriorities.length > 0 || filterDepartments.length > 0
+                  ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+                  : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
+                }`}
+            >
+              {filterPriorities.map((priority) => (
+                <span
+                  key={priority}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
                 >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
-            {filterDepartments.map((dept) => (
-              <span
-                key={dept}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
-              >
-                {dept}
-                <button
-                  onClick={() => toggleDepartment(dept)}
-                  className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  {priority}
+                  <button
+                    onClick={() => togglePriority(priority)}
+                    className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {filterDepartments.map((dept) => (
+                <span
+                  key={dept}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
                 >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
+                  {dept}
+                  <button
+                    onClick={() => toggleDepartment(dept)}
+                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Main Layout: 2 Columns - No page scroll */}

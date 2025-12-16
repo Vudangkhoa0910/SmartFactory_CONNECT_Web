@@ -6,16 +6,17 @@ import UserAvatar from "../../components/common/UserAvatar";
 import PageBreadCrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { ChevronDown, ChevronUp, Users, Crown } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface User {
-  id: number;
+  id: string;
   employee_code: string;
   email: string;
   full_name: string;
   phone: string;
   role: string;
   level: number;
-  department_id: number | null;
+  department_id: string | null;
   department_name: string | null;
   is_active: boolean;
   last_login: string | null;
@@ -23,7 +24,7 @@ interface User {
 }
 
 interface Department {
-  id: number;
+  id: string;
   name: string;
   code: string;
 }
@@ -51,9 +52,9 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [collapsedDepartments, setCollapsedDepartments] = useState<Set<number>>(new Set());
+  const [collapsedDepartments, setCollapsedDepartments] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditDepartmentModal, setShowEditDepartmentModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     employee_code: "",
@@ -64,13 +65,20 @@ export default function UserManagement() {
     role: "operator",
     department_id: ""
   });
+  const [editUser, setEditUser] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    role: "operator",
+    department_id: ""
+  });
 
   useEffect(() => {
     if (!canManageUsers()) {
       window.location.href = "/";
       return;
     }
-    
+
     fetchUsers();
     fetchDepartments();
   }, [canManageUsers]);
@@ -96,7 +104,7 @@ export default function UserManagement() {
     }
   };
 
-  const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
+  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
       await api.put(`/users/${userId}`, { is_active: !currentStatus });
       fetchUsers();
@@ -129,7 +137,7 @@ export default function UserManagement() {
         user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.employee_code.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
       const matchesDepartment =
         departmentFilter === "all" ||
@@ -140,7 +148,7 @@ export default function UserManagement() {
 
     // Group by department
     const grouped: Record<string, User[]> = {};
-    
+
     filtered.forEach(user => {
       const deptKey = user.department_name || 'Chưa phân bổ';
       if (!grouped[deptKey]) {
@@ -157,7 +165,7 @@ export default function UserManagement() {
     return grouped;
   }, [users, searchTerm, roleFilter, departmentFilter]);
 
-  const toggleDepartment = (deptId: number) => {
+  const toggleDepartment = (deptId: string) => {
     setCollapsedDepartments(prev => {
       const next = new Set(prev);
       if (next.has(deptId)) {
@@ -178,7 +186,7 @@ export default function UserManagement() {
     try {
       await api.post("/users", {
         ...newUser,
-        department_id: newUser.department_id ? parseInt(newUser.department_id) : null
+        department_id: newUser.department_id || null
       });
       setShowCreateModal(false);
       setNewUser({
@@ -190,31 +198,37 @@ export default function UserManagement() {
         role: "operator",
         department_id: ""
       });
+      toast.success(t('message.create_success'));
       fetchUsers();
     } catch (error: any) {
       console.error("Failed to create user:", error);
-      alert(error.response?.data?.message || "Không thể tạo người dùng");
+      toast.error(error.response?.data?.message || t('message.create_error'));
     }
   };
 
-  const handleUpdateDepartment = async () => {
+  const handleUpdateUser = async () => {
     if (!selectedUser) return;
     try {
       await api.put(`/users/${selectedUser.id}`, {
-        department_id: newUser.department_id ? parseInt(newUser.department_id) : null
+        full_name: editUser.full_name,
+        email: editUser.email,
+        phone: editUser.phone || null,
+        role: editUser.role,
+        department_id: editUser.department_id || null
       });
-      setShowEditDepartmentModal(false);
+      setShowEditModal(false);
       setSelectedUser(null);
+      toast.success(t('message.update_success'));
       fetchUsers();
-    } catch (error) {
-      console.error("Failed to update department:", error);
-      alert("Không thể cập nhật phòng ban");
+    } catch (error: any) {
+      console.error("Failed to update user:", error);
+      toast.error(error.response?.data?.message || t('message.update_error'));
     }
   };
 
   return (
     <>
-      <PageMeta 
+      <PageMeta
         title={`${t('page.user_management')} | SmartFactory CONNECT`}
         description={t('user.title')}
       />
@@ -223,10 +237,10 @@ export default function UserManagement() {
 
         {/* Header & Filters */}
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t('user.title')}
           </h2>
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors"
           >
@@ -255,14 +269,14 @@ export default function UserManagement() {
               placeholder={t('filter.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
             />
           </div>
           <div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
             >
               <option value="all">{t('filter.all_roles')}</option>
               {ROLES.map((role) => (
@@ -276,7 +290,7 @@ export default function UserManagement() {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
             >
               <option value="all">{t('filter.all_departments')}</option>
               {departments.map((dept) => (
@@ -290,29 +304,29 @@ export default function UserManagement() {
 
         {/* Users Grouped by Department */}
         {loading ? (
-          <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
+          <div className="flex items-center justify-center py-12 bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-800">
             <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           <div className="space-y-4">
             {Object.entries(usersByDepartment).map(([deptName, deptUsers]) => {
-              const deptId = deptUsers[0]?.department_id || 0;
+              const deptId = deptUsers[0]?.department_id || "0";
               const isCollapsed = collapsedDepartments.has(deptId);
-              
+
               return (
-                <div key={deptName} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div key={deptName} className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-800 shadow-sm overflow-hidden">
                   {/* Department Header */}
                   <button
                     onClick={() => toggleDepartment(deptId)}
-                    className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-red-50 to-white hover:from-red-100 transition-colors"
+                    className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-neutral-900 hover:from-red-100 dark:hover:from-red-900/30 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-lg">
+                      <div className="flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg">
                         <Users className="w-5 h-5 text-red-600" />
                       </div>
                       <div className="text-left">
-                        <h3 className="text-lg font-bold text-gray-900">{deptName}</h3>
-                        <p className="text-sm text-gray-500">{deptUsers.length} nhân viên</p>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{deptName}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{deptUsers.length} nhân viên</p>
                       </div>
                     </div>
                     {isCollapsed ? (
@@ -324,17 +338,16 @@ export default function UserManagement() {
 
                   {/* Department Users */}
                   {!isCollapsed && (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-neutral-800">
                       {deptUsers.map((user, index) => {
                         const isLeader = isDepartmentLeader(user);
                         const isFirstUser = index === 0;
-                        
+
                         return (
                           <div
                             key={user.id}
-                            className={`px-6 py-4 hover:bg-gray-50 transition-colors ${
-                              isLeader ? 'bg-red-50/30' : ''
-                            }`}
+                            className={`px-6 py-4 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors ${isLeader ? 'bg-red-50/30 dark:bg-red-900/10' : ''
+                              }`}
                           >
                             <div className="flex items-center justify-between gap-4">
                               {/* User Info */}
@@ -342,19 +355,18 @@ export default function UserManagement() {
                                 <UserAvatar fullName={user.full_name} size={isLeader ? "md" : "sm"} />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <div className={`font-semibold truncate ${
-                                      isLeader ? 'text-base text-gray-900' : 'text-sm text-gray-800'
-                                    }`}>
+                                    <div className={`font-semibold truncate ${isLeader ? 'text-base text-gray-900 dark:text-white' : 'text-sm text-gray-800 dark:text-gray-200'
+                                      }`}>
                                       {user.full_name}
                                     </div>
                                     {isFirstUser && isLeader && (
                                       <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-500 truncate">
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                     {user.email}
                                   </div>
-                                  <div className="text-xs text-gray-400">
+                                  <div className="text-xs text-gray-400 dark:text-gray-500">
                                     {user.employee_code}
                                   </div>
                                 </div>
@@ -362,28 +374,27 @@ export default function UserManagement() {
 
                               {/* Role Badge */}
                               <div className="flex-shrink-0">
-                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                                  isLeader 
-                                    ? 'bg-red-600 text-white' 
-                                    : 'bg-red-100 text-red-700'
-                                }`}>
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${isLeader
+                                  ? 'bg-red-600 text-white'
+                                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                  }`}>
                                   {formatRole(user.role)}
                                 </span>
                               </div>
 
                               {/* Last Login */}
-                              <div className="hidden md:block flex-shrink-0 w-32 text-xs text-gray-500">
+                              <div className="hidden md:block flex-shrink-0 w-32 text-xs text-gray-500 dark:text-gray-400">
                                 {formatDate(user.last_login)}
                               </div>
 
                               {/* Status */}
                               <div className="flex-shrink-0">
                                 {user.is_active ? (
-                                  <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                                  <span className="inline-flex rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300">
                                     {t('status.active')}
                                   </span>
                                 ) : (
-                                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                                  <span className="inline-flex rounded-full bg-gray-100 dark:bg-neutral-700 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300">
                                     {t('status.inactive')}
                                   </span>
                                 )}
@@ -395,20 +406,26 @@ export default function UserManagement() {
                                   onClick={() =>
                                     toggleUserStatus(user.id, user.is_active)
                                   }
-                                  className="text-xs text-red-600 hover:text-red-700 hover:underline"
+                                  className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline"
                                 >
                                   {user.is_active ? t('status.inactive') : t('status.active')}
                                 </button>
-                                <span className="text-gray-300">|</span>
-                                <button 
+                                <span className="text-gray-300 dark:text-gray-600">|</span>
+                                <button
                                   onClick={() => {
                                     setSelectedUser(user);
-                                    setNewUser(prev => ({ ...prev, department_id: user.department_id?.toString() || "" }));
-                                    setShowEditDepartmentModal(true);
+                                    setEditUser({
+                                      full_name: user.full_name,
+                                      email: user.email,
+                                      phone: user.phone || "",
+                                      role: user.role,
+                                      department_id: user.department_id?.toString() || ""
+                                    });
+                                    setShowEditModal(true);
                                   }}
-                                  className="text-xs text-gray-600 hover:text-red-600 hover:underline"
+                                  className="text-xs text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:underline"
                                 >
-                                  Gán phòng ban
+                                  Chỉnh sửa
                                 </button>
                               </div>
                             </div>
@@ -425,173 +442,235 @@ export default function UserManagement() {
 
         {/* Stats */}
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="text-2xl font-bold text-gray-900">
+          <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {users.length}
             </div>
-            <div className="text-sm text-gray-500">{t('user.list')}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('user.list')}</div>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm">
             <div className="text-2xl font-bold text-red-600">
               {users.filter((u) => u.is_active).length}
             </div>
-            <div className="text-sm text-gray-500">{t('status.active')}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('status.active')}</div>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm">
             <div className="text-2xl font-bold text-gray-400">
               {users.filter((u) => !u.is_active).length}
             </div>
-            <div className="text-sm text-gray-500">{t('status.inactive')}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{t('status.inactive')}</div>
           </div>
         </div>
 
         {/* Create User Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Thêm người dùng mới</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mã nhân viên</label>
-                    <input
-                      type="text"
-                      value={newUser.employee_code}
-                      onChange={(e) => setNewUser({ ...newUser, employee_code: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
+        {
+          showCreateModal && (
+            <div
+              className="fixed inset-0 bg-gray-400/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowCreateModal(false)}
+            >
+              <div
+                className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Thêm người dùng mới</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mã nhân viên</label>
+                      <input
+                        type="text"
+                        value={newUser.employee_code}
+                        onChange={(e) => setNewUser({ ...newUser, employee_code: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
+                      <input
+                        type="text"
+                        value={newUser.full_name}
+                        onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                      <input
+                        type="tel"
+                        value={newUser.phone}
+                        onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                      <input
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
+                      <select
+                        value={newUser.role}
+                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        {ROLES.map((role) => (
+                          <option key={role.value} value={role.value}>
+                            {t(role.key)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phòng ban</label>
+                      <select
+                        value={newUser.department_id}
+                        onChange={(e) => setNewUser({ ...newUser, department_id: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        <option value="">Chưa phân bổ</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id.toString()}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-                    <input
-                      type="text"
-                      value={newUser.full_name}
-                      onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                    <input
-                      type="tel"
-                      value={newUser.phone}
-                      onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-                    <input
-                      type="password"
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
-                    <select
-                      value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setShowCreateModal(false)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
                     >
-                      {ROLES.map((role) => (
-                        <option key={role.value} value={role.value}>
-                          {t(role.key)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phòng ban</label>
-                    <select
-                      value={newUser.department_id}
-                      onChange={(e) => setNewUser({ ...newUser, department_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleCreateUser}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                     >
-                      <option value="">Chưa phân bổ</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
+                      Tạo mới
+                    </button>
                   </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    onClick={handleCreateUser}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-                  >
-                    Tạo mới
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
-        {/* Edit Department Modal */}
-        {showEditDepartmentModal && selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Gán phòng ban</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Nhân viên: <span className="font-semibold">{selectedUser.full_name}</span>
-                </p>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Chọn phòng ban</label>
-                  <select
-                    value={newUser.department_id}
-                    onChange={(e) => setNewUser({ ...newUser, department_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  >
-                    <option value="">Chưa phân bổ</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id.toString()}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowEditDepartmentModal(false);
-                      setSelectedUser(null);
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    onClick={handleUpdateDepartment}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-                  >
-                    Cập nhật
-                  </button>
+        {/* Edit User Modal */}
+        {
+          showEditModal && selectedUser && (
+            <div
+              className="fixed inset-0 bg-gray-400/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => {
+                setShowEditModal(false);
+                setSelectedUser(null);
+              }}
+            >
+              <div
+                className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Chỉnh sửa người dùng</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Mã nhân viên: <span className="font-semibold text-gray-700">{selectedUser.employee_code}</span>
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
+                      <input
+                        type="text"
+                        value={editUser.full_name}
+                        onChange={(e) => setEditUser({ ...editUser, full_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={editUser.email}
+                        onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                      <input
+                        type="tel"
+                        value={editUser.phone}
+                        onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
+                      <select
+                        value={editUser.role}
+                        onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        {ROLES.map((role) => (
+                          <option key={role.value} value={role.value}>
+                            {t(role.key)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phòng ban</label>
+                      <select
+                        value={editUser.department_id}
+                        onChange={(e) => setEditUser({ ...editUser, department_id: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        <option value="">Chưa phân bổ</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id.toString()}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setSelectedUser(null);
+                      }}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleUpdateUser}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                    >
+                      Cập nhật
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )
+        }
+      </div >
     </>
   );
 }
