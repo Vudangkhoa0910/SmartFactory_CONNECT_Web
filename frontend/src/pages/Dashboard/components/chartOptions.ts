@@ -4,12 +4,16 @@
 import { ApexOptions } from 'apexcharts';
 import { DepartmentStats } from '../../../services/dashboard.service';
 
-export function getPriorityChartOptions(totalIncidents: number, t: (key: string) => string): ApexOptions {
+export function getPriorityChartOptions(totalIncidents: number, t: (key: string) => string, isDark: boolean = false): ApexOptions {
+  const textColor = isDark ? '#e5e7eb' : '#374151';
+  const subTextColor = isDark ? '#9ca3af' : '#6b7280';
+  const valueColor = isDark ? '#ffffff' : '#111827';
   
   return {
     chart: {
       type: 'donut',
       fontFamily: 'Outfit, sans-serif',
+      background: 'transparent',
     },
     colors: ['#dc2626', '#ef4444', '#f87171', '#fca5a5'],
     labels: [
@@ -21,7 +25,7 @@ export function getPriorityChartOptions(totalIncidents: number, t: (key: string)
     legend: {
       position: 'bottom',
       fontFamily: 'Outfit, sans-serif',
-      labels: { colors: '#6b7280' },
+      labels: { colors: subTextColor },
     },
     plotOptions: {
       pie: {
@@ -29,12 +33,12 @@ export function getPriorityChartOptions(totalIncidents: number, t: (key: string)
           size: '70%',
           labels: {
             show: true,
-            name: { show: true, fontSize: '14px', color: '#374151' },
-            value: { show: true, fontSize: '24px', fontWeight: 700, color: '#111827' },
+            name: { show: true, fontSize: '14px', color: textColor },
+            value: { show: true, fontSize: '24px', fontWeight: 700, color: valueColor },
             total: {
               show: true,
               label: t('incident.total'),
-              color: '#6b7280',
+              color: subTextColor,
               formatter: () => totalIncidents.toString(),
             },
           },
@@ -43,15 +47,21 @@ export function getPriorityChartOptions(totalIncidents: number, t: (key: string)
     },
     stroke: { width: 0 },
     dataLabels: { enabled: false },
+    theme: { mode: isDark ? 'dark' : 'light' }
   };
 }
 
-export function getDepartmentChartOptions(departmentStats: DepartmentStats[]): ApexOptions {
+export function getDepartmentChartOptions(departmentStats: DepartmentStats[], isDark: boolean = false): ApexOptions {
+  const textColor = isDark ? '#e5e7eb' : '#374151';
+  const subTextColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? '#404040' : '#f3f4f6';
+
   return {
     chart: {
       type: 'bar',
       fontFamily: 'Outfit, sans-serif',
       toolbar: { show: false },
+      background: 'transparent',
     },
     colors: ['#dc2626'],
     plotOptions: {
@@ -69,11 +79,12 @@ export function getDepartmentChartOptions(departmentStats: DepartmentStats[]): A
     xaxis: {
       categories: departmentStats.slice(0, 5).map(d => d.department_name),
       max: 100,
-      labels: { style: { colors: '#6b7280' } },
+      labels: { style: { colors: subTextColor } },
     },
     yaxis: {
-      labels: { style: { fontSize: '12px', colors: '#374151' } },
+      labels: { style: { fontSize: '12px', colors: textColor } },
     },
-    grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
+    grid: { borderColor: gridColor, strokeDashArray: 4 },
+    theme: { mode: isDark ? 'dark' : 'light' }
   };
 }

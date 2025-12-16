@@ -25,9 +25,9 @@ export function ListView({ data }: { data: Incident[] }) {
   });
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-      <table className="w-full text-sm text-left text-gray-600">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+    <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-sm overflow-hidden">
+      <table className="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+        <thead className="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -59,7 +59,7 @@ export function ListView({ data }: { data: Incident[] }) {
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors"
+              className="bg-white dark:bg-neutral-800 border-b border-gray-100 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors"
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="p-4 align-middle">

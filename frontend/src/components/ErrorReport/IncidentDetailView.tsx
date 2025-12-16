@@ -13,6 +13,7 @@ import { Incident } from "../types"; // <-- Nhớ cập nhật type này
 import PriorityBadge from "./PriorityBadge";
 
 import { useTranslation } from "../../contexts/LanguageContext";
+import TextArea from '../form/input/TextArea';
 
 interface IncidentDetailViewProps {
   incident: Incident | null;
@@ -43,14 +44,14 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
 
   if (!incident) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-xl p-6 text-center border border-slate-200 dark:border-slate-700">
-        <div className="inline-block p-4 rounded-full mb-4">
-          <Check size={40} className="text-green-600 dark:text-green-300" />
+      <div className="h-full flex flex-col items-center justify-center bg-white dark:bg-neutral-800 rounded-xl p-6 text-center border border-gray-200 dark:border-neutral-700">
+        <div className="inline-block p-4 rounded-full mb-4 bg-gray-50 dark:bg-neutral-700">
+          <Check size={40} className="text-green-600 dark:text-green-400" />
         </div>
-        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
           {t('error_report.empty_queue')}
         </h3>
-        <p className="mt-1 text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-gray-500 dark:text-gray-400">
           {t('error_report.select_incident')}
         </p>
       </div>
@@ -66,15 +67,15 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
   return (
     <div
       key={incident.id}
-      className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 p-6 animate-in fade-in"
+      className="bg-white dark:bg-neutral-800 rounded-xl shadow-md border border-gray-200 dark:border-neutral-700 p-6 animate-in fade-in"
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-200 dark:border-neutral-700">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
             {incident.title}
           </h3>
-          <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
+          <span className="font-mono text-xs text-gray-400 dark:text-gray-500">
             {t('error_report.id')}: {incident.id}
           </span>
         </div>
@@ -83,10 +84,10 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
           <span
             className={`text-xs font-semibold px-2 py-1 rounded-full ${
               incident.status === "pending"
-                ? "bg-yellow-100 text-yellow-800"
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                 : incident.status === "in_progress"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-green-100 text-green-800"
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
             }`}
           >
             {t(`error_report.status.${incident.status}`)}
@@ -95,44 +96,44 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
       </div>
 
       {/* Meta Info */}
-      <div className="grid grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-300 mb-6">
+      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-300 mb-6">
         <div className="flex items-center gap-2">
-          <Clock size={14} className="text-slate-400" />
+          <Clock size={14} className="text-gray-400" />
           <span>{incident.timestamp.toLocaleString("vi-VN")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className="text-slate-400" />
+          <ShieldAlert size={14} className="text-gray-400" />
           <span>Nguồn: {incident.source}</span>
         </div>
       </div>
 
       {/* Description */}
       <div className="mb-6">
-        <h4 className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100 mb-2">
+        <h4 className="flex items-center gap-2 font-semibold text-gray-800 dark:text-white mb-2">
           <FileText size={16} /> Mô tả chi tiết
         </h4>
-        <p className="text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-700/50 p-4 rounded-md">
+        <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed bg-gray-50 dark:bg-neutral-900 p-4 rounded-md border border-gray-100 dark:border-neutral-700">
           {incident.description}
         </p>
       </div>
 
       {/* History Section */}
       <div className="mb-6">
-        <h4 className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100 mb-2">
+        <h4 className="flex items-center gap-2 font-semibold text-gray-800 dark:text-white mb-2">
           <History size={16} /> Lịch sử xử lý
         </h4>
-        <div className="border-l-2 border-slate-200 dark:border-slate-600 ml-2 pl-4 space-y-4">
+        <div className="border-l-2 border-gray-200 dark:border-neutral-700 ml-2 pl-4 space-y-4">
           {incident.history
             ?.map((entry, index) => (
               <div key={index} className="relative">
-                <div className="absolute -left-[23px] top-1.5 w-3 h-3 bg-slate-300 dark:bg-slate-500 rounded-full"></div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <div className="absolute -left-[23px] top-1.5 w-3 h-3 bg-gray-300 dark:bg-neutral-600 rounded-full"></div>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   {entry.timestamp.toLocaleString("vi-VN")}
                 </p>
-                <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">
+                <p className="font-semibold text-sm text-gray-700 dark:text-gray-200">
                   {entry.action}
                 </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {entry.details}
                 </p>
               </div>
@@ -152,12 +153,12 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
                 <div className="relative">
                   <button
                     onClick={() => setIsAssigning(!isAssigning)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-md hover:bg-slate-50 dark:hover:bg-slate-600 text-sm font-semibold transition-colors focus:ring-2 focus:ring-red-500"
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-neutral-600 text-sm font-semibold transition-colors focus:ring-2 focus:ring-red-500"
                   >
                     <Users size={16} /> <span>Phân công</span>
                   </button>
                   {isAssigning && (
-                    <div className="absolute left-0 bottom-full mb-2 w-56 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md shadow-lg z-10 animate-in fade-in zoom-in-95">
+                    <div className="absolute left-0 bottom-full mb-2 w-56 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md shadow-lg z-10 animate-in fade-in zoom-in-95">
                       <div className="p-2">
                         {departments.map((dept) => (
                           <button
@@ -166,7 +167,7 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
                               onAssign(incident.id, dept);
                               setIsAssigning(false);
                             }}
-                            className="w-full text-left px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 rounded"
+                            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded"
                           >
                             {dept}
                           </button>
@@ -199,25 +200,25 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
 
           {/* Feedback Input Form */}
           {showFeedbackInput && (
-            <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg animate-in fade-in">
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-neutral-900 rounded-lg animate-in fade-in border border-gray-100 dark:border-neutral-700">
               <label
                 htmlFor="feedback"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
               >
                 Phản hồi tiếp nhận
               </label>
-              <textarea
-                id="feedback"
+              <TextArea
                 rows={3}
                 value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 focus:ring-2 focus:ring-red-500"
+                onChange={(value) => setFeedback(value)}
+                className="bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-600"
                 placeholder="Nhập phản hồi của bạn về sự cố này..."
+                enableSpeech={true}
               />
               <div className="flex justify-end gap-2 mt-2">
                 <button
                   onClick={() => setShowFeedbackInput(false)}
-                  className="px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md"
+                  className="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-md"
                 >
                   Hủy
                 </button>

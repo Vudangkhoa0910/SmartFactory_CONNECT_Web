@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "react-toastify";
-import { Filter, ChevronDown, X, Search, ArrowUpDown } from "lucide-react";
+import { Filter, ChevronDown, X, Search, ArrowUpDown, Mic } from "lucide-react";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -26,6 +26,7 @@ import { ListView } from "../../components/ErrorReport/ListView";
 import api from "../../services/api";
 
 import { useTranslation } from "../../contexts/LanguageContext";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
 
 interface BackendIncident {
   id: string;
@@ -51,6 +52,14 @@ export default function AllIncidentsPage() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      // Remove trailing period if present to improve search accuracy
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -295,7 +304,7 @@ export default function AllIncidentsPage() {
       />
       <div className="p-4 h-[calc(100vh-4rem)] flex flex-col font-sans overflow-hidden gap-4">
         {/* Header Section */}
-        <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm shrink-0">
+        <div className="p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-gray-100 dark:border-neutral-800 shadow-sm shrink-0">
           <PageHeader
             viewMode={viewMode}
             onViewModeChange={setViewMode}
@@ -303,7 +312,7 @@ export default function AllIncidentsPage() {
           />
 
           {/* Search and Filter Controls */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-800">
             <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
               {/* Search Box */}
               <div className="relative flex-1">
@@ -316,50 +325,63 @@ export default function AllIncidentsPage() {
                   placeholder={t('error_report.search_placeholder') || 'Tìm kiếm...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  className={`w-full pl-10 ${isSupported ? 'pr-20' : 'pr-10'} py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors`}
                 />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  {isSupported && (
+                    <button
+                      onClick={startListening}
+                      className={`text-gray-400 hover:text-red-500 transition-colors ${
+                        isListening ? "text-red-500 animate-pulse" : ""
+                      }`}
+                      title="Click to speak"
+                    >
+                      <Mic size={16} />
+                    </button>
+                  )}
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Priority Filter - Multi Select */}
               <div className="relative" ref={priorityDropdownRef}>
                 <button
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
                 >
                   <Filter size={16} className="absolute left-3 text-gray-400" />
                   <span className="flex-1 text-left">
                     {filterPriorities.length === 0 
-                      ? 'Mức độ' 
-                      : `Mức độ (${filterPriorities.length})`}
+                      ? t('error_report.filter_priority') 
+                      : t('error_report.filter_priority_count', { count: filterPriorities.length })}
                   </span>
                   <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showPriorityDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 overflow-hidden">
                     {[
-                      { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
-                      { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
-                      { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-blue-600' },
-                      { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
+                      { value: 'Critical' as Priority, label: t('error_report.priority.Critical'), color: 'text-red-600 dark:text-red-400' },
+                      { value: 'High' as Priority, label: t('error_report.priority.High'), color: 'text-orange-600 dark:text-orange-400' },
+                      { value: 'Normal' as Priority, label: t('error_report.priority.Normal'), color: 'text-blue-600 dark:text-blue-400' },
+                      { value: 'Low' as Priority, label: t('error_report.priority.Low'), color: 'text-gray-600 dark:text-gray-400' },
                     ].map((priority) => (
                       <label
                         key={priority.value}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={filterPriorities.includes(priority.value)}
                           onChange={() => togglePriority(priority.value)}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          className="w-4 h-4 text-red-600 border-gray-300 dark:border-neutral-600 rounded focus:ring-red-500"
                         />
                         <span className={`text-sm font-medium ${priority.color}`}>
                           {priority.label}
@@ -374,31 +396,31 @@ export default function AllIncidentsPage() {
               <div className="relative" ref={statusDropdownRef}>
                 <button
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
+                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
                 >
                   <Filter size={16} className="absolute left-3 text-gray-400" />
                   <span className="flex-1 text-left">
                     {filterStatuses.length === 0 
-                      ? 'Trạng thái' 
-                      : `Trạng thái (${filterStatuses.length})`}
+                      ? t('error_report.filter_status') 
+                      : t('error_report.filter_status_count', { count: filterStatuses.length })}
                   </span>
                   <ChevronDown size={16} className={`text-gray-400 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showStatusDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                     {KANBAN_COLUMNS.map((status) => (
                       <label
                         key={status}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={filterStatuses.includes(status)}
                           onChange={() => toggleStatus(status)}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          className="w-4 h-4 text-red-600 border-gray-300 dark:border-neutral-600 rounded focus:ring-red-500"
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-neutral-200">
                           {t(`error_report.status.${status}`)}
                         </span>
                       </label>
@@ -410,11 +432,11 @@ export default function AllIncidentsPage() {
               {/* Sort Button */}
               <button
                 onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-                title={sortOrder === 'newest' ? 'Mới nhất trước' : 'Cũ nhất trước'}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors whitespace-nowrap"
+                title={sortOrder === 'newest' ? t('error_report.sort_newest_first') : t('error_report.sort_oldest_first')}
               >
                 <ArrowUpDown size={16} />
-                {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
+                {sortOrder === 'newest' ? t('error_report.sort_newest') : t('error_report.sort_oldest')}
               </button>
 
               {/* Clear Filters Button */}
@@ -423,11 +445,11 @@ export default function AllIncidentsPage() {
                 disabled={!searchTerm && filterPriorities.length === 0 && filterStatuses.length === 0}
                 className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${
                   searchTerm || filterPriorities.length > 0 || filterStatuses.length > 0
-                    ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
-                    : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                    ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                    : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100 dark:bg-neutral-800'
                 }`}
               >
-                Xóa bộ lọc
+                {t('error_report.clear_filters')}
               </button>
             </div>
 
@@ -435,19 +457,19 @@ export default function AllIncidentsPage() {
             <div 
               className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
                 filterPriorities.length > 0 || filterStatuses.length > 0
-                  ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+                  ? 'mt-3 pt-3 border-t border-gray-200 dark:border-neutral-800 max-h-40 opacity-100'
                   : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
               }`}
             >
               {filterPriorities.map((priority) => (
                 <span
                   key={priority}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full"
                 >
-                  {priority}
+                  {t(`error_report.priority.${priority}`)}
                   <button
                     onClick={() => togglePriority(priority)}
-                    className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full p-0.5 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -456,12 +478,12 @@ export default function AllIncidentsPage() {
               {filterStatuses.map((status) => (
                 <span
                   key={status}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full"
                 >
                   {t(`error_report.status.${status}`)}
                   <button
                     onClick={() => toggleStatus(status)}
-                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-full p-0.5 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -472,7 +494,7 @@ export default function AllIncidentsPage() {
         </div>
 
         {/* Content Section */}
-        <main className="flex-1 overflow-hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <main className="flex-1 overflow-hidden bg-white dark:bg-neutral-900 rounded-2xl border border-gray-100 dark:border-neutral-800 shadow-sm p-4">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />

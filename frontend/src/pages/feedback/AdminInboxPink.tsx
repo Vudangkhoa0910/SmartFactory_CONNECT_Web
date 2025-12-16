@@ -12,7 +12,7 @@ import {
 import { MessageList } from "../../components/feedback/MessageList";
 import { MessageDetailView } from "../../components/feedback/MessageDetailView";
 import { useTranslation } from "../../contexts/LanguageContext";
-
+import { useSpeechToText } from "../../hooks/useSpeechToText";
 
 // Helper to map API status to UI status
 const mapStatus = (apiStatus: string): MessageStatus => {
@@ -73,6 +73,14 @@ export default function SensitiveInboxPage() {
   const [loading, setLoading] = useState(true);
   const { departments, loading: deptLoading } = useDepartments();
   const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   // Fetch list of ideas
   useEffect(() => {
@@ -117,6 +125,13 @@ export default function SensitiveInboxPage() {
   }, [selectedMessageId]);
 
   const selectedMessage = messages.find((m) => m.id === selectedMessageId);
+
+  // Filter messages based on search term
+  const filteredMessages = messages.filter(msg => 
+    msg.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    msg.fullContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    msg.senderName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleForward = async (
     messageId: string,
@@ -215,14 +230,19 @@ export default function SensitiveInboxPage() {
   return (
     <>
       <PageMeta
-        title="Hộp thư nhạy cảm | SmartFactory CONNECT"
-        description="Quản lý các phản hồi nhạy cảm và ý kiến đóng góp"
+        title={`${t('menu.admin_inbox_pink')} | SmartFactory CONNECT`}
+        description={t('feedback.pink_box_desc')}
       />
-      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white text-gray-900">
+      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-white dark:bg-neutral-900 text-gray-900 dark:text-white">
         <MessageList
-          messages={messages}
+          messages={filteredMessages}
           selectedMessageId={selectedMessageId}
           onSelectMessage={setSelectedMessageId}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onVoiceClick={startListening}
+          isListening={isListening}
+          isVoiceSupported={isSupported}
         />
         <MessageDetailView
           message={selectedMessage}

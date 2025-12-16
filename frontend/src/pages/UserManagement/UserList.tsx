@@ -5,6 +5,8 @@ import api from "../../services/api";
 import UserAvatar from "../../components/common/UserAvatar";
 import PageBreadCrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { Mic } from "lucide-react";
 
 interface User {
   id: number;
@@ -50,6 +52,13 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   useEffect(() => {
     if (!canManageUsers()) {
@@ -133,7 +142,7 @@ export default function UserManagement() {
 
         {/* Header & Filters */}
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t('user.title')}
           </h2>
           <button className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors">
@@ -156,20 +165,31 @@ export default function UserManagement() {
 
         {/* Filters */}
         <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <div>
+          <div className="relative">
             <input
               type="text"
               placeholder={t('filter.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className={`w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 pl-4 ${isSupported ? 'pr-10' : 'pr-4'} py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none`}
             />
+            {isSupported && (
+              <button
+                onClick={startListening}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors ${
+                  isListening ? "text-red-500 animate-pulse" : ""
+                }`}
+                title="Click to speak"
+              >
+                <Mic size={16} />
+              </button>
+            )}
           </div>
           <div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
             >
               <option value="all">{t('filter.all_roles')}</option>
               {ROLES.map((role) => (
@@ -183,7 +203,7 @@ export default function UserManagement() {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm text-gray-900 dark:text-neutral-200 focus:border-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
             >
               <option value="all">{t('filter.all_departments')}</option>
               {departments.map((dept) => (
@@ -196,15 +216,15 @@ export default function UserManagement() {
         </div>
 
         {/* User Table */}
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-600">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-700 border-b border-gray-200">
+              <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                <thead className="bg-gray-50 dark:bg-neutral-800 text-xs uppercase text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-neutral-800">
                   <tr>
                     <th className="px-6 py-3">{t('user.name')}</th>
                     <th className="px-6 py-3">{t('user.role')}</th>
@@ -218,36 +238,36 @@ export default function UserManagement() {
                   {filteredUsers.map((user) => (
                     <tr
                       key={user.id}
-                      className="border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors"
+                      className="border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <UserAvatar fullName={user.full_name} size="sm" />
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {user.full_name}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
                               {user.email}
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
                               {user.employee_code}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                        <span className="inline-flex rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300">
                           {formatRole(user.role)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         {user.department_name ? (
-                          <span className="text-gray-700">
+                          <span className="text-gray-700 dark:text-gray-300">
                             {user.department_name}
                           </span>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4">{formatDate(user.last_login)}</td>
@@ -257,7 +277,7 @@ export default function UserManagement() {
                             {t('status.active')}
                           </span>
                         ) : (
-                          <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                          <span className="inline-flex rounded-full bg-gray-100 dark:bg-neutral-700 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300">
                             {t('status.inactive')}
                           </span>
                         )}
@@ -268,12 +288,12 @@ export default function UserManagement() {
                             onClick={() =>
                               toggleUserStatus(user.id, user.is_active)
                             }
-                            className="text-red-600 hover:text-red-700 hover:underline"
+                            className="text-red-600 hover:text-red-700 hover:underline dark:text-red-400 dark:hover:text-red-300"
                           >
                             {user.is_active ? t('status.inactive') : t('status.active')}
                           </button>
-                          <span className="text-gray-300">|</span>
-                          <button className="text-gray-600 hover:text-red-600 hover:underline">
+                          <span className="text-gray-300 dark:text-gray-600">|</span>
+                          <button className="text-gray-600 hover:text-red-600 hover:underline dark:text-gray-400 dark:hover:text-red-400">
                             {t('button.edit')}
                           </button>
                         </div>

@@ -43,16 +43,16 @@ export function KanbanColumn({
   return (
     <div 
       ref={setNodeRef}
-      className="flex-shrink-0 w-72 bg-gray-50 rounded-xl flex flex-col h-full border border-gray-200"
+      className="flex-shrink-0 w-72 bg-gray-50 dark:bg-neutral-800 rounded-xl flex flex-col h-full border border-gray-200 dark:border-neutral-700"
     >
-      <div className="p-3 border-b border-gray-200 flex justify-between items-center shrink-0">
+      <div className="p-3 border-b border-gray-200 dark:border-neutral-700 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-2">
           {columnIcons[title]}
-          <h3 className="font-semibold text-sm text-gray-800">
+          <h3 className="font-semibold text-sm text-gray-800 dark:text-white">
             {t(`error_report.status.${title}`)}
           </h3>
         </div>
-        <span className="text-xs font-bold text-gray-600 bg-gray-200 rounded-full px-2 py-0.5">
+        <span className="text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-neutral-700 rounded-full px-2 py-0.5">
           {incidents.length}
         </span>
       </div>

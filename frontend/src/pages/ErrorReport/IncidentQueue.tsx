@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown } from "lucide-react";
+import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown, Mic } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { toast } from "react-toastify";
 import { useTranslation } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
 
 import { Incident, Priority } from "../../components/ErrorReport/index";
 import { useDepartments } from "../../hooks/useDepartments";
@@ -28,6 +29,13 @@ const IncidentWorkspace: React.FC = () => {
   const { departments } = useDepartments();
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  const { isListening, startListening, isSupported } = useSpeechToText({
+    onResult: (text) => {
+      const cleanText = text.trim().replace(/\.$/, '');
+      setSearchTerm((prev) => (prev ? `${prev} ${cleanText}` : cleanText));
+    },
+  });
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -120,12 +128,12 @@ const IncidentWorkspace: React.FC = () => {
       });
       setAutoAssignEnabled(res.data.enabled);
       toast.success(res.data.enabled
-        ? 'Đã bật tự động điều phối'
-        : 'Đã tắt tự động điều phối'
+        ? t('error_report.auto_assign_enabled')
+        : t('error_report.auto_assign_disabled')
       );
     } catch (error) {
       console.error("Failed to toggle auto-assign:", error);
-      toast.error('Không thể thay đổi cài đặt');
+      toast.error(t('error_report.update_settings_failed'));
     } finally {
       setAutoAssignLoading(false);
     }
@@ -339,8 +347,8 @@ const IncidentWorkspace: React.FC = () => {
         <div className="flex-shrink-0 p-4 pb-0">
           <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{t('menu.queue')}</h1>
-            <p className="text-gray-500 mt-1 text-sm">{t('incident.select_to_process')}</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('menu.queue')}</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{t('incident.select_to_process')}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Auto-Assign Toggle - Admin only */}
@@ -349,19 +357,19 @@ const IncidentWorkspace: React.FC = () => {
                 onClick={handleToggleAutoAssign}
                 disabled={autoAssignLoading}
                 className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${autoAssignEnabled
-                    ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50'
+                    : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-700'
                   } ${autoAssignLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {autoAssignLoading
-                  ? 'Đang xử lý...'
+                  ? t('error_report.processing')
                   : autoAssignEnabled
-                    ? 'Tự động điều phối: BẬT'
-                    : 'Tự động điều phối: TẮT'
+                    ? t('error_report.auto_assign_on')
+                    : t('error_report.auto_assign_off')
                 }
               </button>
             )}
-            <div className="flex items-center gap-2 text-sm font-medium bg-red-100 text-red-700 px-3 py-1.5 rounded-full">
+            <div className="flex items-center gap-2 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full">
               <BellRing size={16} />
               <span>{activeIncidents.length} {t('incident.waiting')}</span>
             </div>
@@ -369,7 +377,7 @@ const IncidentWorkspace: React.FC = () => {
         </div>
 
         {/* Search and Filter Controls - Fixed */}
-        <div className="mb-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="mb-4 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-800 p-4">
           <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
             {/* Search Box */}
             <div className="relative flex-1">
@@ -379,53 +387,66 @@ const IncidentWorkspace: React.FC = () => {
               />
               <input
                 type="text"
-                placeholder={t('error_report.search_placeholder') || 'Tìm kiếm theo tiêu đề, mô tả, vị trí...'}
+                placeholder={t('error_report.search_placeholder_queue') || 'Tìm kiếm theo tiêu đề, mô tả, vị trí...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                className={`w-full pl-10 ${isSupported ? 'pr-20' : 'pr-10'} py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors`}
               />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              )}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {isSupported && (
+                  <button
+                    onClick={startListening}
+                    className={`text-gray-400 hover:text-red-500 transition-colors ${
+                      isListening ? "text-red-500 animate-pulse" : ""
+                    }`}
+                    title="Click to speak"
+                  >
+                    <Mic size={16} />
+                  </button>
+                )}
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Priority Filter - Multi Select */}
             <div className="relative" ref={priorityDropdownRef}>
               <button
                 onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
+                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
               >
                 <Filter size={16} className="absolute left-3 text-gray-400" />
                 <span className="flex-1 text-left">
                   {filterPriorities.length === 0 
-                    ? 'Mức độ' 
-                    : `Mức độ (${filterPriorities.length})`}
+                    ? t('error_report.filter_priority') 
+                    : t('error_report.filter_priority_count', { count: filterPriorities.length })}
                 </span>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
               </button>
               
               {showPriorityDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 overflow-hidden">
                   {[
-                    { value: 'Critical' as Priority, label: 'Nghiêm trọng', color: 'text-red-600' },
-                    { value: 'High' as Priority, label: 'Cao', color: 'text-orange-600' },
-                    { value: 'Normal' as Priority, label: 'Bình thường', color: 'text-blue-600' },
-                    { value: 'Low' as Priority, label: 'Thấp', color: 'text-gray-600' },
+                    { value: 'Critical' as Priority, label: t('error_report.priority.Critical'), color: 'text-red-600 dark:text-red-400' },
+                    { value: 'High' as Priority, label: t('error_report.priority.High'), color: 'text-orange-600 dark:text-orange-400' },
+                    { value: 'Normal' as Priority, label: t('error_report.priority.Normal'), color: 'text-blue-600 dark:text-blue-400' },
+                    { value: 'Low' as Priority, label: t('error_report.priority.Low'), color: 'text-gray-600 dark:text-gray-400' },
                   ].map((priority) => (
                     <label
                       key={priority.value}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={filterPriorities.includes(priority.value)}
                         onChange={() => togglePriority(priority.value)}
-                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        className="w-4 h-4 text-red-600 border-gray-300 dark:border-neutral-600 rounded focus:ring-red-500"
                       />
                       <span className={`text-sm font-medium ${priority.color}`}>
                         {priority.label}
@@ -440,31 +461,31 @@ const IncidentWorkspace: React.FC = () => {
             <div className="relative" ref={departmentDropdownRef}>
               <button
                 onClick={() => setShowDepartmentDropdown(!showDepartmentDropdown)}
-                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
+                className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
               >
                 <Filter size={16} className="absolute left-3 text-gray-400" />
                 <span className="flex-1 text-left">
                   {filterDepartments.length === 0 
-                    ? 'Phòng ban' 
-                    : `Phòng ban (${filterDepartments.length})`}
+                    ? t('error_report.filter_department') 
+                    : t('error_report.filter_department_count', { count: filterDepartments.length })}
                 </span>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform ${showDepartmentDropdown ? 'rotate-180' : ''}`} />
               </button>
               
               {showDepartmentDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                   {departmentNames.map((dept) => (
                     <label
                       key={dept}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={filterDepartments.includes(dept)}
                         onChange={() => toggleDepartment(dept)}
-                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        className="w-4 h-4 text-red-600 border-gray-300 dark:border-neutral-600 rounded focus:ring-red-500"
                       />
-                      <span className="text-sm text-gray-700">{dept}</span>
+                      <span className="text-sm text-gray-700 dark:text-neutral-200">{dept}</span>
                     </label>
                   ))}
                 </div>
@@ -473,11 +494,11 @@ const IncidentWorkspace: React.FC = () => {
               {/* Sort Button */}
               <button
                 onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-                title={sortOrder === 'newest' ? 'Mới nhất trước' : 'Cũ nhất trước'}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors whitespace-nowrap"
+                title={sortOrder === 'newest' ? t('error_report.sort_newest_first') : t('error_report.sort_oldest_first')}
               >
                 <ArrowUpDown size={16} />
-                {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
+                {sortOrder === 'newest' ? t('error_report.sort_newest') : t('error_report.sort_oldest')}
               </button>
             {/* Clear Filters Button */}
             <button
@@ -485,11 +506,11 @@ const IncidentWorkspace: React.FC = () => {
               disabled={!searchTerm && filterPriorities.length === 0 && filterDepartments.length === 0}
               className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${
                 searchTerm || filterPriorities.length > 0 || filterDepartments.length > 0
-                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
-                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100 dark:bg-neutral-800'
               }`}
             >
-              Xóa bộ lọc
+              {t('error_report.clear_filters')}
             </button>
           </div>
 
@@ -497,19 +518,19 @@ const IncidentWorkspace: React.FC = () => {
           <div 
             className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
               filterPriorities.length > 0 || filterDepartments.length > 0
-                ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+                ? 'mt-3 pt-3 border-t border-gray-200 dark:border-neutral-800 max-h-40 opacity-100'
                 : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
             }`}
           >
             {filterPriorities.map((priority) => (
               <span
                 key={priority}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
               >
-                {priority}
+                {t(`error_report.priority.${priority}`)}
                 <button
                   onClick={() => togglePriority(priority)}
-                  className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                  className="hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full p-0.5 transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -518,12 +539,12 @@ const IncidentWorkspace: React.FC = () => {
             {filterDepartments.map((dept) => (
               <span
                 key={dept}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full animate-in fade-in slide-in-from-top-2 duration-200"
               >
                 {dept}
                 <button
                   onClick={() => toggleDepartment(dept)}
-                  className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  className="hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-full p-0.5 transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -537,8 +558,8 @@ const IncidentWorkspace: React.FC = () => {
         <div className="flex-1 px-4 pb-4 min-h-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
             {/* LEFT PANE: LIST - Scrollable */}
-            <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col min-h-0">
-              <h2 className="text-lg font-semibold text-gray-800 mb-3 px-2 flex-shrink-0">
+            <div className="lg:col-span-1 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-800 p-4 flex flex-col min-h-0">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 px-2 flex-shrink-0">
                 {t('incident.list')}
               </h2>
               <div className="overflow-y-auto custom-scrollbar pr-2 space-y-2 min-h-0 flex-1" style={{ scrollbarGutter: 'stable' }}>
@@ -556,7 +577,7 @@ const IncidentWorkspace: React.FC = () => {
                     />
                   ))
                 ) : (
-                  <p className="text-center text-sm text-gray-500 py-8">
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
                     {t('error_report.no_incidents')}
                   </p>
                 )}

@@ -4,6 +4,8 @@ import { useLocation } from "react-router";
 import api from "../../services/api";
 import { toast } from "react-toastify";
 import { useTranslation } from "../../contexts/LanguageContext";
+import Input from '../form/input/InputField';
+import TextArea from '../form/input/TextArea';
 
 interface NewsItem {
   title: string;
@@ -132,14 +134,14 @@ export default function NewsForm() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-5 text-gray-900">{t('news.create_title')}</h2>
+    <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700 transition-colors">
+      <h2 className="text-xl font-semibold mb-5 text-gray-900 dark:text-gray-100">{t('news.create_title')}</h2>
 
       {/* Category & Priority */}
       <div className="flex gap-4 mb-3">
         <div className="flex-1">
           <select
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             value={news.category}
             onChange={(e) => setNews({ ...news, category: e.target.value })}
             disabled={loading}
@@ -155,12 +157,12 @@ export default function NewsForm() {
           <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
-              className="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-300"
+              className="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-300 dark:border-neutral-600 dark:bg-neutral-900"
               checked={news.is_priority}
               onChange={(e) => setNews({ ...news, is_priority: e.target.checked })}
               disabled={loading}
             />
-            <span className="ml-2 text-sm font-medium text-gray-700">
+            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('news.priority')}
             </span>
           </label>
@@ -168,89 +170,91 @@ export default function NewsForm() {
       </div>
 
       {/* Title */}
-      <input
+      <Input
         type="text"
         placeholder={t('news.title_placeholder')}
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+        className="mb-3 bg-white dark:bg-neutral-900 dark:text-gray-100 dark:border-neutral-700"
         value={news.title}
         onChange={(e) => setNews({ ...news, title: e.target.value })}
         disabled={loading}
+        enableSpeech={true}
       />
 
       {/* Excerpt */}
-      <input
+      <Input
         type="text"
         placeholder={t('news.excerpt_placeholder')}
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+        className="mb-3 bg-white dark:bg-neutral-900 dark:text-gray-100 dark:border-neutral-700"
         value={news.excerpt}
         onChange={(e) => setNews({ ...news, excerpt: e.target.value })}
         disabled={loading}
+        enableSpeech={true}
       />
 
       {/* Content */}
-      <textarea
+      <TextArea
         placeholder={t('news.content_placeholder')}
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white h-32 mb-5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+        className="h-32 mb-5 bg-white dark:bg-neutral-900 dark:text-gray-100 dark:border-neutral-700"
         value={news.content}
-        onChange={(e) => setNews({ ...news, content: e.target.value })}
+        onChange={(value) => setNews({ ...news, content: value })}
         disabled={loading}
+        enableSpeech={true}
       />
 
-      {/* Upload Section */}
+      {/* File Upload */}
       <div
-        className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 hover:border-red-300 transition"
+        className="border-2 border-dashed border-gray-200 dark:border-neutral-700 rounded-xl p-6 text-center hover:border-red-500 dark:hover:border-red-500 transition-colors cursor-pointer mb-5 bg-gray-50 dark:bg-neutral-900"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        onClick={() => document.getElementById("fileInput")?.click()}
+        onClick={() => document.getElementById("file-upload")?.click()}
       >
-        <UploadCloud className="w-10 h-10 mx-auto mb-3 text-gray-400" />
-        <p className="text-gray-600 font-medium mb-1">
+        <UploadCloud className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {t('news.drag_drop')}
         </p>
-        <p className="text-xs text-gray-400">{t('news.allowed_types')}</p>
-
         <input
+          id="file-upload"
           type="file"
-          id="fileInput"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
           multiple
           className="hidden"
+          accept={allowedTypes.join(",")}
           onChange={(e) => handleFiles(e.target.files)}
           disabled={loading}
         />
       </div>
 
-      {/* Preview Files */}
+      {/* File List */}
       {news.attachments.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {news.attachments.map((file, index) => (
+        <div className="space-y-2 mb-5">
+          {news.attachments.map((file, i) => (
             <div
-              key={index}
-              className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg border border-gray-100"
-            >
-              <div className="flex items-center gap-2 text-gray-700">
-                <FileText className="w-5 h-5" />
-                <span className="text-sm">{file.name}</span>
+                  key={i}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700"
+                >
+              <div className="flex items-center gap-3">
+                <FileText size={18} className="text-red-600" />
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate max-w-[200px]">
+                  {file.name}
+                </span>
               </div>
               <button
-                onClick={() => removeFile(index)}
-                className="text-gray-400 hover:text-red-600 transition-colors"
+                onClick={() => removeFile(i)}
+                className="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
                 disabled={loading}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Button */}
-      <button 
+      <button
         onClick={handleSubmit}
         disabled={loading}
-        className="mt-5 w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-gray-300 dark:disabled:bg-neutral-700 transition-colors shadow-sm"
       >
-        {loading ? t('news.processing') : t('news.post_news')}
+        {loading ? t('news.posting') : t('news.post_button')}
       </button>
     </div>
   );

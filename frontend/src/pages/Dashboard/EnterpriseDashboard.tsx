@@ -16,6 +16,7 @@ import {
   ArrowRightIcon
 } from '../../icons';
 import { useTranslation } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Components and hooks
 import { StatCard, QuickActionButton, ActivityItem, getPriorityChartOptions, getDepartmentChartOptions } from './components';
@@ -24,8 +25,10 @@ import { useDashboardData, computeDashboardValues } from './hooks';
 export default function EnterpriseDashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { summary, incidentStats, departmentStats, activities, loading, error, refetch } = useDashboardData();
   const values = computeDashboardValues(summary);
+  const isDark = theme === 'dark';
 
   // Priority chart data
   const priorityData = incidentStats?.by_priority 
@@ -96,7 +99,7 @@ export default function EnterpriseDashboard() {
           {/* Priority Chart */}
           <ChartSection title={t('dashboard.priority_distribution')} loading={loading}>
             <Chart
-              options={getPriorityChartOptions(values.totalIncidents, t)}
+              options={getPriorityChartOptions(values.totalIncidents, t, isDark)}
               series={priorityData}
               type="donut"
               height={280}
@@ -105,7 +108,7 @@ export default function EnterpriseDashboard() {
         </div>
 
         {/* Department Performance */}
-        <DepartmentPerformanceSection departmentStats={departmentStats} loading={loading} t={t} />
+        <DepartmentPerformanceSection departmentStats={departmentStats} loading={loading} t={t} isDark={isDark} />
 
         {/* Summary Stats */}
         <SummaryStatsSection values={values} t={t} />
@@ -119,13 +122,13 @@ type TranslateFunction = (key: string) => string;
 
 // Sub-components
 const ErrorView = ({ error, onRetry, t }: { error: string; onRetry: () => void; t: TranslateFunction }) => (
-  <div className="min-h-[60vh] flex items-center justify-center">
+  <div className="min-h-[60vh] flex items-center justify-center bg-gray-50 dark:bg-neutral-900">
     <div className="text-center">
-      <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-        <AlertIcon className="w-8 h-8 text-red-600" />
+      <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
+        <AlertIcon className="w-8 h-8 text-red-600 dark:text-red-500" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('error.occurred')}</h3>
-      <p className="text-gray-500 mb-4">{error}</p>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('error.occurred')}</h3>
+      <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
       <button
         onClick={onRetry}
         className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -137,17 +140,17 @@ const ErrorView = ({ error, onRetry, t }: { error: string; onRetry: () => void; 
 );
 
 const DashboardHeader = ({ loading, onRefresh, t }: { loading: boolean; onRefresh: () => void; t: TranslateFunction }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl p-6 border border-gray-100">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-gray-100 dark:border-neutral-700">
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">{t('menu.dashboard')}</h1>
-      <p className="text-gray-500 mt-1">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('menu.dashboard')}</h1>
+      <p className="text-gray-500 dark:text-gray-400 mt-1">
         {t('dashboard.overview')} • {new Date().toLocaleDateString('en-GB')}
       </p>
     </div>
     <button
       onClick={onRefresh}
       disabled={loading}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-neutral-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-600 transition-colors"
     >
       <TimeIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
       {t('button.refresh')}
@@ -156,8 +159,8 @@ const DashboardHeader = ({ loading, onRefresh, t }: { loading: boolean; onRefres
 );
 
 const QuickActionsSection = ({ navigate, t }: { navigate: (path: string) => void; t: TranslateFunction }) => (
-  <div className="bg-white rounded-2xl p-6 border border-gray-100">
-    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.quick_actions')}</h2>
+  <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-gray-100 dark:border-neutral-700">
+    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.quick_actions')}</h2>
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <QuickActionButton icon={AlertIcon} label={t('dashboard.report_incident')} onClick={() => navigate('/error-report/create')} />
       <QuickActionButton icon={BoxIcon} label={t('dashboard.submit_feedback')} onClick={() => navigate('/feedback/submit')} />
@@ -168,10 +171,10 @@ const QuickActionsSection = ({ navigate, t }: { navigate: (path: string) => void
 );
 
 const ActivitiesSection = ({ activities, loading, navigate, t }: { activities: any[]; loading: boolean; navigate: (path: string) => void; t: TranslateFunction }) => (
-  <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100">
+  <div className="lg:col-span-2 bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-gray-100 dark:border-neutral-700">
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.recent_activities')}</h2>
-      <button onClick={() => navigate('/activities')} className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.recent_activities')}</h2>
+      <button onClick={() => navigate('/activities')} className="text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 font-medium flex items-center gap-1">
         {t('button.view_all')}
         <ArrowRightIcon className="w-4 h-4" />
       </button>
@@ -185,14 +188,14 @@ const ActivitiesSection = ({ activities, loading, navigate, t }: { activities: a
         ))}
       </div>
     ) : (
-      <div className="text-center py-8 text-gray-500">{t('common.no_activities')}</div>
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('common.no_activities')}</div>
     )}
   </div>
 );
 
 const ChartSection = ({ title, loading, children }: { title: string; loading: boolean; children: React.ReactNode }) => (
-  <div className="bg-white rounded-2xl p-6 border border-gray-100">
-    <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
+  <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-gray-100 dark:border-neutral-700">
+    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h2>
     {loading ? (
       <div className="h-[280px] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
@@ -201,22 +204,22 @@ const ChartSection = ({ title, loading, children }: { title: string; loading: bo
   </div>
 );
 
-const DepartmentPerformanceSection = ({ departmentStats, loading, t }: { departmentStats: any[]; loading: boolean; t: TranslateFunction }) => (
-  <div className="bg-white rounded-2xl p-6 border border-gray-100">
-    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.department_performance')}</h2>
+const DepartmentPerformanceSection = ({ departmentStats, loading, t, isDark }: { departmentStats: any[]; loading: boolean; t: TranslateFunction; isDark: boolean }) => (
+  <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-gray-100 dark:border-neutral-700">
+    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.department_performance')}</h2>
     {loading ? (
       <div className="h-[250px] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
       </div>
     ) : departmentStats.length > 0 ? (
       <Chart
-        options={getDepartmentChartOptions(departmentStats)}
+        options={getDepartmentChartOptions(departmentStats, isDark)}
         series={[{ name: 'KPI', data: departmentStats.slice(0, 5).map(d => d.kpi_percentage) }]}
         type="bar"
         height={250}
       />
     ) : (
-      <div className="h-[250px] flex items-center justify-center text-gray-500">{t('common.no_department_data')}</div>
+      <div className="h-[250px] flex items-center justify-center text-gray-500 dark:text-gray-400">{t('common.no_department_data')}</div>
     )}
   </div>
 );
@@ -227,17 +230,17 @@ const SummaryStatsSection = ({ values, t }: { values: ReturnType<typeof computeD
       <p className="text-red-100 text-sm font-medium">{t('dashboard.total_incidents')}</p>
       <p className="text-3xl font-bold mt-1">{values.totalIncidents}</p>
     </div>
-    <div className="bg-white rounded-2xl p-5 border border-gray-100">
-      <p className="text-gray-500 text-sm font-medium">{t('dashboard.resolved')}</p>
-      <p className="text-3xl font-bold text-gray-900 mt-1">{values.resolvedIncidents}</p>
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl p-5 border border-gray-100 dark:border-neutral-700">
+      <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{t('dashboard.resolved')}</p>
+      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{values.resolvedIncidents}</p>
     </div>
-    <div className="bg-white rounded-2xl p-5 border border-gray-100">
-      <p className="text-gray-500 text-sm font-medium">{t('dashboard.feedback_ideas')}</p>
-      <p className="text-3xl font-bold text-gray-900 mt-1">{values.totalIdeas}</p>
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl p-5 border border-gray-100 dark:border-neutral-700">
+      <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{t('dashboard.feedback_ideas')}</p>
+      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{values.totalIdeas}</p>
     </div>
-    <div className="bg-white rounded-2xl p-5 border border-gray-100">
-      <p className="text-gray-500 text-sm font-medium">{t('dashboard.departments')}</p>
-      <p className="text-3xl font-bold text-gray-900 mt-1">{values.departmentsCount}</p>
+    <div className="bg-white dark:bg-neutral-800 rounded-2xl p-5 border border-gray-100 dark:border-neutral-700">
+      <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{t('dashboard.departments')}</p>
+      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{values.departmentsCount}</p>
     </div>
   </div>
 );
@@ -246,10 +249,10 @@ const LoadingPlaceholder = ({ count }: { count: number }) => (
   <div className="space-y-3">
     {Array.from({ length: count }).map((_, i) => (
       <div key={i} className="animate-pulse flex gap-3 p-3">
-        <div className="w-9 h-9 rounded-lg bg-gray-100" />
+        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-neutral-700" />
         <div className="flex-1">
-          <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-          <div className="h-3 bg-gray-100 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 dark:bg-neutral-700 rounded w-3/4 mb-2" />
+          <div className="h-3 bg-gray-100 dark:bg-neutral-700 rounded w-1/2" />
         </div>
       </div>
     ))}

@@ -147,12 +147,19 @@
       "productivity": "生産性",
       "cost_saving": "コスト削減",
       "other": "その他"
-    }
+    },
+    "sender": "送信者",
+    "attached_image": "添付画像",
+    "solution_proposal": "解決策の提案:",
+    "solution_placeholder": "解決策を入力...",
+    "chat_placeholder": "返信を入力...",
+    "discussion": "ディスカッション"
   },
 
  
 
   "news": {
+    "post_button": "ニュース投稿",
     "title": "ニュース",
     "create": "ニュース作成",
     "list": "ニュース一覧",
@@ -669,6 +676,30 @@
     "page_title": "インシデント管理 | SmartFactory CONNECT",
     "page_description": "工場内のインシデントの追跡と管理",
     "search_placeholder": "インシデントを検索...",
+    "search_placeholder_queue": "タイトル、説明、場所で検索...",
+    "filter_priority": "優先度",
+    "filter_priority_count": "優先度 ({{count}})",
+    "filter_department": "部門",
+    "filter_department_count": "部門 ({{count}})",
+    "filter_status": "ステータス",
+    "filter_status_count": "ステータス ({{count}})",
+    "sort_newest_first": "新しい順",
+    "sort_oldest_first": "古い順",
+    "sort_newest": "最新",
+    "sort_oldest": "最古",
+    "clear_filters": "フィルターをクリア",
+    "auto_assign_on": "自動割り当て: ON",
+    "auto_assign_off": "自動割り当て: OFF",
+    "processing": "処理中...",
+    "auto_assign_enabled": "自動割り当てを有効にしました",
+    "auto_assign_disabled": "自動割り当てを無効にしました",
+    "update_settings_failed": "設定を変更できませんでした",
+    "priority": {
+      "Critical": "重大",
+      "High": "高",
+      "Normal": "中",
+      "Low": "低"
+    },
     "export_excel": "Excel出力",
     "view": {
       "kanban": "かんばん",

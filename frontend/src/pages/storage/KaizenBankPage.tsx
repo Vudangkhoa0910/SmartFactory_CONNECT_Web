@@ -71,7 +71,7 @@ export default function KaizenBankPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-        <span className="ml-2 text-gray-600">{t('kaizen.loading')}</span>
+        <span className="ml-2 text-gray-600 dark:text-gray-400">{t('kaizen.loading')}</span>
       </div>
     );
   }
@@ -82,29 +82,29 @@ export default function KaizenBankPage() {
         title={t('kaizen.page_title')}
         description={t('kaizen.page_description')}
       />
-      <div className="p-4">
+      <div className="p-4 bg-gray-50 dark:bg-neutral-900 min-h-screen transition-colors">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <BookOpen size={28} className="text-red-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {t('kaizen.title')}
             </h1>
-            <p className="text-gray-500 mt-0.5">
+            <p className="text-gray-500 dark:text-gray-400 mt-0.5">
               {t('kaizen.description')}
             </p>
           </div>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 p-4 mb-6">
           <div className="flex items-center gap-3">
             <Search size={20} className="text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('kaizen.search_placeholder')}
-              className="w-full outline-none bg-transparent text-gray-900 placeholder-gray-400"
+              className="w-full outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-400"
             />
           </div>
 
@@ -117,7 +117,7 @@ export default function KaizenBankPage() {
                   ${
                     selectedTags.includes(tag)
                       ? "bg-red-600 text-white border-red-600"
-                      : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      : "bg-gray-50 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-600"
                   }`}
               >
                 <Tag
@@ -135,14 +135,14 @@ export default function KaizenBankPage() {
           {filteredData.map((item) => (
             <div
               key={item.id}
-              className="bg-white p-5 rounded-xl shadow-sm hover:shadow-md border border-gray-200 transition-all duration-300"
+              className="bg-white dark:bg-neutral-800 p-5 rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-neutral-700 transition-all duration-300"
             >
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Lightbulb size={18} className="text-red-500" />
                 {item.title}
               </h3>
 
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('kaizen.id')}: {item.idea_code || item.id} •{" "}
                 {new Date(item.created_at).toLocaleDateString("vi-VN", {
                   day: "2-digit",
@@ -152,7 +152,7 @@ export default function KaizenBankPage() {
                 {item.difficulty_level && ` • ${t('kaizen.difficulty')}: ${getDifficultyLabel(item.difficulty_level)}`}
               </p>
 
-              <div className="mt-3 text-sm text-gray-700">
+              <div className="mt-3 text-sm text-gray-700 dark:text-gray-300">
                 <p>
                   <span className="font-semibold">• {t('kaizen.desc')}:</span>{" "}
                   {item.description}
@@ -171,7 +171,7 @@ export default function KaizenBankPage() {
                 )}
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Award size={16} className="text-red-500" />
                 <span>
                   {t('kaizen.contributed_by')}:{" "}
@@ -181,7 +181,7 @@ export default function KaizenBankPage() {
 
               {item.category && (
                 <div className="flex gap-2 mt-3 flex-wrap">
-                  <span className="px-3 py-1 text-xs rounded-full font-medium bg-red-100 text-red-700">
+                  <span className="px-3 py-1 text-xs rounded-full font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
                     {item.category}
                   </span>
                 </div>
@@ -191,9 +191,9 @@ export default function KaizenBankPage() {
         </div>
 
         {filteredData.length === 0 && !loading && (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <Lightbulb size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500">
+          <div className="text-center py-12 bg-white dark:bg-neutral-800 rounded-xl border border-gray-200 dark:border-neutral-700">
+            <Lightbulb size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">
               {kaizenItems.length === 0 
                 ? t('kaizen.no_ideas')
                 : t('kaizen.no_results')}

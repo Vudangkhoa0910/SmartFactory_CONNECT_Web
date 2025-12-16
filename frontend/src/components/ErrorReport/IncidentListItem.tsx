@@ -32,16 +32,16 @@ const IncidentListItem: React.FC<IncidentListItemProps> = ({
         border-l-4
         ${
           isSelected
-            ? "bg-red-50 dark:bg-slate-700/50 border-red-500 shadow-sm"
-            : "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700/30 border-transparent"
+            ? "bg-red-50 dark:bg-neutral-800 border-red-500 shadow-sm"
+            : "bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800/50 border-transparent"
         }
       `}
     >
       <div className="flex justify-between items-center mb-1">
-        <h4 className="font-semibold text-slate-800 dark:text-slate-100 truncate pr-2">
+        <h4 className={`font-semibold truncate pr-2 ${isSelected ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
           {incident.title}
         </h4>
-        <div className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
+        <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
           {displayTime}
         </div>
       </div>
