@@ -18,10 +18,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Rate limit configurations
 const configs = {
-  // General API - 100 requests per minute
+  // General API - 100 requests per minute (500 in dev for React Strict Mode)
   general: {
     windowMs: 60 * 1000, // 1 minute
-    max: 100,
+    max: isProduction ? 100 : 500, // Higher limit in development
     message: {
       status: 429,
       error: 'Too many requests',
@@ -33,7 +33,7 @@ const configs = {
   // Auth endpoints - stricter limits
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // 20 attempts per 15 minutes
+    max: isProduction ? 20 : 100, // Higher limit in development
     message: {
       status: 429,
       error: 'Too many authentication attempts',
@@ -45,7 +45,7 @@ const configs = {
   // Login specifically - very strict
   login: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 login attempts per 15 minutes
+    max: isProduction ? 5 : 20, // Higher limit in development
     message: {
       status: 429,
       error: 'Too many login attempts',
@@ -57,7 +57,7 @@ const configs = {
   // File uploads - limited
   upload: {
     windowMs: 60 * 1000, // 1 minute
-    max: 10, // 10 uploads per minute
+    max: isProduction ? 10 : 50, // Higher limit in development
     message: {
       status: 429,
       error: 'Upload limit reached',
@@ -69,7 +69,7 @@ const configs = {
   // AI/Chat endpoints - expensive operations
   ai: {
     windowMs: 60 * 1000, // 1 minute
-    max: 20, // 20 AI requests per minute
+    max: isProduction ? 20 : 100, // Higher limit in development
     message: {
       status: 429,
       error: 'AI rate limit exceeded',
@@ -81,7 +81,7 @@ const configs = {
   // Admin endpoints
   admin: {
     windowMs: 60 * 1000, // 1 minute
-    max: 50, // 50 requests per minute
+    max: isProduction ? 50 : 200, // Higher limit in development
     message: {
       status: 429,
       error: 'Admin rate limit exceeded',
