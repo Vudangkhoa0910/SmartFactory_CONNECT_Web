@@ -20,8 +20,16 @@ export const sendMessageToGemini = async (history: ChatMessage[], newMessage: st
     });
 
     // System instruction to guide the AI
+    const currentTime = new Date().toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    });
+
     const systemInstruction = `You are a helpful assistant for the SmartFactory CONNECT application. 
       You help users navigate the app and understand its features.
+      
+      Current time: ${currentTime}
       
       Here are the main features and their routes:
       - Dashboard/Home: /
@@ -54,14 +62,14 @@ export const sendMessageToGemini = async (history: ChatMessage[], newMessage: st
       },
       ...contents
     ];
-    
+
     // Call backend proxy instead of direct Google API
     const response = await api.post('/chat/message', { contents: finalContents });
-    
+
     if (response.data.success) {
       return response.data.text;
     }
-    
+
     return "Sorry, I couldn't understand that.";
   } catch (error) {
     console.error("Error calling Chat API:", error);
@@ -99,11 +107,11 @@ export const generateNewsContent = async (userInput: string) => {
 
     // Call backend proxy
     const response = await api.post('/chat/generate-news', { prompt });
-    
+
     if (response.data.success) {
       return response.data.data;
     }
-    
+
     return null;
   } catch (error) {
     console.error("Error generating news content:", error);
