@@ -259,35 +259,32 @@ const IncidentWorkspace: React.FC = () => {
 
   const handleAssign = async (id: string, department: string) => {
     try {
-      // Find department ID from name (mock logic since we don't have dept IDs in frontend constant)
-      // In real app, DEPARTMENTS should have IDs.
-      // For now, we'll use quick-assign endpoint which accepts department_id.
-      // Assuming we can't map name to ID easily without fetching departments.
-      // Let's assume we just update status for now or use a mock ID if needed.
-
-      // Actually, let's use the quick-assign endpoint
-      // We need department ID. 
-      // Let's just simulate success for UI and call API if we had IDs.
-      // Since we don't have department IDs readily available in DEPARTMENTS constant (it's likely just strings),
-      // we might need to fetch departments first.
-
-      // For this implementation, I'll assume we just acknowledge/assign to current user or similar.
-      // But the UI asks for Department.
-
-      console.log(`[PHÂN CÔNG] Sự cố ${id} đã được gán cho ${department}`);
+      // Find department  ID from departments hook
+      const dept = departments.find(d => d.name === department);
+      if (!dept) {
+        toast.error('Không tìm thấy phòng ban');
+        return;
+      }
 
       // Optimistic update
       setIncidents((prev) =>
         prev.map((inc) =>
-          inc.id === id ? { ...inc, status: "in_progress" } : inc
+          inc.id === id ? { ...inc, status: "in_progress", department: department } : inc
         )
       );
 
-      // Call API (mocking department ID or using a specific endpoint)
-      // await api.post(`/incidents/${id}/quick-assign`, { department_id: '...' });
+      // Call API
+      await api.post(`/incidents/${id}/quick-assign`, {
+        department_id: dept.id
+      });
+
+      toast.success(`Đã phân công sự cố cho ${department}`);
+      fetchQueue(false);
 
     } catch (error) {
       console.error("Assign failed", error);
+      toast.error('Không thể phân công sự cố');
+      fetchQueue(false);
     }
   };
 
