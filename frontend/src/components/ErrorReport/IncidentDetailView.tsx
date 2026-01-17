@@ -8,6 +8,8 @@ import {
   Send,
   History,
   Paperclip,
+  MapPin,
+  Building2,
 } from "lucide-react";
 import { Incident } from "../types"; // <-- Nhớ cập nhật type này
 import { PriorityBadge } from "./Badges";
@@ -95,16 +97,91 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Meta Info */}
-      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-300 mb-6">
-        <div className="flex items-center gap-2">
-          <Clock size={14} className="text-gray-400" />
-          <span>{incident.timestamp?.toLocaleString("vi-VN") || new Date(incident.createdAt).toLocaleString("vi-VN")}</span>
+      {/* Status Progression Stepper */}
+      <div className="mb-6 bg-gradient-to-r from-gray-50 to-white dark:from-neutral-900 dark:to-neutral-800 p-4 rounded-xl border border-gray-100 dark:border-neutral-700">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Tiến trình xử lý</h4>
+        <div className="flex items-center justify-between">
+          {['new', 'assigned', 'in_progress', 'resolved'].map((status, index) => {
+            const isActive = incident.status === status;
+            const isPassed = ['new', 'assigned', 'in_progress', 'resolved'].indexOf(incident.status) > index;
+            const statusLabels: Record<string, string> = {
+              new: 'Mới',
+              assigned: 'Đã phân',
+              in_progress: 'Xử lý',
+              resolved: 'Hoàn tất'
+            };
+
+            return (
+              <div key={status} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${isActive
+                    ? 'bg-red-500 text-white ring-4 ring-red-100 dark:ring-red-900/30 scale-110'
+                    : isPassed
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 dark:bg-neutral-700 text-gray-400'
+                    }`}>
+                    {isPassed ? '✓' : index + 1}
+                  </div>
+                  <span className={`text-xs mt-1.5 font-medium ${isActive ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                    {statusLabels[status]}
+                  </span>
+                </div>
+                {index < 3 && (
+                  <div className={`flex-1 h-1 mx-2 rounded ${isPassed ? 'bg-green-500' : 'bg-gray-200 dark:bg-neutral-700'
+                    }`} />
+                )}
+              </div>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className="text-gray-400" />
-          <span>Nguồn: {incident.source}</span>
+      </div>
+
+      {/* Assignee Info Card */}
+      {incident.assignedTo && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-neutral-800 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+              <Users size={20} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Người xử lý</p>
+              <p className="text-base font-semibold text-gray-900 dark:text-white">{incident.assignedTo}</p>
+            </div>
+            <div className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+              <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Đang xử lý</span>
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* Meta Info - Enhanced with cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <Clock size={18} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Thời gian tạo</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {incident.timestamp?.toLocaleString("vi-VN") || new Date(incident.createdAt).toLocaleString("vi-VN")}
+            </p>
+          </div>
+        </div>
+
+        {(incident.source || incident.reporter) && (
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <ShieldAlert size={18} className="text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Nguồn báo cáo</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {incident.source || incident.reporter}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Description */}
@@ -117,6 +194,67 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
         </p>
       </div>
 
+      {/* Quick Stats Summary */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/10 dark:to-neutral-800 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock size={14} className="text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Thời gian phản hồi</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {(() => {
+              const diffHours = (new Date().getTime() - (incident.timestamp || incident.createdAt).getTime()) / (1000 * 60 * 60);
+              if (diffHours < 1) return `${Math.round(diffHours * 60)} phút`;
+              if (diffHours < 24) return `${Math.round(diffHours)} giờ`;
+              return `${Math.round(diffHours / 24)} ngày`;
+            })()}
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/10 dark:to-neutral-800 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
+          <div className="flex items-center gap-2 mb-1">
+            <History size={14} className="text-amber-600 dark:text-amber-400" />
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Cập nhật</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {incident.history?.length || 0} lần
+          </p>
+        </div>
+      </div>
+
+      {/* Additional Info Cards - Location & Department */}
+      {(incident.location || incident.department) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+          {incident.location && (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <MapPin size={18} className="text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Vị trí</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {incident.location}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {incident.department && (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg border border-gray-100 dark:border-neutral-700">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Building2 size={18} className="text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Phòng ban</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {incident.department}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Attachments Section */}
       {incident.attachments && incident.attachments.length > 0 && (
         <div className="mb-6">
@@ -124,8 +262,8 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
             <Paperclip size={16} /> Đính kèm ({incident.attachments.length})
           </h4>
           <div className="bg-gray-50 dark:bg-neutral-900 p-4 rounded-lg border border-gray-100 dark:border-neutral-700">
-            <MediaViewer 
-              attachments={incident.attachments} 
+            <MediaViewer
+              attachments={incident.attachments}
               baseUrl={import.meta.env.VITE_API_URL || 'http://localhost:3000'}
             />
           </div>

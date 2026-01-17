@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "react-toastify";
-import { Filter, ChevronDown, X, Search, ArrowUpDown } from "lucide-react";
+import { Filter, ChevronDown, X, Search, ArrowUpDown, AlertTriangle, AlertCircle, Activity, CheckCircle2 } from "lucide-react";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -23,6 +23,7 @@ import { PageHeader } from "../../components/ErrorReport/PageHeader";
 import { KanbanColumn } from "../../components/ErrorReport/KanbanColumn";
 import { KanbanCard } from "../../components/ErrorReport/KanbanCard";
 import { ListView } from "../../components/ErrorReport/ListView";
+import { StatisticsCard } from "../../components/ErrorReport/StatisticsCard";
 import api from "../../services/api";
 
 import { useTranslation } from "../../contexts/LanguageContext";
@@ -313,6 +314,37 @@ export default function AllIncidentsPage() {
             onViewModeChange={setViewMode}
             onExport={handleExport}
           />
+
+          {/* Statistics Dashboard */}
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <StatisticsCard
+                title="Tổng sự cố"
+                value={filteredIncidents.length}
+                icon={<AlertTriangle size={20} />}
+                color="gray"
+                subtitle={`Trong ${incidents.length} sự cố`}
+              />
+              <StatisticsCard
+                title="Nghiêm trọng"
+                value={filteredIncidents.filter(i => i.priority === 'Critical').length}
+                icon={<AlertCircle size={20} />}
+                color="red"
+              />
+              <StatisticsCard
+                title="Đang xử lý"
+                value={filteredIncidents.filter(i => i.status === 'in_progress').length}
+                icon={<Activity size={20} />}
+                color="blue"
+              />
+              <StatisticsCard
+                title="Đã giải quyết"
+                value={filteredIncidents.filter(i => i.status === 'resolved' || i.status === 'closed').length}
+                icon={<CheckCircle2 size={20} />}
+                color="green"
+              />
+            </div>
+          </div>
 
           {/* Search and Filter Controls */}
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-700">

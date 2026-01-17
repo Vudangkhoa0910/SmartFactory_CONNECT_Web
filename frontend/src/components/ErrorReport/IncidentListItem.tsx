@@ -1,8 +1,8 @@
-import React from "react";
-import { ChevronRight } from "lucide-react";
-import { Incident } from "../types";
-import { PriorityBadge } from "./Badges";
-import { useTranslation } from "../../contexts/LanguageContext";
+import React from 'react';
+import { Incident } from '../types';
+import { PriorityBadge } from './Badges';
+import { TimelineBadge } from './TimelineBadge';
+import { MapPin, Building2 } from 'lucide-react';
 
 interface IncidentListItemProps {
   incident: Incident;
@@ -15,65 +15,54 @@ const IncidentListItem: React.FC<IncidentListItemProps> = ({
   isSelected,
   onClick,
 }) => {
-  const { t } = useTranslation();
-
-  // Format timestamp
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const incidentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const diffDays = Math.floor((today.getTime() - incidentDate.getTime()) / 86400000);
-
-    // Nếu trong ngày hôm nay, hiển thị giờ
-    if (diffDays === 0) {
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    }
-
-    // Nếu hôm qua
-    if (diffDays === 1) {
-      return 'Hôm qua';
-    }
-
-    // Nếu trong tuần này (dưới 7 ngày)
-    if (diffDays < 7) {
-      return `${diffDays} ngày trước`;
-    }
-
-    // Nếu lâu hơn, hiển thị ngày tháng
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    return `${day}/${month}`;
+  // Priority color for dot indicator
+  const priorityDotColors = {
+    Critical: 'bg-red-600',
+    High: 'bg-orange-500',
+    Normal: 'bg-green-600',
+    Low: 'bg-gray-400',
   };
 
-  const displayTime = formatTime(incident.createdAt);
-
   return (
-    <button
+    <div
       onClick={onClick}
-      className={`
-        w-full text-left p-4 rounded-lg transition-all duration-200
-        border-l-4
-        ${isSelected
-          ? "bg-red-50 dark:bg-neutral-700 border-red-500 shadow-sm"
-          : "bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 border-transparent"
-        }
-      `}
+      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 border-l-4 ${isSelected
+          ? 'bg-red-50 dark:bg-red-900/20 border-l-red-600 shadow-md'
+          : 'bg-white dark:bg-neutral-700 border-l-transparent hover:bg-gray-50 dark:hover:bg-neutral-600 hover:border-l-red-400'
+        } border border-gray-200 dark:border-neutral-600`}
     >
-      <div className="flex justify-between items-center mb-1">
-        <h4 className="font-semibold text-gray-800 dark:text-white truncate pr-2">
-          {incident.title}
-        </h4>
-        <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 font-medium">
-          {displayTime}
+      {/* Header with priority dot and title */}
+      <div className="flex items-start gap-2 mb-2">
+        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${priorityDotColors[incident.priority]}`} />
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1">
+            {incident.title}
+          </h4>
+          <div className="flex items-center gap-2 flex-wrap">
+            <PriorityBadge priority={incident.priority} />
+            <TimelineBadge createdAt={incident.timestamp || incident.createdAt} priority={incident.priority} />
+          </div>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <PriorityBadge priority={incident.priority} />
-        {isSelected && <ChevronRight size={16} className="text-red-500" />}
+
+      {/* Meta information */}
+      <div className="flex flex-col gap-1.5 ml-4 text-xs">
+        {incident.location && (
+          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+            <MapPin className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{incident.location}</span>
+          </div>
+        )}
+        {incident.department && (
+          <div className="flex items-center gap-1">
+            <Building2 className="w-3 h-3 flex-shrink-0 text-gray-400" />
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium text-xs">
+              {incident.department}
+            </span>
+          </div>
+        )}
       </div>
-    </button>
+    </div>
   );
 };
 

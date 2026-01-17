@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown, Calendar } from "lucide-react";
+import { BellRing, Search, Filter, X, ChevronDown, ArrowUpDown, Calendar, AlertTriangle, AlertCircle, Clock, TrendingUp } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import api from "../../services/api";
 import { toast } from "react-toastify";
@@ -11,6 +11,7 @@ import { Incident, Priority } from "../../components/ErrorReport/index";
 import { useDepartments } from "../../hooks/useDepartments";
 import IncidentListItem from "../../components/ErrorReport/IncidentListItem";
 import IncidentDetailView from "../../components/ErrorReport/IncidentDetailView";
+import { StatisticsCard } from "../../components/ErrorReport/StatisticsCard";
 
 const IncidentWorkspace: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -398,6 +399,43 @@ const IncidentWorkspace: React.FC = () => {
             </div>
           </div>
 
+          {/* Statistics Dashboard */}
+          <div className="mb-4 bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatisticsCard
+                title="Chờ xử lý"
+                value={activeIncidents.length}
+                icon={<BellRing size={20} />}
+                color="red"
+              />
+              <StatisticsCard
+                title="Nghiêm trọng"
+                value={activeIncidents.filter(i => i.priority === 'Critical').length}
+                icon={<AlertCircle size={20} />}
+                color="red"
+              />
+              <StatisticsCard
+                title="Cao"
+                value={activeIncidents.filter(i => i.priority === 'High').length}
+                icon={<AlertTriangle size={20} />}
+                color="yellow"
+              />
+              <StatisticsCard
+                title="Thời gian TB"
+                value={activeIncidents.length > 0
+                  ? `${Math.round(activeIncidents.reduce((acc, inc) => {
+                    const diffHours = (new Date().getTime() - (inc.timestamp || inc.createdAt).getTime()) / (1000 * 60 * 60);
+                    return acc + diffHours;
+                  }, 0) / activeIncidents.length)}h`
+                  : '0h'
+                }
+                icon={<Clock size={20} />}
+                color="blue"
+                subtitle="Thời gian chờ trung bình"
+              />
+            </div>
+          </div>
+
           {/* Search and Filter Controls - Fixed */}
           <div className="mb-4 bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-700 p-4">
             <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
@@ -513,11 +551,10 @@ const IncidentWorkspace: React.FC = () => {
               {/* Date Filter Toggle */}
               <button
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-lg transition-colors whitespace-nowrap ${
-                  showDateFilter || dateFrom || dateTo
-                    ? 'bg-red-50 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400'
-                    : 'border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-lg transition-colors whitespace-nowrap ${showDateFilter || dateFrom || dateTo
+                  ? 'bg-red-50 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400'
+                  : 'border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                  }`}
               >
                 <Calendar size={16} />
                 {dateFrom || dateTo ? 'Ngày (đã lọc)' : 'Ngày'}
@@ -539,32 +576,32 @@ const IncidentWorkspace: React.FC = () => {
             {/* Date Filter Panel */}
             {showDateFilter && (
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-neutral-700 flex flex-wrap gap-3 items-end">
-                <div className="min-w-[160px]">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <div className="min-w-[180px]">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                     Từ ngày
                   </label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors cursor-pointer"
                   />
                 </div>
-                <div className="min-w-[160px]">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                <div className="min-w-[180px]">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                     Đến ngày
                   </label>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors cursor-pointer"
                   />
                 </div>
                 {(dateFrom || dateTo) && (
                   <button
                     onClick={() => { setDateFrom(""); setDateTo(""); }}
-                    className="px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-1"
+                    className="px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-1.5 font-medium transition-colors"
                   >
                     <X size={14} />
                     Xóa ngày
