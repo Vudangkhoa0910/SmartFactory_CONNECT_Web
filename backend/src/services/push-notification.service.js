@@ -489,22 +489,22 @@ class PushNotificationService {
 
             const statusVi = {
                 'pending': 'Chờ xử lý',
-                'assigned': 'Đã gán',
-                'in_progress': 'Đang xử lý',
-                'resolved': 'Đã giải quyết',
-                'closed': 'Đã đóng',
-                'cancelled': 'Đã hủy',
-                'escalated': 'Đã leo thang'
+                'assigned': 'Đã phân công',
+                'under_review': 'Đang xem xét',
+                'approved': 'Đã duyệt',
+                'rejected': 'Đã từ chối',
+                'implemented': 'Đã triển khai',
+                'closed': 'Đã đóng'
             }[newStatus] || newStatus;
 
             const statusJa = {
                 'pending': '保留中',
                 'assigned': '割り当て済み',
-                'in_progress': '進行中',
-                'resolved': '解決済み',
-                'closed': 'クローズ',
-                'cancelled': 'キャンセル',
-                'escalated': 'エスカレーション'
+                'under_review': 'レビュー中',
+                'approved': '承認済み',
+                'rejected': '拒否',
+                'implemented': '実装済み',
+                'closed': 'クローズ'
             }[newStatus] || newStatus;
 
             // Create notifications
@@ -556,6 +556,172 @@ class PushNotificationService {
             return { success: true, recipientCount: notifyUserIds.length };
         } catch (error) {
             console.error('[PushNotification] Error sending status change notification:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+
+    /**
+     * Send notification when idea is assigned to user
+     * @param {Object} idea - Idea object
+     * @param {string} assigneeId - User ID who is assigned
+     */
+    async sendIdeaAssignedNotification(idea, assigneeId) {
+        const startTime = Date.now();
+        console.log(`[PushNotification] Sending idea assigned notification for idea: ${idea.id} to ${assigneeId}`);
+
+        try {
+            // Create in-app notification
+            await this.notificationService.createNotification({
+                user_id: assigneeId,
+                type: 'idea_response', // Valid enum value for idea assignment
+                title: '💡 Phân công ý kiến mới',
+                title_ja: '💡 新しいアイデアの割り当て',
+                message: `Bạn được phân công xử lý ý kiến: "${idea.title}"`,
+                message_ja: `アイデア「${idea.title_ja || idea.title}」が割り当てられました`,
+                reference_type: 'idea',
+                reference_id: idea.id,
+                related_idea_id: idea.id,
+                action_url: `/ideas/${idea.id}`,
+                metadata: {
+                    idea_type: idea.ideabox_type,
+                    status: 'assigned'
+                }
+            });
+
+            // Send FCM push notification (SECURE: Minimal payload)
+            const fcmTokens = await getUserFcmTokens(assigneeId);
+
+            if (fcmTokens.length > 0 && fcmService.isAvailable()) {
+                const fcmResult = await fcmService.sendToMultipleDevices(
+                    fcmTokens,
+                    '💡 Phân công ý kiến mới',
+                    'Bạn có ý kiến mới cần xử lý',
+                    {
+                        type: 'idea',
+                        id: String(idea.id),
+                        action_url: `/ideas/${idea.id}`,
+                        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                        idea_type: idea.ideabox_type || 'white',
+                        notification_type: 'idea_assigned'
+                    }
+                );
+                console.log(`[PushNotification] FCM idea assigned sent to ${fcmResult.successCount || 0}/${fcmTokens.length} devices`);
+            }
+
+            // Emit Socket.io
+            if (this.io) {
+                this.io.to(`user_${assigneeId}`).emit('notification', {
+                    type: 'idea_assigned',
+                    title: '💡 Phân công ý kiến mới',
+                    message: `Bạn được phân công xử lý ý kiến: "${idea.title}"`,
+                    idea_id: idea.id,
+                    action_url: `/ideas/${idea.id}`
+                });
+            }
+
+            const duration = Date.now() - startTime;
+            console.log(`[PushNotification] Idea assigned notification completed in ${duration}ms`);
+            return { success: true, recipientCount: 1 };
+        } catch (error) {
+            console.error('[PushNotification] Error sending idea assigned notification:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Send notification when idea status changes (Review)
+     * @param {Object} idea - Idea object
+     * @param {string} oldStatus - Previous status
+     * @param {string} newStatus - New status
+     */
+    async sendIdeaStatusChangedNotification(idea, oldStatus, newStatus) {
+        const startTime = Date.now();
+        console.log(`[PushNotification] Sending idea status change notification for idea: ${idea.id}`);
+
+        try {
+            const submitterId = idea.submitter_id;
+            if (!submitterId) {
+                console.log('[PushNotification] No submitter_id found for idea, skipping notification');
+                return { success: true, recipientCount: 0 };
+            }
+
+            const statusVi = {
+                'pending': 'Chờ xử lý',
+                'assigned': 'Đã phân công',
+                'under_review': 'Đang xem xét',
+                'approved': 'Đã duyệt',
+                'rejected': 'Đã từ chối',
+                'implemented': 'Đã triển khai',
+                'closed': 'Đã đóng'
+            }[newStatus] || newStatus;
+
+            const statusJa = {
+                'pending': '保留中',
+                'assigned': '割り当て済み',
+                'under_review': 'レビュー中',
+                'approved': '承認済み',
+                'rejected': '拒否',
+                'implemented': '実装済み',
+                'closed': 'クローズ'
+            }[newStatus] || newStatus;
+
+            // Create in-app notification
+            await this.notificationService.createNotification({
+                user_id: submitterId,
+                type: 'idea_reviewed', // Valid enum value for idea status change
+                title: '💡 Cập nhật trạng thái ý kiến',
+                title_ja: '💡 アイデアステータスの更新',
+                message: `Ý kiến "${idea.title}" đã chuyển sang: ${statusVi}`,
+                message_ja: `アイデア「${idea.title_ja || idea.title}」のステータス: ${statusJa}`,
+                reference_type: 'idea',
+                reference_id: idea.id,
+                related_idea_id: idea.id,
+                action_url: `/ideas/${idea.id}`,
+                metadata: {
+                    old_status: oldStatus,
+                    new_status: newStatus
+                }
+            });
+
+            // Send FCM push notification (SECURE: Minimal payload)
+            const fcmTokens = await getUserFcmTokens(submitterId);
+
+            if (fcmTokens.length > 0 && fcmService.isAvailable()) {
+                const fcmResult = await fcmService.sendToMultipleDevices(
+                    fcmTokens,
+                    '💡 Cập nhật trạng thái ý kiến',
+                    `Ý kiến của bạn đã chuyển sang trạng thái: ${statusVi}`,
+                    {
+                        type: 'idea',
+                        id: String(idea.id),
+                        action_url: `/ideas/${idea.id}`,
+                        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                        idea_type: idea.ideabox_type || 'white',
+                        status: newStatus,
+                        notification_type: 'idea_status_changed'
+                    }
+                );
+                console.log(`[PushNotification] FCM idea status sent to ${fcmResult.successCount || 0}/${fcmTokens.length} devices`);
+            }
+
+            // Emit Socket.io
+            if (this.io) {
+                this.io.to(`user_${submitterId}`).emit('notification', {
+                    type: 'idea_status_changed',
+                    title: '💡 Cập nhật trạng thái ý kiến',
+                    message: `Ý kiến của bạn đã chuyển sang trạng thái: ${statusVi}`,
+                    idea_id: idea.id,
+                    action_url: `/ideas/${idea.id}`,
+                    new_status: newStatus
+                });
+            }
+
+            const duration = Date.now() - startTime;
+            console.log(`[PushNotification] Idea status change notification completed in ${duration}ms`);
+            return { success: true, recipientCount: 1 };
+        } catch (error) {
+            console.error('[PushNotification] Error sending idea status change notification:', error);
             return { success: false, error: error.message };
         }
     }

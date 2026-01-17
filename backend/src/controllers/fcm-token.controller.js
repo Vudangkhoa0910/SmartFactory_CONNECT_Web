@@ -14,30 +14,16 @@ const registerFcmToken = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Try to create table if not exists
-        await db.query(`
-      CREATE TABLE IF NOT EXISTS user_fcm_tokens (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        fcm_token TEXT NOT NULL UNIQUE,
-        device_name VARCHAR(255),
-        device_platform VARCHAR(50),
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
         // Upsert token - if token exists, update user_id (device changed user)
         // If same user, update device info
+        // Note: Using device_type column to match schema.sql
         const result = await db.query(`
-      INSERT INTO user_fcm_tokens (user_id, fcm_token, device_name, device_platform)
+      INSERT INTO user_fcm_tokens (user_id, fcm_token, device_name, device_type)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (fcm_token) 
+      ON CONFLICT (user_id, fcm_token) 
       DO UPDATE SET 
-        user_id = $1,
         device_name = COALESCE($3, user_fcm_tokens.device_name),
-        device_platform = COALESCE($4, user_fcm_tokens.device_platform),
+        device_type = COALESCE($4, user_fcm_tokens.device_type),
         is_active = true,
         updated_at = CURRENT_TIMESTAMP
       RETURNING *
