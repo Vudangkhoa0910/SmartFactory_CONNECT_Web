@@ -1,0 +1,1113 @@
+{
+    "version": "1.0.0",
+    "description": "Registry of all APIs and actions available through the SmartFactory Chat Assistant",
+    "lastUpdated": "2026-01-13",
+    "intents": [
+        {
+            "id": "navigate_dashboard",
+            "name": "Điều hướng trang chủ",
+            "description": "Chuyển đến trang tổng quan/dashboard",
+            "category": "navigation",
+            "route": "/",
+            "keywords": [
+                "thống kê tổng quan",
+                "dashboard",
+                "trang chủ",
+                "tổng quan"
+            ],
+            "examples": [
+                "đi đến trang chủ",
+                "mở dashboard",
+                "xem thống kê tổng quan"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_incident_report",
+            "name": "Điều hướng thống kê sự cố",
+            "description": "Chuyển đến trang thống kê/báo cáo sự cố",
+            "category": "navigation",
+            "route": "/incident-report-page",
+            "keywords": [
+                "thống kê sự cố",
+                "báo cáo sự cố",
+                "báo lỗi"
+            ],
+            "examples": [
+                "xem thống kê sự cố",
+                "mở báo cáo sự cố"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_feedback",
+            "name": "Điều hướng thống kê góp ý",
+            "description": "Chuyển đến trang feedback dashboard",
+            "category": "navigation",
+            "route": "/feadback-dashboard",
+            "keywords": [
+                "thống kê góp ý",
+                "feedback dashboard",
+                "góp ý"
+            ],
+            "examples": [
+                "xem thống kê góp ý",
+                "mở feedback dashboard"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_news",
+            "name": "Điều hướng tin tức",
+            "description": "Chuyển đến trang tin tức",
+            "category": "navigation",
+            "route": "/news",
+            "keywords": [
+                "tin tức",
+                "news",
+                "bản tin"
+            ],
+            "examples": [
+                "xem tin tức",
+                "mở trang tin",
+                "đọc bản tin"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_calendar",
+            "name": "Điều hướng lịch",
+            "description": "Chuyển đến trang lịch làm việc",
+            "category": "navigation",
+            "route": "/calendar",
+            "keywords": [
+                "lịch",
+                "calendar",
+                "lịch làm việc"
+            ],
+            "examples": [
+                "xem lịch",
+                "mở calendar",
+                "lịch làm việc"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_all_incidents",
+            "name": "Điều hướng danh sách sự cố",
+            "description": "Chuyển đến trang danh sách tất cả sự cố",
+            "category": "navigation",
+            "route": "/all-incidents-page",
+            "keywords": [
+                "danh sách sự cố",
+                "tất cả sự cố",
+                "lịch sử sự cố"
+            ],
+            "examples": [
+                "xem tất cả sự cố",
+                "mở danh sách sự cố"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_incident_queue",
+            "name": "Điều hướng hàng đợi sự cố",
+            "description": "Chuyển đến trang hàng đợi sự cố khẩn cấp",
+            "category": "navigation",
+            "route": "/incident-queue",
+            "keywords": [
+                "hàng đợi",
+                "queue",
+                "thông báo sự cố khẩn cấp",
+                "sự cố khẩn cấp"
+            ],
+            "examples": [
+                "xem hàng đợi sự cố",
+                "mở queue"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_public_ideas",
+            "name": "Điều hướng hòm trắng",
+            "description": "Chuyển đến trang ý tưởng công khai (Hòm Trắng)",
+            "category": "navigation",
+            "route": "/public-ideas-page",
+            "keywords": [
+                "hòn trắng",
+                "hòm trắng",
+                "đánh giá công khai",
+                "ý tưởng",
+                "sáng kiến",
+                "hòm thư góp ý công khai"
+            ],
+            "examples": [
+                "xem hòm trắng",
+                "mở ý tưởng công khai"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_pink_inbox",
+            "name": "Điều hướng hòm hồng",
+            "description": "Chuyển đến trang góp ý ẩn danh (Hòm Hồng)",
+            "category": "navigation",
+            "route": "/admin-inbox-pink",
+            "keywords": [
+                "hòm hồng",
+                "đánh giá ẩn danh",
+                "đánh giá kín",
+                "góp ý kín",
+                "hòm thu góp ý ẩn danh"
+            ],
+            "examples": [
+                "xem hòm hồng",
+                "mở góp ý ẩn danh"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_kaizen_bank",
+            "name": "Điều hướng ngân hàng Kaizen",
+            "description": "Chuyển đến trang lưu trữ Kaizen",
+            "category": "navigation",
+            "route": "/kaizen-bank-page",
+            "keywords": [
+                "lưu trữ",
+                "kaizen",
+                "ngân hàng kaizen"
+            ],
+            "examples": [
+                "xem ngân hàng kaizen",
+                "mở lưu trữ"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_users",
+            "name": "Điều hướng người dùng",
+            "description": "Chuyển đến trang quản lý người dùng",
+            "category": "navigation",
+            "route": "/users",
+            "keywords": [
+                "người dùng",
+                "nhân viên"
+            ],
+            "examples": [
+                "xem danh sách người dùng",
+                "quản lý nhân viên"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_profile",
+            "name": "Điều hướng hồ sơ",
+            "description": "Chuyển đến trang hồ sơ cá nhân",
+            "category": "navigation",
+            "route": "/profile",
+            "keywords": [
+                "hồ sơ",
+                "profile"
+            ],
+            "examples": [
+                "xem hồ sơ",
+                "mở profile"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_room_booking",
+            "name": "Điều hướng đặt phòng",
+            "description": "Chuyển đến trang đặt phòng họp",
+            "category": "navigation",
+            "route": "/room-booking",
+            "keywords": [
+                "lịch đặt phòng",
+                "đến lịch đặt phòng"
+            ],
+            "examples": [
+                "xem lịch đặt phòng",
+                "đến trang đặt phòng"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_my_bookings",
+            "name": "Điều hướng lịch của tôi",
+            "description": "Chuyển đến trang lịch đặt phòng cá nhân",
+            "category": "navigation",
+            "route": "/my-bookings",
+            "keywords": [
+                "lịch của tôi",
+                "đến lịch của tôi",
+                "lịch cá nhân"
+            ],
+            "examples": [
+                "xem lịch của tôi",
+                "lịch đặt phòng cá nhân"
+            ],
+            "requiredRole": null,
+            "api": null
+        },
+        {
+            "id": "navigate_booking_approval",
+            "name": "Điều hướng duyệt đặt phòng",
+            "description": "Chuyển đến trang duyệt đặt phòng (Admin)",
+            "category": "navigation",
+            "route": "/admin/booking-approval",
+            "keywords": [
+                "duyệt đặt phòng",
+                "đến duyệt đặt phòng",
+                "duyệt phòng"
+            ],
+            "examples": [
+                "duyệt đặt phòng",
+                "xem danh sách chờ duyệt"
+            ],
+            "requiredRole": "admin",
+            "api": null
+        },
+        {
+            "id": "room_booking_create",
+            "name": "Đặt phòng họp",
+            "description": "Đặt phòng họp cho cuộc họp",
+            "category": "room_booking",
+            "route": null,
+            "keywords": [
+                "đặt phòng",
+                "book",
+                "đặt lịch"
+            ],
+            "examples": [
+                "đặt phòng 10 người tổ chức sinh nhật từ 9 giờ đến 10 giờ ngày 28 tháng 11 năm 2025",
+                "book phòng họp cho 5 người",
+                "đặt lịch họp team ngày mai"
+            ],
+            "requiredRole": null,
+            "api": {
+                "method": "POST",
+                "endpoint": "/room-bookings",
+                "params": {
+                    "room_id": {
+                        "type": "number",
+                        "required": true,
+                        "description": "ID phòng họp"
+                    },
+                    "title": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Tiêu đề cuộc họp"
+                    },
+                    "description": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Mô tả cuộc họp"
+                    },
+                    "meeting_type": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Loại cuộc họp",
+                        "enum": [
+                            "department_meeting",
+                            "team_standup",
+                            "project_review",
+                            "training_session",
+                            "client_meeting",
+                            "interview",
+                            "workshop",
+                            "company_event",
+                            "celebration",
+                            "technical_discussion",
+                            "brainstorming",
+                            "presentation",
+                            "other"
+                        ]
+                    },
+                    "attendees_count": {
+                        "type": "number",
+                        "required": true,
+                        "description": "Số người tham dự"
+                    },
+                    "booking_date": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Ngày đặt (YYYY-MM-DD)"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Giờ bắt đầu (HH:mm)"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Giờ kết thúc (HH:mm)"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Ghi chú"
+                    }
+                }
+            },
+            "handler": "roomBookingHandler"
+        },
+        {
+            "id": "notification_view_list",
+            "name": "Xem thông báo",
+            "description": "Xem danh sách thông báo chưa đọc",
+            "category": "notification",
+            "route": null,
+            "keywords": [
+                "xem thông báo",
+                "kiểm tra thông báo",
+                "thông báo mới"
+            ],
+            "examples": [
+                "xem thông báo",
+                "có thông báo mới không?",
+                "kiểm tra thông báo"
+            ],
+            "requiredRole": null,
+            "api": {
+                "method": "GET",
+                "endpoint": "/notifications",
+                "params": {
+                    "limit": {
+                        "type": "number",
+                        "required": false,
+                        "default": 10
+                    },
+                    "unread": {
+                        "type": "boolean",
+                        "required": false,
+                        "default": true
+                    }
+                }
+            },
+            "handler": "notificationHandler"
+        },
+        {
+            "id": "notification_mark_all_read",
+            "name": "Đánh dấu tất cả đã đọc",
+            "description": "Đánh dấu tất cả thông báo là đã đọc",
+            "category": "notification",
+            "route": null,
+            "keywords": [
+                "đọc hết",
+                "đã xem hết",
+                "đánh dấu tất cả đã đọc",
+                "đã xem các thông báo"
+            ],
+            "examples": [
+                "đã đọc hết thông báo",
+                "đánh dấu tất cả đã đọc"
+            ],
+            "requiredRole": null,
+            "api": {
+                "method": "PUT",
+                "endpoint": "/notifications/read-all"
+            },
+            "handler": "notificationHandler"
+        },
+        {
+            "id": "notification_mark_specific_read",
+            "name": "Đánh dấu thông báo cụ thể đã đọc",
+            "description": "Đánh dấu một thông báo cụ thể là đã đọc (theo số thứ tự)",
+            "category": "notification",
+            "route": null,
+            "keywords": [
+                "đã đọc",
+                "xem xong",
+                "đánh dấu",
+                "đã xem"
+            ],
+            "examples": [
+                "đã xem thông báo số 1",
+                "đánh dấu số 2 đã đọc"
+            ],
+            "requiredRole": null,
+            "api": {
+                "method": "PUT",
+                "endpoint": "/notifications/:id/read"
+            },
+            "pattern": "(?:đã đọc|xem xong|đánh dấu|đã xem)\\s*(?:thông báo|tin)?\\s*(?:số|thứ)?\\s*(\\d+)",
+            "handler": "notificationHandler"
+        },
+        {
+            "id": "notification_view_detail",
+            "name": "Xem chi tiết thông báo",
+            "description": "Xem chi tiết một thông báo cụ thể (theo số thứ tự)",
+            "category": "notification",
+            "route": null,
+            "keywords": [
+                "xem chi tiết thông báo",
+                "xem chi tiết tin",
+                "chi tiết thông báo",
+                "mở thông báo"
+            ],
+            "examples": [
+                "xem thông báo số 1",
+                "chi tiết thông báo 2"
+            ],
+            "requiredRole": null,
+            "api": null,
+            "pattern": "(?:xem|chi tiết|về|nội dung)\\s*(?:thông báo|tin)?\\s*(?:số|thứ)?\\s*(\\d+)",
+            "handler": "notificationHandler"
+        },
+        {
+            "id": "incident_search",
+            "name": "Tìm kiếm sự cố",
+            "description": "Tìm kiếm sự cố theo nhiều tiêu chí (từ khóa, ngày, trạng thái, mức độ ưu tiên)",
+            "category": "incident",
+            "route": null,
+            "keywords": [
+                "tìm sự cố",
+                "tìm kiếm sự cố",
+                "tìm báo cáo",
+                "tìm incident"
+            ],
+            "examples": [
+                "tìm sự cố tháng 11",
+                "tìm sự cố đang xử lý",
+                "tìm sự cố khẩn cấp năm 2025"
+            ],
+            "requiredRole": "admin",
+            "api": {
+                "method": "GET",
+                "endpoint": "/incidents",
+                "params": {
+                    "search": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Từ khóa tìm kiếm"
+                    },
+                    "status": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Trạng thái sự cố",
+                        "enum": [
+                            "pending",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                        ],
+                        "keywords": {
+                            "pending": [
+                                "chờ xử lý",
+                                "pending"
+                            ],
+                            "in_progress": [
+                                "đang xử lý",
+                                "in_progress"
+                            ],
+                            "resolved": [
+                                "đã giải quyết",
+                                "resolved"
+                            ],
+                            "closed": [
+                                "đã đóng",
+                                "closed"
+                            ]
+                        }
+                    },
+                    "priority": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Mức độ ưu tiên",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high",
+                            "critical"
+                        ],
+                        "keywords": {
+                            "low": [
+                                "thấp",
+                                "low"
+                            ],
+                            "medium": [
+                                "trung bình",
+                                "medium"
+                            ],
+                            "high": [
+                                "cao",
+                                "high"
+                            ],
+                            "critical": [
+                                "khẩn cấp",
+                                "critical"
+                            ]
+                        }
+                    },
+                    "date_from": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Từ ngày (ISO 8601)"
+                    },
+                    "date_to": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Đến ngày (ISO 8601)"
+                    },
+                    "limit": {
+                        "type": "number",
+                        "required": false,
+                        "default": 20
+                    },
+                    "page": {
+                        "type": "number",
+                        "required": false,
+                        "default": 1
+                    }
+                }
+            },
+            "handler": "incidentSearchHandler"
+        },
+        {
+            "id": "idea_search",
+            "name": "Tìm kiếm ý tưởng",
+            "description": "Tìm kiếm ý tưởng theo nhiều tiêu chí (loại hòm, từ khóa, ngày, trạng thái)",
+            "category": "idea",
+            "route": null,
+            "keywords": [
+                "tìm ý tưởng",
+                "tìm kiếm ý tưởng",
+                "tìm hòm trắng",
+                "tìm hòm hồng",
+                "tìm white",
+                "tìm pink"
+            ],
+            "examples": [
+                "tìm ý tưởng hòm trắng tháng 11",
+                "tìm ý tưởng đã phê duyệt",
+                "tìm kiếm ý tưởng năm 2025"
+            ],
+            "requiredRole": "admin",
+            "api": {
+                "method": "GET",
+                "endpoint": "/ideas",
+                "params": {
+                    "search": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Từ khóa tìm kiếm"
+                    },
+                    "ideabox_type": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Loại hòm ý tưởng",
+                        "enum": [
+                            "white",
+                            "pink"
+                        ],
+                        "keywords": {
+                            "white": [
+                                "hòm trắng",
+                                "white"
+                            ],
+                            "pink": [
+                                "hòm hồng",
+                                "pink"
+                            ]
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Trạng thái ý tưởng",
+                        "enum": [
+                            "pending",
+                            "under_review",
+                            "approved",
+                            "rejected",
+                            "implemented"
+                        ],
+                        "keywords": {
+                            "pending": [
+                                "chờ xử lý",
+                                "pending"
+                            ],
+                            "under_review": [
+                                "đang xem xét",
+                                "under_review"
+                            ],
+                            "approved": [
+                                "đã phê duyệt",
+                                "approved"
+                            ],
+                            "rejected": [
+                                "từ chối",
+                                "rejected"
+                            ],
+                            "implemented": [
+                                "đã triển khai",
+                                "implemented"
+                            ]
+                        }
+                    },
+                    "from_chat": {
+                        "type": "boolean",
+                        "required": false,
+                        "default": true
+                    },
+                    "date_from": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Từ ngày (ISO 8601)"
+                    },
+                    "date_to": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Đến ngày (ISO 8601)"
+                    },
+                    "limit": {
+                        "type": "number",
+                        "required": false,
+                        "default": 20
+                    },
+                    "page": {
+                        "type": "number",
+                        "required": false,
+                        "default": 1
+                    }
+                }
+            },
+            "handler": "ideaSearchHandler"
+        },
+        {
+            "id": "news_create",
+            "name": "Tạo tin tức",
+            "description": "Tạo tin tức/thông báo mới từ nội dung người dùng nhập",
+            "category": "news",
+            "route": null,
+            "keywords": [
+                "tạo tin",
+                "tạo tin tức",
+                "tạo thông báo",
+                "viết tin",
+                "đăng tin",
+                "soạn tin",
+                "muốn tạo tin",
+                "cần tạo tin",
+                "giúp tạo tin"
+            ],
+            "examples": [
+                "tạo tin cảnh báo cháy tại khu vực A quan trọng",
+                "tạo tin thông báo bảo trì máy CNC ngày mai",
+                "tạo tin chúc mừng sinh nhật tháng 11"
+            ],
+            "requiredRole": "supervisor",
+            "api": {
+                "method": "POST",
+                "endpoint": "/news",
+                "params": {
+                    "title": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Tiêu đề tin tức"
+                    },
+                    "content": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Nội dung tin tức"
+                    },
+                    "excerpt": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Tóm tắt tin tức"
+                    },
+                    "category": {
+                        "type": "string",
+                        "required": true,
+                        "description": "Danh mục tin tức",
+                        "enum": [
+                            "company_announcement",
+                            "safety_alert",
+                            "event",
+                            "production_update",
+                            "maintenance",
+                            "policy_update"
+                        ],
+                        "default": "company_announcement",
+                        "keywords": {
+                            "company_announcement": [
+                                "thông báo",
+                                "thông báo công ty",
+                                "announcement",
+                                "công bố"
+                            ],
+                            "safety_alert": [
+                                "cảnh báo",
+                                "cảnh báo an toàn",
+                                "an toàn",
+                                "nguy hiểm",
+                                "safety",
+                                "alert",
+                                "cháy",
+                                "tai nạn"
+                            ],
+                            "event": [
+                                "sự kiện",
+                                "event",
+                                "sinh nhật",
+                                "kỷ niệm",
+                                "lễ",
+                                "hội",
+                                "party",
+                                "tiệc",
+                                "chúc mừng"
+                            ],
+                            "production_update": [
+                                "sản xuất",
+                                "production",
+                                "cập nhật sản xuất",
+                                "tiến độ",
+                                "output"
+                            ],
+                            "maintenance": [
+                                "bảo trì",
+                                "maintenance",
+                                "sửa chữa",
+                                "bảo dưỡng",
+                                "repair",
+                                "fix",
+                                "máy hỏng",
+                                "ngừng hoạt động"
+                            ],
+                            "policy_update": [
+                                "chính sách",
+                                "policy",
+                                "quy định",
+                                "nội quy",
+                                "rule",
+                                "regulation"
+                            ]
+                        }
+                    },
+                    "target_audience": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Đối tượng nhận",
+                        "enum": [
+                            "all",
+                            "departments",
+                            "users"
+                        ],
+                        "default": "all"
+                    },
+                    "is_priority": {
+                        "type": "boolean",
+                        "required": false,
+                        "default": false,
+                        "description": "Tin quan trọng"
+                    },
+                    "status": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Trạng thái tin",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ],
+                        "default": "published"
+                    }
+                }
+            },
+            "handler": "newsCreateHandler",
+            "usesAI": true
+        },
+        {
+            "id": "help_general",
+            "name": "Trợ giúp chung",
+            "description": "Hiển thị menu trợ giúp các chức năng",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn",
+                "trợ giúp",
+                "help",
+                "từ khóa",
+                "lệnh"
+            ],
+            "shortcut": [
+                "h",
+                "?"
+            ],
+            "examples": [
+                "hướng dẫn",
+                "trợ giúp sử dụng",
+                "help"
+            ],
+            "requiredRole": null,
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_booking",
+            "name": "Hướng dẫn đặt phòng",
+            "description": "Hiển thị hướng dẫn đặt phòng họp",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn đặt phòng"
+            ],
+            "examples": [
+                "hướng dẫn đặt phòng họp"
+            ],
+            "requiredRole": null,
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_notification",
+            "name": "Hướng dẫn thông báo",
+            "description": "Hiển thị hướng dẫn quản lý thông báo",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn thông báo"
+            ],
+            "examples": [
+                "hướng dẫn xem thông báo"
+            ],
+            "requiredRole": null,
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_navigation",
+            "name": "Hướng dẫn điều hướng",
+            "description": "Hiển thị hướng dẫn điều hướng các trang",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn điều hướng"
+            ],
+            "examples": [
+                "hướng dẫn điều hướng"
+            ],
+            "requiredRole": null,
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_incident",
+            "name": "Hướng dẫn sự cố",
+            "description": "Hiển thị hướng dẫn tìm kiếm sự cố",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn sự cố"
+            ],
+            "examples": [
+                "hướng dẫn tìm sự cố"
+            ],
+            "requiredRole": "admin",
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_idea",
+            "name": "Hướng dẫn ý tưởng",
+            "description": "Hiển thị hướng dẫn tìm kiếm ý tưởng",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn ý tưởng"
+            ],
+            "examples": [
+                "hướng dẫn tìm ý tưởng"
+            ],
+            "requiredRole": "admin",
+            "api": null,
+            "handler": "helpHandler"
+        },
+        {
+            "id": "help_news",
+            "name": "Hướng dẫn tin tức",
+            "description": "Hiển thị hướng dẫn tạo tin tức",
+            "category": "help",
+            "route": null,
+            "keywords": [
+                "hướng dẫn tin tức"
+            ],
+            "examples": [
+                "hướng dẫn tạo tin tức"
+            ],
+            "requiredRole": "admin",
+            "api": null,
+            "handler": "helpHandler"
+        }
+    ],
+    "categories": {
+        "navigation": {
+            "name": "Điều hướng",
+            "description": "Các lệnh chuyển đến các trang khác nhau trong ứng dụng",
+            "icon": "navigation"
+        },
+        "room_booking": {
+            "name": "Đặt phòng họp",
+            "description": "Các chức năng liên quan đến đặt phòng họp",
+            "icon": "calendar"
+        },
+        "notification": {
+            "name": "Thông báo",
+            "description": "Quản lý thông báo cá nhân",
+            "icon": "bell"
+        },
+        "incident": {
+            "name": "Sự cố",
+            "description": "Tìm kiếm và quản lý sự cố (chỉ Admin)",
+            "icon": "alert-triangle"
+        },
+        "idea": {
+            "name": "Ý tưởng",
+            "description": "Tìm kiếm và quản lý ý tưởng (chỉ Admin)",
+            "icon": "lightbulb"
+        },
+        "news": {
+            "name": "Tin tức",
+            "description": "Tạo và quản lý tin tức",
+            "icon": "newspaper"
+        },
+        "help": {
+            "name": "Trợ giúp",
+            "description": "Hướng dẫn sử dụng chatbot",
+            "icon": "help-circle"
+        }
+    },
+    "meetingTypes": {
+        "department_meeting": {
+            "label": "Họp phòng ban",
+            "keywords": [
+                "họp phòng ban",
+                "phòng ban"
+            ]
+        },
+        "team_standup": {
+            "label": "Họp đứng team",
+            "keywords": [
+                "họp team",
+                "standup"
+            ]
+        },
+        "project_review": {
+            "label": "Họp review dự án",
+            "keywords": [
+                "review",
+                "đánh giá",
+                "dự án"
+            ]
+        },
+        "training_session": {
+            "label": "Đào tạo nội bộ",
+            "keywords": [
+                "đào tạo",
+                "training"
+            ]
+        },
+        "client_meeting": {
+            "label": "Gặp khách hàng/đối tác",
+            "keywords": [
+                "khách hàng",
+                "đối tác",
+                "client"
+            ]
+        },
+        "interview": {
+            "label": "Phỏng vấn tuyển dụng",
+            "keywords": [
+                "phỏng vấn",
+                "interview",
+                "tuyển dụng"
+            ]
+        },
+        "workshop": {
+            "label": "Workshop/Hội thảo",
+            "keywords": [
+                "workshop",
+                "hội thảo"
+            ]
+        },
+        "company_event": {
+            "label": "Sự kiện công ty",
+            "keywords": [
+                "sự kiện",
+                "event"
+            ]
+        },
+        "celebration": {
+            "label": "Sinh nhật/Kỷ niệm",
+            "keywords": [
+                "sinh nhật",
+                "kỷ niệm",
+                "celebration"
+            ]
+        },
+        "technical_discussion": {
+            "label": "Thảo luận kỹ thuật",
+            "keywords": [
+                "thảo luận",
+                "kỹ thuật"
+            ]
+        },
+        "brainstorming": {
+            "label": "Brainstorm ý tưởng",
+            "keywords": [
+                "brainstorm",
+                "ý tưởng"
+            ]
+        },
+        "presentation": {
+            "label": "Thuyết trình/Báo cáo",
+            "keywords": [
+                "thuyết trình",
+                "báo cáo",
+                "presentation"
+            ]
+        },
+        "other": {
+            "label": "Khác",
+            "keywords": []
+        }
+    },
+    "datePatterns": {
+        "fullDate": {
+            "pattern": "(?:ngày\\s+)?(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?",
+            "description": "Ngày đầy đủ: ngày 15/11/2025, 15-11-2025"
+        },
+        "monthYear": {
+            "pattern": "(?:tháng|t)\\s*(\\d{1,2})(?:\\s*[/-]?\\s*(\\d{4}))?",
+            "description": "Tháng năm: tháng 11/2025, T11 2025"
+        },
+        "year": {
+            "pattern": "(?:năm\\s+)?(\\d{4})",
+            "description": "Năm: năm 2025, 2025"
+        },
+        "dayOfMonth": {
+            "pattern": "ngày\\s+(\\d{1,2})\\s+tháng\\s+(\\d{1,2})(?:\\s+năm\\s+(\\d{4}))?",
+            "description": "Ngày tháng năm: ngày 15 tháng 11 năm 2025"
+        }
+    },
+    "timePatterns": {
+        "range": {
+            "pattern": "từ\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(?:giờ|h)?\\s*đến\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(?:giờ|h)?",
+            "description": "Khoảng thời gian: từ 9 giờ đến 10 giờ, từ 9:00 đến 10:30"
+        }
+    }
+}
