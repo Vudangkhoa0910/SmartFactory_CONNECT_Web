@@ -1,0 +1,42 @@
+node_modules/
+.env
+.DS_Store
+
+# Uploads (ignore uploaded files, keep structure)
+uploads/*
+!uploads/.gitkeep
+!uploads/ideas/.gitkeep
+!uploads/incidents/.gitkeep
+!uploads/news/.gitkeep
+!uploads/temp/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.tmp/
+coverage/
+.nyc_output/
+
+# Database backups (don't commit backups)
+*.backup
+*backup*.sql
+src/database/*.backup
+src/database/*backup*.sql
+src/database/restore_*.bat
+src/database/restore_*.ps1
+
+# Firebase Service Account
+firebase-service-account.json
