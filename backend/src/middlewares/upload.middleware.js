@@ -59,6 +59,11 @@ const fileFilter = (req, file, cb) => {
     // Audio - Web formats
     'audio/webm',
     'audio/ogg',
+    'audio/3gpp',
+    'audio/amr',
+    'audio/flac',
+    'audio/x-caf',
+    'audio/x-wav',
     // Documents
     'application/pdf',
     'application/msword',
