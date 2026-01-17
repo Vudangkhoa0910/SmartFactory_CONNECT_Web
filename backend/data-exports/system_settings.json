@@ -1,0 +1,87 @@
+{
+  "table": "system_settings",
+  "exported_at": "2026-01-17T04:19:46.498Z",
+  "count": 7,
+  "data": [
+    {
+      "id": 2,
+      "key": "auto_assign_threshold",
+      "value": 0.85,
+      "description": "Confidence threshold for auto-assignment",
+      "category": "incidents",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 3,
+      "key": "escalation_timeout_hours",
+      "value": 24,
+      "description": "Hours before auto-escalation",
+      "category": "escalation",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 4,
+      "key": "incident_priority_weights",
+      "value": {
+        "low": 1,
+        "high": 3,
+        "medium": 2,
+        "critical": 4
+      },
+      "description": "Priority weighting",
+      "category": "incidents",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 5,
+      "key": "idea_difficulty_targets",
+      "value": {
+        "A": 7,
+        "B": 14,
+        "C": 30,
+        "D": 60
+      },
+      "description": "Target days by difficulty",
+      "category": "ideas",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 6,
+      "key": "notification_retention_days",
+      "value": 90,
+      "description": "Days to retain notifications",
+      "category": "notifications",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 7,
+      "key": "max_file_size_mb",
+      "value": 10,
+      "description": "Maximum upload file size",
+      "category": "uploads",
+      "updated_by": null,
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-13T16:09:13.502Z"
+    },
+    {
+      "id": 1,
+      "key": "auto_assign_enabled",
+      "value": false,
+      "description": "Enable AI auto-assignment for incidents",
+      "category": "incidents",
+      "updated_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "created_at": "2026-01-13T16:09:13.502Z",
+      "updated_at": "2026-01-17T02:42:32.484Z"
+    }
+  ]
+}

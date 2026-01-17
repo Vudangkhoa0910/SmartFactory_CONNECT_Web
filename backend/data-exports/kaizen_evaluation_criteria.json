@@ -1,0 +1,85 @@
+{
+  "table": "kaizen_evaluation_criteria",
+  "exported_at": "2026-01-17T04:19:46.520Z",
+  "count": 6,
+  "data": [
+    {
+      "id": "6cf4b64c-cbf6-43a7-ba8d-5fbb1c3e7a6a",
+      "criteria_code": "EC-001",
+      "name": "Hiệu quả kinh tế",
+      "name_ja": "経済効果",
+      "description": "Lợi ích tài chính mang lại",
+      "weight": "30.00",
+      "max_score": 100,
+      "category": "effectiveness",
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    },
+    {
+      "id": "a0ac8532-bf3a-45fd-9e01-c491eb93a916",
+      "criteria_code": "EC-002",
+      "name": "Tính sáng tạo",
+      "name_ja": "創造性",
+      "description": "Mức độ sáng tạo và đổi mới",
+      "weight": "20.00",
+      "max_score": 100,
+      "category": "creativity",
+      "is_active": true,
+      "sort_order": 2,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    },
+    {
+      "id": "80fc7d9f-1f40-4382-bb7e-57145f241d2e",
+      "criteria_code": "EC-003",
+      "name": "Khả năng áp dụng",
+      "name_ja": "適用性",
+      "description": "Dễ dàng triển khai",
+      "weight": "15.00",
+      "max_score": 100,
+      "category": "applicability",
+      "is_active": true,
+      "sort_order": 3,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    },
+    {
+      "id": "820befe6-182b-496b-a002-8c4fad8ae13d",
+      "criteria_code": "EC-004",
+      "name": "Tính bền vững",
+      "name_ja": "持続可能性",
+      "description": "Khả năng duy trì lâu dài",
+      "weight": "15.00",
+      "max_score": 100,
+      "category": "sustainability",
+      "is_active": true,
+      "sort_order": 4,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    },
+    {
+      "id": "026a6f37-5469-4bec-9b6e-0233fedc9160",
+      "criteria_code": "EC-005",
+      "name": "Khả năng nhân rộng",
+      "name_ja": "展開可能性",
+      "description": "Có thể áp dụng cho khu vực khác",
+      "weight": "10.00",
+      "max_score": 100,
+      "category": "replication",
+      "is_active": true,
+      "sort_order": 5,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    },
+    {
+      "id": "7a247e8b-c07c-408b-a353-3e841c115c38",
+      "criteria_code": "EC-006",
+      "name": "Tác động an toàn",
+      "name_ja": "安全影響",
+      "description": "Cải thiện điều kiện an toàn",
+      "weight": "10.00",
+      "max_score": 100,
+      "category": "safety",
+      "is_active": true,
+      "sort_order": 6,
+      "created_at": "2026-01-14T03:35:28.912Z"
+    }
+  ]
+}

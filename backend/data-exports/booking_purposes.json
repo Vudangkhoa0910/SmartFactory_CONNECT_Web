@@ -1,0 +1,63 @@
+{
+  "table": "booking_purposes",
+  "exported_at": "2026-01-17T04:19:46.392Z",
+  "count": 8,
+  "data": [
+    {
+      "code": "meeting",
+      "name_vi": "Họp thường",
+      "name_ja": "定例会議",
+      "description_vi": "Cuộc họp thông thường",
+      "description_ja": "通常の会議"
+    },
+    {
+      "code": "training",
+      "name_vi": "Đào tạo",
+      "name_ja": "トレーニング",
+      "description_vi": "Buổi đào tạo, huấn luyện",
+      "description_ja": "トレーニングセッション"
+    },
+    {
+      "code": "interview",
+      "name_vi": "Phỏng vấn",
+      "name_ja": "面接",
+      "description_vi": "Phỏng vấn tuyển dụng",
+      "description_ja": "採用面接"
+    },
+    {
+      "code": "idea_discussion",
+      "name_vi": "Thảo luận ý kiến",
+      "name_ja": "意見討議",
+      "description_vi": "Họp thảo luận về ý kiến đóng góp",
+      "description_ja": "意見についての議論"
+    },
+    {
+      "code": "incident_review",
+      "name_vi": "Xem xét sự cố",
+      "name_ja": "インシデントレビュー",
+      "description_vi": "Họp xem xét sự cố",
+      "description_ja": "インシデントのレビュー会議"
+    },
+    {
+      "code": "kaizen",
+      "name_vi": "Kaizen",
+      "name_ja": "カイゼン",
+      "description_vi": "Họp cải tiến liên tục",
+      "description_ja": "継続的改善会議"
+    },
+    {
+      "code": "client",
+      "name_vi": "Tiếp khách",
+      "name_ja": "来客対応",
+      "description_vi": "Tiếp khách hàng, đối tác",
+      "description_ja": "顧客・パートナーとの会議"
+    },
+    {
+      "code": "other",
+      "name_vi": "Khác",
+      "name_ja": "その他",
+      "description_vi": "Mục đích khác",
+      "description_ja": "その他の目的"
+    }
+  ]
+}

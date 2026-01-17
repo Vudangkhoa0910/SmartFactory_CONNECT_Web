@@ -1,0 +1,16 @@
+{
+  "table": "idea_responses",
+  "exported_at": "2026-01-17T04:19:46.441Z",
+  "count": 1,
+  "data": [
+    {
+      "id": "384dc4dc-19c5-48fc-ba56-ffd6c3616d2e",
+      "idea_id": "a141c75b-eae6-4982-8d03-31d7f69927b8",
+      "user_id": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "response": "Chấp nhận",
+      "response_ja": null,
+      "attachments": [],
+      "created_at": "2026-01-16T14:50:59.133Z"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "table": "idea_history",
+  "exported_at": "2026-01-17T04:19:46.439Z",
+  "count": 12,
+  "data": [
+    {
+      "id": "f64637f5-70b9-4803-9f51-f614e1f592e7",
+      "idea_id": "adb7a810-2ec1-44ef-9317-5e6a214580a8",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-13T16:10:28.341Z"
+    },
+    {
+      "id": "73b1b7c1-e2c0-4ce2-8da0-a149dbbbfeb5",
+      "idea_id": "05bec596-723f-4860-91e7-7a87779dba9a",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-13T16:10:28.662Z"
+    },
+    {
+      "id": "f889db83-cf1c-4edd-be88-ae634a1a8df6",
+      "idea_id": "e5b97cc7-c59c-4fc3-8216-664c944f898f",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-13T16:10:28.995Z"
+    },
+    {
+      "id": "8801c095-3331-4359-953c-e4cd8d03b331",
+      "idea_id": "5d3f141b-acfb-47e7-8d9d-379e4b77bd81",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-13T16:10:29.314Z"
+    },
+    {
+      "id": "2315f8d9-8e03-4e67-b5f9-9f2c8fb7fbd0",
+      "idea_id": "ec2e3df7-1484-46d2-bf8f-3c3186d5ffda",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-13T16:10:29.627Z"
+    },
+    {
+      "id": "8d562fd7-a9bf-466c-8250-580c133d3050",
+      "idea_id": "d68de718-d814-4879-8a9d-cdcc754c54c2",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "pink"
+      },
+      "created_at": "2026-01-13T16:10:29.956Z"
+    },
+    {
+      "id": "92bbe959-c67e-43dd-8cc2-0128b6bf9576",
+      "idea_id": "b59c9ccc-1acb-4eb0-bd0e-4d276397a286",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "pink"
+      },
+      "created_at": "2026-01-13T16:10:59.304Z"
+    },
+    {
+      "id": "45b777c1-11cb-462d-ba85-f5dd0f8bd1f6",
+      "idea_id": "7a7d5ec7-37be-4662-b9cc-1f0d1b0b019a",
+      "action": "submitted",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "pink"
+      },
+      "created_at": "2026-01-13T16:10:59.636Z"
+    },
+    {
+      "id": "76c788f9-78cc-4fdb-8939-bf3da1af3d5b",
+      "idea_id": "075d1c0c-757a-47d0-bb88-61c063a4532c",
+      "action": "submitted",
+      "performed_by": "e7d9e53f-d764-4431-8801-9e1c05b6a2ee",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "white"
+      },
+      "created_at": "2026-01-14T15:10:10.962Z"
+    },
+    {
+      "id": "54d443ab-a3cf-4b42-b596-c2548a137862",
+      "idea_id": "a141c75b-eae6-4982-8d03-31d7f69927b8",
+      "action": "submitted",
+      "performed_by": "e7d9e53f-d764-4431-8801-9e1c05b6a2ee",
+      "details": {
+        "status": "pending",
+        "ideabox_type": "pink"
+      },
+      "created_at": "2026-01-14T15:10:55.110Z"
+    },
+    {
+      "id": "b3940ef8-2ff3-4411-b4c7-466e60abb2ff",
+      "idea_id": "a141c75b-eae6-4982-8d03-31d7f69927b8",
+      "action": "assigned",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "department_id": "cfcd5749-cf71-4a9c-ade5-cb1239961f66"
+      },
+      "created_at": "2026-01-16T08:58:11.025Z"
+    },
+    {
+      "id": "388d3891-1180-4840-ba15-8b52bab4d894",
+      "idea_id": "075d1c0c-757a-47d0-bb88-61c063a4532c",
+      "action": "reviewed",
+      "performed_by": "4433114b-be0f-4932-9c69-0a8d9c4d53e8",
+      "details": {
+        "new_status": "approved",
+        "old_status": "pending",
+        "review_notes": "Đã phê duyệt"
+      },
+      "created_at": "2026-01-16T14:50:06.907Z"
+    }
+  ]
+}

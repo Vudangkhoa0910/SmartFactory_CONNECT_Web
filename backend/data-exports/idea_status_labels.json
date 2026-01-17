@@ -1,0 +1,117 @@
+{
+  "table": "idea_status_labels",
+  "exported_at": "2026-01-17T04:19:46.449Z",
+  "count": 11,
+  "data": [
+    {
+      "status": "pending",
+      "label_vi": "Chờ xử lý",
+      "label_ja": "処理待ち",
+      "description_vi": "Ý kiến đang chờ được xem xét",
+      "description_ja": "意見は審査待ちです",
+      "color": "#FFA500",
+      "icon": "clock",
+      "sort_order": 1
+    },
+    {
+      "status": "under_review",
+      "label_vi": "Đang xem xét",
+      "label_ja": "審査中",
+      "description_vi": "Ý kiến đang được xem xét",
+      "description_ja": "意見を審査中です",
+      "color": "#3B82F6",
+      "icon": "eye",
+      "sort_order": 2
+    },
+    {
+      "status": "forwarded",
+      "label_vi": "Đã chuyển phòng ban",
+      "label_ja": "部門に転送済み",
+      "description_vi": "Đã chuyển cho phòng ban xử lý",
+      "description_ja": "部門に転送されました",
+      "color": "#8B5CF6",
+      "icon": "send",
+      "sort_order": 3
+    },
+    {
+      "status": "department_responded",
+      "label_vi": "Phòng ban đã trả lời",
+      "label_ja": "部門回答済み",
+      "description_vi": "Phòng ban đã gửi phản hồi",
+      "description_ja": "部門から回答がありました",
+      "color": "#10B981",
+      "icon": "message-circle",
+      "sort_order": 4
+    },
+    {
+      "status": "coordinator_reviewing",
+      "label_vi": "Điều phối viên xem xét",
+      "label_ja": "コーディネーター確認中",
+      "description_vi": "Điều phối viên đang xem xét phản hồi",
+      "description_ja": "コーディネーターが回答を確認中",
+      "color": "#6366F1",
+      "icon": "user-check",
+      "sort_order": 5
+    },
+    {
+      "status": "need_revision",
+      "label_vi": "Cần bổ sung",
+      "label_ja": "修正が必要",
+      "description_vi": "Cần phòng ban bổ sung thêm thông tin",
+      "description_ja": "部門からの追加情報が必要です",
+      "color": "#F59E0B",
+      "icon": "alert-circle",
+      "sort_order": 6
+    },
+    {
+      "status": "approved",
+      "label_vi": "Đã phê duyệt",
+      "label_ja": "承認済み",
+      "description_vi": "Ý kiến đã được phê duyệt",
+      "description_ja": "意見は承認されました",
+      "color": "#22C55E",
+      "icon": "check-circle",
+      "sort_order": 7
+    },
+    {
+      "status": "rejected",
+      "label_vi": "Từ chối",
+      "label_ja": "却下",
+      "description_vi": "Ý kiến đã bị từ chối",
+      "description_ja": "意見は却下されました",
+      "color": "#EF4444",
+      "icon": "x-circle",
+      "sort_order": 8
+    },
+    {
+      "status": "implemented",
+      "label_vi": "Đã triển khai",
+      "label_ja": "実施済み",
+      "description_vi": "Ý kiến đã được triển khai",
+      "description_ja": "意見は実施されました",
+      "color": "#059669",
+      "icon": "check-circle-2",
+      "sort_order": 9
+    },
+    {
+      "status": "published",
+      "label_vi": "Đã công bố",
+      "label_ja": "公開済み",
+      "description_vi": "Phản hồi đã được công bố công khai",
+      "description_ja": "回答が公開されました",
+      "color": "#0EA5E9",
+      "icon": "globe",
+      "sort_order": 10
+    },
+    {
+      "status": "on_hold",
+      "label_vi": "Tạm hoãn",
+      "label_ja": "保留中",
+      "description_vi": "Ý kiến đang được tạm hoãn",
+      "description_ja": "意見は保留中です",
+      "color": "#6B7280",
+      "icon": "pause-circle",
+      "sort_order": 11
+    }
+  ]
+}
