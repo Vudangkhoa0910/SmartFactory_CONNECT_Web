@@ -4,7 +4,7 @@ import { useTranslation } from '../../contexts/LanguageContext';
 
 interface DifficultySelectorProps {
   value?: DifficultyLevel;
-  onChange: (difficulty: DifficultyLevel) => void;
+  onChange?: (difficulty: DifficultyLevel) => void;
   disabled?: boolean;
   label?: string;
 }
@@ -53,8 +53,8 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
             <button
               key={level}
               type="button"
-              onClick={() => onChange(level)}
-              disabled={disabled}
+              onClick={() => onChange?.(level)}
+              disabled={disabled || !onChange}
               className={`
                 flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200
                 ${isSelected ? config.selectedColor : config.color}
