@@ -140,24 +140,37 @@ async def find_similar_ideas(
     query: str = Query(..., min_length=3, description="Noi dung tim kiem"),
     limit: int = Query(5, ge=1, le=20)
 ):
-    """Tim cac ideas tuong tu bang vector search"""
+    """Tim cac ideas tuong tu bang vector search - Enhanced version"""
     try:
         # Generate embedding for query
         query_embedding = embedding_service.encode(query)
         
-        # Search in ideas table with pgvector
+        # Search in ideas table with pgvector - with more fields
         with db.cursor() as cur:
             cur.execute("""
                 SELECT 
                     i.id,
                     i.title,
-                    i.content,
+                    i.description as content,
                     i.status,
                     i.category,
+                    i.difficulty,
+                    i.ideabox_type,
                     i.created_at,
-                    ie.embedding <=> %s::vector as distance
+                    i.updated_at,
+                    u.full_name as submitter_name,
+                    d.name as department_name,
+                    ie.embedding <=> %s::vector as distance,
+                    (SELECT COUNT(*) FROM ideas i2 
+                     WHERE i2.status = 'implemented' 
+                     AND i2.category = i.category) as implemented_count,
+                    (SELECT response FROM idea_responses 
+                     WHERE idea_id = i.id 
+                     ORDER BY created_at DESC LIMIT 1) as last_response
                 FROM ideas i
                 INNER JOIN idea_embeddings ie ON i.id = ie.idea_id
+                LEFT JOIN users u ON i.submitter_id = u.id
+                LEFT JOIN departments d ON i.department_id = d.id
                 WHERE ie.embedding IS NOT NULL
                 ORDER BY ie.embedding <=> %s::vector
                 LIMIT %s
@@ -169,31 +182,51 @@ async def find_similar_ideas(
         for row in results:
             similarity = 1 - row['distance']  # Convert distance to similarity
             if similarity > Config.MIN_SIMILARITY:
+                # Determine relevance level
+                relevance_level = "high" if similarity > 0.8 else "medium" if similarity > 0.6 else "low"
+                
                 ideas.append({
                     "id": str(row['id']),
                     "title": row['title'],
                     "content": row['content'][:200] if row['content'] else None,
                     "status": row['status'],
                     "category": row['category'],
+                    "difficulty": row['difficulty'],
+                    "ideabox_type": row['ideabox_type'],
                     "similarity": round(similarity, 4),
-                    "created_at": row['created_at'].isoformat() if row['created_at'] else None
+                    "relevance_level": relevance_level,
+                    "relevance_percent": f"{round(similarity * 100)}%",
+                    "submitter_name": row['submitter_name'],
+                    "department_name": row['department_name'],
+                    "created_at": row['created_at'].isoformat() if row['created_at'] else None,
+                    "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None,
+                    "implemented_in_category": row['implemented_count'] or 0,
+                    "last_response": row['last_response'][:100] if row['last_response'] else None,
+                    "has_resolution": row['last_response'] is not None
                 })
         
         return {
             "success": True,
             "query": query,
             "count": len(ideas),
-            "ideas": ideas
+            "ideas": ideas,
+            "search_type": "vector"
         }
     except Exception as e:
         # Fallback to text search if vector search fails
         try:
             with db.cursor() as cur:
                 cur.execute("""
-                    SELECT id, title, content, status, category, created_at
-                    FROM ideas
-                    WHERE title ILIKE %s OR content ILIKE %s
-                    ORDER BY created_at DESC
+                    SELECT 
+                        i.id, i.title, i.description as content, i.status, 
+                        i.category, i.difficulty, i.ideabox_type, i.created_at,
+                        u.full_name as submitter_name,
+                        d.name as department_name
+                    FROM ideas i
+                    LEFT JOIN users u ON i.submitter_id = u.id
+                    LEFT JOIN departments d ON i.department_id = d.id
+                    WHERE i.title ILIKE %s OR i.description ILIKE %s
+                    ORDER BY i.created_at DESC
                     LIMIT %s
                 """, (f'%{query}%', f'%{query}%', limit))
                 results = cur.fetchall()
@@ -204,8 +237,15 @@ async def find_similar_ideas(
                 "content": row['content'][:200] if row['content'] else None,
                 "status": row['status'],
                 "category": row['category'],
-                "similarity": 0.5,  # Default similarity for text search
-                "created_at": row['created_at'].isoformat() if row['created_at'] else None
+                "difficulty": row['difficulty'],
+                "ideabox_type": row['ideabox_type'],
+                "similarity": 0.5,
+                "relevance_level": "medium",
+                "relevance_percent": "50%",
+                "submitter_name": row['submitter_name'],
+                "department_name": row['department_name'],
+                "created_at": row['created_at'].isoformat() if row['created_at'] else None,
+                "has_resolution": False
             } for row in results]
             
             return {
@@ -213,7 +253,7 @@ async def find_similar_ideas(
                 "query": query,
                 "count": len(ideas),
                 "ideas": ideas,
-                "fallback": "text_search"
+                "search_type": "text_fallback"
             }
         except Exception as e2:
             raise HTTPException(status_code=500, detail=f"Search failed: {str(e2)}")
