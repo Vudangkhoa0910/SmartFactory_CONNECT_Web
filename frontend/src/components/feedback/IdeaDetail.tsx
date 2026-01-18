@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PublicIdea, DifficultyLevel } from "./types";
-import { IdeaList, IdeaHistory } from "./IdeaHistory";
+import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
-import { Check, X, ArrowUpRight, Send, Save, Paperclip } from "lucide-react";
+import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2 } from "lucide-react";
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from "../form/input/TextArea";
 import { DifficultyBadge, DifficultySelector } from "./DifficultySelector";
 import { toast } from "react-toastify";
 import api from "../../services/api";
-import { MediaViewer } from "../common/MediaViewer";
+import MediaViewer from "../common/MediaViewer";
+import { StatusWorkflowPanel } from "./StatusWorkflowPanel";
 
 interface Department {
   id: string;
@@ -48,6 +49,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     note: string;
     status: string;
   } | null>(null);
+
+  // ===== STATUS-BASED ACTION CONTROL =====
+  // Determine which actions are allowed based on current status
+  // Status workflow: new/pending → under_review → approved/rejected → implemented
+  const canApproveReject = ['new', 'pending', 'under_review'].includes(idea.status);
+  const canForward = ['new', 'pending', 'under_review'].includes(idea.status);
+  const canModifyDifficulty = !['implemented', 'rejected'].includes(idea.status);
+  const isFinalized = ['approved', 'rejected', 'implemented'].includes(idea.status);
 
   // Reset scroll position về đầu khi chuyển sang idea khác
   useEffect(() => {
@@ -154,29 +163,58 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-neutral-900 transition-colors">
       {/* HEADER + ACTIONS (Không cuộn) */}
       <div className="p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center flex-shrink-0 bg-white dark:bg-neutral-900">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{idea.title}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t('idea.sender')}: {idea.senderName} • {idea.senderId}
-            </p>
+            <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                <User size={14} />
+                {idea.senderName || 'Ẩn danh'}
+              </span>
+              {idea.group && (
+                <span className="flex items-center gap-1">
+                  <Building2 size={14} />
+                  {idea.group}
+                </span>
+              )}
+            </div>
           </div>
           {idea.difficulty && <DifficultyBadge difficulty={idea.difficulty} />}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleApprove}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition-colors"
-          >
-            <Check size={16} /> {t('button.approve')}
-          </button>
-          <button
-            onClick={handleReject}
-            className="px-4 py-2 text-sm bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
-          >
-            <X size={16} /> {t('button.reject')}
-          </button>
-          {showForwardButton && (
+          {/* Status Badge - Always show current status */}
+          <span className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+            idea.status === 'approved' || idea.status === 'implemented'
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : idea.status === 'rejected'
+              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              : idea.status === 'under_review'
+              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              : 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-gray-300'
+          }`}>
+            {t(`status.${idea.status}`) || idea.status}
+          </span>
+          
+          {/* Approve/Reject buttons - Only show when status allows */}
+          {canApproveReject && (
+            <>
+              <button
+                onClick={handleApprove}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition-colors"
+              >
+                <Check size={16} /> {t('button.approve')}
+              </button>
+              <button
+                onClick={handleReject}
+                className="px-4 py-2 text-sm bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
+              >
+                <X size={16} /> {t('button.reject')}
+              </button>
+            </>
+          )}
+          
+          {/* Forward button - Only show when status allows */}
+          {showForwardButton && canForward && (
             <button
               onClick={() => onUpdateStatus("Escalate")}
               className="px-4 py-2 text-sm border border-gray-200 dark:border-neutral-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 flex items-center gap-2 transition-colors text-gray-700 dark:text-gray-300"
@@ -193,10 +231,21 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
         className="overflow-y-auto flex-1 bg-gray-50 dark:bg-neutral-900"
       >
         <div className="p-6 space-y-6 max-w-4xl mx-auto">
+          {/* Status Workflow Panel - Thanh trạng thái */}
+          <StatusWorkflowPanel
+            currentStatus={idea.status}
+            workflowType="white"
+            onStatusChange={async (newStatus, note) => {
+              onUpdateStatus(newStatus, note);
+            }}
+            loading={false}
+            compact={false}
+          />
+
           {/* Nội dung chính */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
             <p className="leading-relaxed text-gray-700 dark:text-gray-300">{idea.content}</p>
-            {idea.imageUrl && (
+            {idea.imageUrl && !idea.attachments?.length && (
               <img
                 src={idea.imageUrl}
                 alt={t('idea.attached_image')}
@@ -218,14 +267,15 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
             </div>
           )}
 
-          {/* ĐÁNH GIÁ ĐỘ KHÓ - Độc lập */}
+          {/* ĐÁNH GIÁ ĐỘ KHÓ - Độc lập - Only editable when not finalized */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
             <DifficultySelector
               value={difficulty}
-              onChange={setDifficulty}
+              onChange={canModifyDifficulty ? setDifficulty : undefined}
               label={t('difficulty.label')}
+              disabled={!canModifyDifficulty}
             />
-            {difficulty !== idea.difficulty && (
+            {canModifyDifficulty && difficulty !== idea.difficulty && (
               <button
                 onClick={handleSaveDifficulty}
                 disabled={savingDifficulty}
@@ -235,9 +285,15 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
                 {savingDifficulty ? t('difficulty.saving') : t('difficulty.save_button')}
               </button>
             )}
+            {!canModifyDifficulty && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                {t('difficulty.readonly_note') || 'Không thể thay đổi độ khó sau khi đã phê duyệt/từ chối'}
+              </p>
+            )}
           </div>
 
-          {/* ĐỀ XUẤT HƯỚNG GIẢI QUYẾT */}
+          {/* ĐỀ XUẤT HƯỚNG GIẢI QUYẾT - Only show when can still take action */}
+          {canApproveReject && (
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
             <label className="block mb-3 font-semibold text-gray-900 dark:text-white">
               {t('idea.solution_proposal')}
@@ -281,6 +337,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Lịch sử hành động */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
