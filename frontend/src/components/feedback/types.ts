@@ -6,6 +6,20 @@
 /** Độ khó của ý tưởng */
 export type DifficultyLevel = 'A' | 'B' | 'C' | 'D';
 
+/** Attachment interface for media files (images, videos, audio) */
+export interface Attachment {
+  file_id?: string;
+  fileId?: string;
+  filename: string;
+  original_name?: string;
+  originalName?: string;
+  mime_type?: string;
+  mimeType?: string;
+  size?: number;
+  path?: string;
+  url: string;
+}
+
 /** Trạng thái của ý tưởng / góp ý */
 export type StatusType =
   | "new"
@@ -90,6 +104,7 @@ export interface SensitiveMessage {
   title: string;
   fullContent: string;
   imageUrl?: string;
+  attachments?: Attachment[]; // Media attachments: images, videos, audio
   timestamp: Date;
   status: MessageStatus;
   difficulty?: DifficultyLevel;
@@ -130,6 +145,7 @@ export interface PublicIdea {
   title: string; // Tiêu đề
   content: string; // Nội dung chi tiết
   imageUrl?: string; // Hình ảnh nếu có
+  attachments?: Attachment[]; // Media attachments: images, videos, audio
   timestamp: Date; // Thời gian gửi
   status: StatusType; // Trạng thái hiện tại
   difficulty?: DifficultyLevel; // Độ khó
