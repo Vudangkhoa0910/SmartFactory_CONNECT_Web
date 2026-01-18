@@ -66,6 +66,33 @@ const mapStatus = (apiStatus: string): MessageStatus => {
 
 // Helper to map API response to SensitiveMessage
 const mapIdeaToMessage = (idea: any): SensitiveMessage => {
+  // Parse attachments array with full URL
+  const parseAttachments = () => {
+    if (!idea.attachments) return undefined;
+    try {
+      const att = typeof idea.attachments === 'string' 
+        ? JSON.parse(idea.attachments) 
+        : idea.attachments;
+      if (Array.isArray(att) && att.length > 0) {
+        const baseUrl = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+        return att.map((a: any) => ({
+          file_id: a.file_id || a.fileId,
+          filename: a.filename,
+          original_name: a.original_name || a.originalName,
+          mime_type: a.mime_type || a.mimeType,
+          size: a.size,
+          path: a.path,
+          url: a.path ? `${baseUrl}/${a.path}` : (a.url || ''),
+        }));
+      }
+    } catch (e) {
+      console.error("Error parsing attachments", e);
+    }
+    return undefined;
+  };
+
+  const attachments = parseAttachments();
+  
   return {
     id: idea.id,
     isAnonymous: idea.is_anonymous,
@@ -75,23 +102,10 @@ const mapIdeaToMessage = (idea: any): SensitiveMessage => {
     title: idea.title,
     fullContent: idea.description,
     difficulty: idea.difficulty,
-    imageUrl: (() => {
-      if (!idea.attachments) return undefined;
-      try {
-        const att =
-          typeof idea.attachments === "string"
-            ? JSON.parse(idea.attachments)
-            : idea.attachments;
-        if (Array.isArray(att) && att.length > 0 && att[0].path) {
-          return `${import.meta.env.VITE_API_URL?.replace("/api", "")}/${
-            att[0].path
-          }`;
-        }
-      } catch (e) {
-        console.error("Error parsing attachments", e);
-      }
-      return undefined;
-    })(),
+    attachments: attachments,
+    imageUrl: attachments && attachments.length > 0 
+      ? attachments.find((a: any) => a.mime_type?.startsWith('image/'))?.url 
+      : undefined,
     timestamp: new Date(idea.created_at),
     status: mapStatus(idea.status),
     history: (idea.history || []).map((h: any) => ({
