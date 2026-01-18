@@ -45,7 +45,7 @@ const autoTranslate = async (text, fieldName = 'text') => {
  */
 const processIdeaAsync = async (ideaId, data, files, submitterId) => {
   console.log(`[ProcessIdeaAsync] Starting background processing for idea ${ideaId}`);
-  
+
   try {
     const {
       title,
@@ -119,7 +119,7 @@ const processIdeaAsync = async (ideaId, data, files, submitterId) => {
         relatedType: 'idea',
         uploadedBy: submitterId,
       });
-      
+
       // Update files with idea ID (for linking)
       if (attachments.length > 0) {
         const fileIds = attachments.map(a => a.file_id);
@@ -820,7 +820,7 @@ const reviewIdea = asyncHandler(async (req, res) => {
 
   const oldStatus = idea.rows[0].status;
 
-  // Update idea
+  // Update idea - only update difficulty if explicitly provided
   const query = `
     UPDATE ideas
     SET 
@@ -828,7 +828,7 @@ const reviewIdea = asyncHandler(async (req, res) => {
       review_notes = $2,
       feasibility_score = $3,
       impact_score = $4,
-      difficulty = $5,
+      difficulty = COALESCE($5, difficulty),
       reviewed_by = $6,
       reviewed_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP
@@ -2221,8 +2221,8 @@ const scheduleMeeting = asyncHandler(async (req, res) => {
   }
 
   // Create room booking
-  const meetingTitle = title || (lang === 'ja' 
-    ? `意見討議: ${idea.title?.substring(0, 50)}` 
+  const meetingTitle = title || (lang === 'ja'
+    ? `意見討議: ${idea.title?.substring(0, 50)}`
     : `Thảo luận ý kiến: ${idea.title?.substring(0, 50)}`);
 
   const bookingQuery = `

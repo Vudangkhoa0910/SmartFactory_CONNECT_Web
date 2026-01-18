@@ -233,11 +233,6 @@ const VideoPlayer: React.FC<{
             )}
           </button>
         </div>
-
-        <div className="mt-2 flex items-center gap-2">
-          <Video size={14} className="text-gray-400" />
-          <span className="text-gray-400 text-xs truncate">{title}</span>
-        </div>
       </div>
     </div>
   );
@@ -330,13 +325,6 @@ const AudioPlayer: React.FC<{
         </button>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Mic size={14} className="text-red-600 dark:text-red-400 flex-shrink-0" />
-            <span className="text-sm font-medium text-red-900 dark:text-red-200 truncate">
-              {title}
-            </span>
-          </div>
-
           <div className="flex items-center gap-3">
             <input
               type="range"

@@ -1,5 +1,5 @@
 // src/pages/SensitiveInbox/MessageDetailView.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Inbox,
   Send,
@@ -51,14 +51,19 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
   const [savingDifficulty, setSavingDifficulty] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Reset difficulty khi chuyển sang message khác
+  useEffect(() => {
+    setDifficulty(message?.difficulty);
+  }, [message?.id]);
+
   // Check if there's a new department response that hasn't been reviewed
-  const hasNewDepartmentResponse = message?.departmentResponse?.department_response && 
+  const hasNewDepartmentResponse = message?.departmentResponse?.department_response &&
     !message?.publishedInfo?.is_published;
 
   // Handle status change from StatusWorkflowPanel
   const handleStatusChange = async (newStatus: string, note?: string) => {
     if (!message) return;
-    
+
     setUpdatingStatus(true);
     try {
       await api.put(`/ideas/${message.id}/review`, {
@@ -233,8 +238,10 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
             currentStatus={message.status}
             workflowType={boxType}
             onStatusChange={handleStatusChange}
-            hasNewResponse={hasNewDepartmentResponse}
+            hasNewResponse={!!hasNewDepartmentResponse}
             loading={updatingStatus}
+            difficulty={difficulty}
+            requireDifficultyForApproval={true}
           />
 
           {/* New Response Notification */}
@@ -248,7 +255,7 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
                   {language === 'ja' ? '部署からの新しい回答があります！' : 'Có phản hồi mới từ phòng ban!'}
                 </p>
                 <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
-                  {language === 'ja' 
+                  {language === 'ja'
                     ? '内容を確認し、公開するかどうかを決定してください'
                     : 'Vui lòng xem xét nội dung và quyết định công khai'}
                 </p>
@@ -258,17 +265,17 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
 
           <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700">
             <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">{message.fullContent}</p>
-            
+
             {/* Media Attachments - Images, Videos, Audio */}
             {message.attachments && message.attachments.length > 0 && (
               <div className="mt-4">
-                <MediaViewer 
-                  attachments={message.attachments} 
+                <MediaViewer
+                  attachments={message.attachments}
                   baseUrl=""
                 />
               </div>
             )}
-            
+
             {/* Fallback for legacy imageUrl only */}
             {!message.attachments?.length && message.imageUrl && (
               <img
