@@ -138,6 +138,33 @@ export default function WhiteBoxLanding() {
         responsesArr = [];
       }
 
+      // Parse attachments with full URL
+      const parseAttachments = () => {
+        if (!item.attachments) return undefined;
+        try {
+          const att = typeof item.attachments === 'string' 
+            ? JSON.parse(item.attachments) 
+            : item.attachments;
+          if (Array.isArray(att) && att.length > 0) {
+            const baseUrl = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+            return att.map((a: any) => ({
+              file_id: a.file_id || a.fileId,
+              filename: a.filename,
+              original_name: a.original_name || a.originalName,
+              mime_type: a.mime_type || a.mimeType,
+              size: a.size,
+              path: a.path,
+              url: a.path ? `${baseUrl}/${a.path}` : (a.url || ''),
+            }));
+          }
+        } catch (e) {
+          console.error("Error parsing attachments", e);
+        }
+        return undefined;
+      };
+
+      const attachments = parseAttachments();
+
       return {
         id: item.id,
         senderId: item.submitter_id || "",
@@ -147,7 +174,10 @@ export default function WhiteBoxLanding() {
         title: item.title || "",
         content: item.description || "",
         difficulty: item.difficulty as "A" | "B" | "C" | "D" | undefined,
-        imageUrl: undefined,
+        attachments: attachments,
+        imageUrl: attachments && attachments.length > 0 
+          ? attachments.find((a: any) => a.mime_type?.startsWith('image/'))?.url 
+          : undefined,
         timestamp: new Date(item.created_at),
         status: mapStatus(item.status),
         history: historyArr.map((h: any) => ({
