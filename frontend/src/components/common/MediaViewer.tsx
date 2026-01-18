@@ -168,12 +168,12 @@ const VideoPlayer: React.FC<{
   }
 
   return (
-    <div className="bg-black rounded-lg overflow-hidden">
-      <div className="relative">
+    <div className="bg-black rounded-lg overflow-hidden max-w-md">
+      <div className="relative" style={{ maxHeight: '400px' }}>
         <video
           ref={videoRef}
           src={url}
-          className="w-full"
+          className="w-full h-auto max-h-[400px] object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
@@ -307,7 +307,7 @@ const AudioPlayer: React.FC<{
   }
 
   return (
-    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
       <audio
         ref={audioRef}
         src={url}
@@ -320,7 +320,7 @@ const AudioPlayer: React.FC<{
       <div className="flex items-center gap-4">
         <button
           onClick={togglePlay}
-          className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+          className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
         >
           {isPlaying ? (
             <Pause size={24} className="text-white" />
@@ -331,8 +331,8 @@ const AudioPlayer: React.FC<{
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <Mic size={14} className="text-orange-600 dark:text-orange-400 flex-shrink-0" />
-            <span className="text-sm font-medium text-orange-900 dark:text-orange-200 truncate">
+            <Mic size={14} className="text-red-600 dark:text-red-400 flex-shrink-0" />
+            <span className="text-sm font-medium text-red-900 dark:text-red-200 truncate">
               {title}
             </span>
           </div>
@@ -344,9 +344,9 @@ const AudioPlayer: React.FC<{
               max="100"
               value={progress}
               onChange={handleSeek}
-              className="flex-1 h-1 bg-orange-200 dark:bg-orange-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              className="flex-1 h-1 bg-red-200 dark:bg-red-700 rounded-lg appearance-none cursor-pointer accent-red-500"
             />
-            <span className="text-xs text-orange-700 dark:text-orange-300 min-w-[70px]">
+            <span className="text-xs text-red-700 dark:text-red-300 min-w-[70px]">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
