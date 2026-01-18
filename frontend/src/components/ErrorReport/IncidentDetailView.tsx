@@ -16,7 +16,7 @@ import { PriorityBadge } from "./Badges";
 
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from '../form/input/TextArea';
-import { MediaViewer } from '../common/MediaViewer';
+import MediaViewer from '../common/MediaViewer';
 
 interface IncidentDetailViewProps {
   incident: Incident | null;
