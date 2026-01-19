@@ -19,6 +19,7 @@ import {
 import { useSidebar } from "../contexts/SidebarContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "../contexts/LanguageContext";
+import { useSocket } from "../hooks/useSocket";
 import dashboardService from "../services/dashboard.service";
 // import SidebarWidget from "./SidebarWidget";
 
@@ -37,6 +38,8 @@ type NavItem = {
 interface BadgeCounts {
   pendingIncidents: number;
   pendingIdeas: number;
+  pendingWhiteIdeas: number;
+  pendingPinkIdeas: number;
   pendingBookings: number;
   unreadNews: number;
 }
@@ -95,14 +98,14 @@ const othersItems2Config: NavItem[] = [
     icon: <BoxIcon />,
     nameKey: "menu.public_ideas",
     path: "/public-ideas-page",
-    badgeKey: "pendingIdeas",
+    badgeKey: "pendingWhiteIdeas",
   },
   {
     icon: <BoxCubeIcon />,
     nameKey: "menu.admin_inbox",
     path: "/admin-inbox-pink",
     requiredPermission: "pink_box",
-    badgeKey: "pendingIdeas",
+    badgeKey: "pendingPinkIdeas",
   },
   {
     icon: <FolderIcon />,
@@ -131,14 +134,71 @@ const AppSidebar: React.FC = () => {
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({
     pendingIncidents: 0,
     pendingIdeas: 0,
+    pendingWhiteIdeas: 0,
+    pendingPinkIdeas: 0,
     pendingBookings: 0,
     unreadNews: 0,
   });
 
-  // Translate nav items
   const navItems = useMemo(() => navItemsConfig, []);
   const othersItems1 = useMemo(() => othersItems1Config, []);
   const othersItems2 = useMemo(() => othersItems2Config, []);
+
+  // Notification animation state for idea box - track which type has new notification
+  const [newIdeaType, setNewIdeaType] = useState<'white' | 'pink' | null>(null);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Listen for idea-related socket events
+  useSocket({
+    channels: ['ideas'],
+    events: {
+      idea_created: (data: { ideabox_type?: string }) => triggerNotificationAnimation(data?.ideabox_type),
+      idea_updated: (data: { ideabox_type?: string }) => triggerNotificationAnimation(data?.ideabox_type),
+    }
+  });
+
+  // Trigger animation for 5 seconds
+  const triggerNotificationAnimation = useCallback((ideaboxType?: string) => {
+    // Determine which type: 'pink' for pink box, 'white' for everything else
+    const type = ideaboxType === 'pink' ? 'pink' : 'white';
+    setNewIdeaType(type);
+    // Also refresh badge counts
+    fetchBadgeCountsRef.current?.();
+
+    // Clear previous timeout
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+
+    // Auto-clear after 5 seconds
+    notificationTimeoutRef.current = setTimeout(() => {
+      setNewIdeaType(null);
+    }, 5000);
+  }, []);
+
+  // Clear animation when visiting idea pages
+  useEffect(() => {
+    // Clear white animation when visiting white box pages
+    if (location.pathname.startsWith('/public-ideas-page')) {
+      if (newIdeaType === 'white') setNewIdeaType(null);
+    }
+    // Clear pink animation when visiting pink box pages
+    if (location.pathname.startsWith('/admin-inbox-pink')) {
+      if (newIdeaType === 'pink') setNewIdeaType(null);
+    }
+    if (notificationTimeoutRef.current && newIdeaType === null) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+  }, [location.pathname, newIdeaType]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // <<< THAY ĐỔI 1: Cập nhật kiểu (type) của state để chấp nhận các loại menu mới
   const [openSubmenu, setOpenSubmenu] = useState<{
@@ -156,6 +216,9 @@ const AppSidebar: React.FC = () => {
     [location.pathname]
   );
 
+  // Ref for fetchBadgeCounts to be called from triggerNotificationAnimation
+  const fetchBadgeCountsRef = useRef<(() => void) | null>(null);
+
   // Fetch badge counts from API
   useEffect(() => {
     const fetchBadgeCounts = async () => {
@@ -164,6 +227,8 @@ const AppSidebar: React.FC = () => {
         setBadgeCounts({
           pendingIncidents: summary.pending_incidents || 0,
           pendingIdeas: summary.pending_ideas || 0,
+          pendingWhiteIdeas: summary.pending_white_ideas || 0,
+          pendingPinkIdeas: summary.pending_pink_ideas || 0,
           pendingBookings: 0, // TODO: Add booking stats to API
           unreadNews: 0, // TODO: Add news stats to API
         });
@@ -172,6 +237,7 @@ const AppSidebar: React.FC = () => {
       }
     };
 
+    fetchBadgeCountsRef.current = fetchBadgeCounts;
     fetchBadgeCounts();
     // Refresh every 2 minutes
     const interval = setInterval(fetchBadgeCounts, 2 * 60 * 1000);
@@ -182,6 +248,16 @@ const AppSidebar: React.FC = () => {
   const getBadgeCount = (badgeKey?: string): number => {
     if (!badgeKey) return 0;
     return badgeCounts[badgeKey as keyof BadgeCounts] || 0;
+  };
+
+  // Check if item should have notification animation based on path
+  const shouldAnimate = (path?: string): boolean => {
+    if (!newIdeaType || !path) return false;
+    // White box animation for public-ideas-page
+    if (newIdeaType === 'white' && path === '/public-ideas-page') return true;
+    // Pink box animation for admin-inbox-pink
+    if (newIdeaType === 'pink' && path === '/admin-inbox-pink') return true;
+    return false;
   };
 
   // <<< THAY ĐỔI 2: Cấu trúc lại useEffect để trở nên linh hoạt hơn
@@ -291,12 +367,12 @@ const AppSidebar: React.FC = () => {
                   className={`menu-item-icon-size relative ${openSubmenu?.type === menuType && openSubmenu?.index === index
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
-                    }`}
+                    } ${shouldAnimate(nav.path) ? "notification-animate" : ""}`}
                 >
                   {nav.icon}
                   {/* Badge for collapsed state */}
                   {!isExpanded && !isHovered && !isMobileOpen && getBadgeCount(nav.badgeKey) > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">
+                    <span className={`absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ${shouldAnimate(nav.path) ? "notification-badge-pulse" : ""}`}>
                       {getBadgeCount(nav.badgeKey) > 9 ? '9+' : getBadgeCount(nav.badgeKey)}
                     </span>
                   )}
@@ -306,7 +382,7 @@ const AppSidebar: React.FC = () => {
                 )}
                 {/* Badge for expanded state */}
                 {(isExpanded || isHovered || isMobileOpen) && getBadgeCount(nav.badgeKey) > 0 && (
-                  <span className="ml-2 px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                  <span className={`ml-2 px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full ${shouldAnimate(nav.path) ? "animate-pulse" : ""}`}>
                     {getBadgeCount(nav.badgeKey) > 99 ? '99+' : getBadgeCount(nav.badgeKey)}
                   </span>
                 )}
@@ -331,12 +407,12 @@ const AppSidebar: React.FC = () => {
                     className={`menu-item-icon-size relative ${isActive(nav.path)
                       ? "menu-item-icon-active"
                       : "menu-item-icon-inactive"
-                      }`}
+                      } ${shouldAnimate(nav.path) ? "notification-animate" : ""}`}
                   >
                     {nav.icon}
                     {/* Badge for collapsed state */}
                     {!isExpanded && !isHovered && !isMobileOpen && getBadgeCount(nav.badgeKey) > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">
+                      <span className={`absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ${shouldAnimate(nav.path) ? "notification-badge-pulse" : ""}`}>
                         {getBadgeCount(nav.badgeKey) > 9 ? '9+' : getBadgeCount(nav.badgeKey)}
                       </span>
                     )}

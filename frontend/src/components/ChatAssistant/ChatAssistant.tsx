@@ -83,14 +83,14 @@ const ChatAssistant: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+    <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans ${!isOpen ? 'pointer-events-none' : ''}`}>
 
       {/* --- CỬA SỔ CHAT (Trắng – Đỏ) --- */}
       <div
         className={`bg-white rounded-2xl shadow-2xl border border-red-300 
         w-[400px] max-w-[calc(100vw-48px)] overflow-hidden transition-all duration-300 
         ease-in-out origin-bottom-right 
-        ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0'}`}
+        ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0 pointer-events-none'}`}
       >
         <ChatHeader onClose={() => setIsOpen(false)} />
         <MessageList
@@ -494,7 +494,7 @@ const ChatAssistant: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className={`group relative flex items-center justify-center w-16 h-16 rounded-full 
         shadow-2xl transition-all duration-300 hover:scale-110 focus:outline-none 
-        focus:ring-4 focus:ring-red-300 
+        focus:ring-4 focus:ring-red-300 pointer-events-auto
         ${isOpen
             ? 'bg-white text-red-600 rotate-90'
             : 'bg-red-600 text-white hover:shadow-red-500/50'

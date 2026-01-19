@@ -47,7 +47,7 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
   return (
     <div className="space-y-4">
       {/* Chat messages */}
-      <div 
+      <div
         ref={chatContainerRef}
         className="min-h-[120px] max-h-[300px] overflow-y-auto bg-gray-50 dark:bg-neutral-900 p-4 rounded-xl border border-gray-200 dark:border-neutral-700"
       >
@@ -61,30 +61,27 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
             {chat.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2 ${
-                  msg.sender === "manager" ? "flex-row-reverse" : "flex-row"
-                }`}
+                className={`flex gap-2 ${msg.sender === "manager" ? "flex-row-reverse" : "flex-row"
+                  }`}
               >
                 {/* Avatar */}
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  msg.sender === "manager" 
-                    ? "bg-red-100 dark:bg-red-900/30" 
-                    : "bg-gray-200 dark:bg-neutral-700"
-                }`}>
-                  {msg.sender === "manager" 
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.sender === "manager"
+                  ? "bg-red-100 dark:bg-red-900/30"
+                  : "bg-gray-200 dark:bg-neutral-700"
+                  }`}>
+                  {msg.sender === "manager"
                     ? <UserCog size={16} className="text-red-600 dark:text-red-400" />
                     : <User size={16} className="text-gray-600 dark:text-gray-400" />
                   }
                 </div>
-                
+
                 {/* Message bubble */}
                 <div className={`flex flex-col ${msg.sender === "manager" ? "items-end" : "items-start"} max-w-[75%]`}>
                   <div
-                    className={`px-4 py-2.5 rounded-2xl text-sm ${
-                      msg.sender === "manager"
-                        ? "bg-red-600 text-white rounded-tr-sm"
-                        : "bg-white dark:bg-neutral-800 text-gray-800 dark:text-white border border-gray-200 dark:border-neutral-700 rounded-tl-sm"
-                    }`}
+                    className={`px-4 py-2.5 rounded-2xl text-sm ${msg.sender === "manager"
+                      ? "bg-red-600 text-white rounded-tr-sm"
+                      : "bg-white dark:bg-neutral-800 text-gray-800 dark:text-white border border-gray-200 dark:border-neutral-700 rounded-tl-sm"
+                      }`}
                   >
                     {msg.text}
                   </div>
@@ -109,7 +106,7 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
             placeholder={t('idea.chat_placeholder') || (language === 'ja' ? '返信を入力...' : 'Nhập phản hồi...')}
             className="bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 dark:text-white resize-none"
             enableSpeech={true}
-            onKeyDown={(e: React.KeyboardEvent) => {
+            onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
@@ -118,6 +115,7 @@ export const IdeaChat: React.FC<IdeaChatProps> = ({ chat, onSend }) => {
           />
         </div>
         <button
+          type="button"
           onClick={handleSend}
           className="px-5 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
           disabled={!text.trim()}
