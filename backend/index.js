@@ -59,21 +59,28 @@ app.use(helmet({
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
+      // Production Netlify
+      'https://smartfactoryconnect.netlify.app',
+      // Custom domain (if configured)
+      'https://app.xiao.software',
+      // Local development
       process.env.FRONTEND_URL || 'http://localhost:5173',
       'http://localhost',
       'http://localhost:80',
       'http://localhost:3000',
+      'http://localhost:5173',
     ];
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Be permissive in development
+      // Be permissive - allow any origin in development
+      callback(null, true);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Client-Type'],
 };
 app.use(cors(corsOptions));
 
