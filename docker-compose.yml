@@ -158,6 +158,7 @@ services:
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
+      - ./backend/secure:/app/secure
     ports:
       - "3000:3000"
     networks:

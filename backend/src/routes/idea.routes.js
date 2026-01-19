@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, param, query } = require('express-validator');
 const ideaController = require('../controllers/idea.controller');
+const ideaSupportController = require('../controllers/ideaSupport.controller');
 const { authenticate, authorizeLevel, authorizePinkBoxAccess } = require('../middlewares/auth.middleware');
 const { uploadIdeaFiles } = require('../middlewares/upload.middleware');
 const { validate, pagination, parseSort, parseFilters } = require('../middlewares/validation.middleware');
@@ -944,6 +945,314 @@ router.get(
   param('id').isUUID(),
   validate,
   ideaController.getIdeaMeeting
+);
+
+// =====================================================
+// WHITE BOX WORKFLOW ROUTES (Hòm Trắng / ホワイトボックス)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/ideas/check-duplicate:
+ *   post:
+ *     summary: Check duplicate before submitting idea
+ *     description: Kiểm tra trùng lặp trước khi gửi / 送信前に重複をチェック
+ *     tags: [Ideas - White Box]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               whitebox_subtype:
+ *                 type: string
+ *                 enum: [idea, opinion]
+ *               ideabox_type:
+ *                 type: string
+ *                 enum: [white, pink]
+ *     responses:
+ *       200:
+ *         description: Duplicate check result
+ */
+router.post(
+  '/check-duplicate',
+  authenticate,
+  [
+    body('title').trim().notEmpty().withMessage('Title is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('whitebox_subtype').optional().isIn(['idea', 'opinion']),
+    body('ideabox_type').optional().isIn(['white', 'pink'])
+  ],
+  validate,
+  ideaSupportController.checkDuplicate
+);
+
+/**
+ * @swagger
+ * /api/ideas/workflow-stages:
+ *   get:
+ *     summary: Get all workflow stages
+ *     description: Lấy danh sách các giai đoạn workflow / ワークフローステージ一覧を取得
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: query
+ *         name: applicable_to
+ *         schema:
+ *           type: string
+ *           enum: [white, pink]
+ *     responses:
+ *       200:
+ *         description: List of workflow stages
+ */
+router.get(
+  '/workflow-stages',
+  authenticate,
+  ideaSupportController.getWorkflowStages
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/support:
+ *   post:
+ *     summary: Support an idea
+ *     description: Ủng hộ ý tưởng / アイデアを支持する
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: Optional support message
+ *     responses:
+ *       201:
+ *         description: Support added successfully
+ */
+router.post(
+  '/:id/support',
+  authenticate,
+  [
+    param('id').isUUID(),
+    body('message').optional().trim()
+  ],
+  validate,
+  ideaSupportController.supportIdea
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/remind:
+ *   post:
+ *     summary: Remind about an idea
+ *     description: Nhắc nhở về ý tưởng / アイデアについてリマインドする
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: Optional remind message
+ *     responses:
+ *       201:
+ *         description: Remind sent successfully
+ */
+router.post(
+  '/:id/remind',
+  authenticate,
+  [
+    param('id').isUUID(),
+    body('message').optional().trim()
+  ],
+  validate,
+  ideaSupportController.remindIdea
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/support:
+ *   delete:
+ *     summary: Remove support/remind
+ *     description: Xóa ủng hộ/nhắc nhở / 支持/リマインドを削除
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: support_type
+ *         schema:
+ *           type: string
+ *           enum: [support, remind]
+ *     responses:
+ *       200:
+ *         description: Support/remind removed
+ */
+router.delete(
+  '/:id/support',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  ideaSupportController.removeSupport
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/supports:
+ *   get:
+ *     summary: Get supports/reminds for an idea
+ *     description: Lấy danh sách ủng hộ/nhắc nhở / 支持/リマインド一覧を取得
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: support_type
+ *         schema:
+ *           type: string
+ *           enum: [support, remind]
+ *     responses:
+ *       200:
+ *         description: List of supports/reminds
+ */
+router.get(
+  '/:id/supports',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  ideaSupportController.getIdeaSupports
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/workflow-history:
+ *   get:
+ *     summary: Get workflow history (status transitions)
+ *     description: Lấy lịch sử workflow / ワークフロー履歴を取得
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Workflow history
+ */
+router.get(
+  '/:id/workflow-history',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  ideaSupportController.getWorkflowHistory
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/workflow-stage:
+ *   put:
+ *     summary: Update workflow stage
+ *     description: Cập nhật giai đoạn workflow / ワークフローステージを更新
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - stage
+ *             properties:
+ *               stage:
+ *                 type: string
+ *               reason:
+ *                 type: string
+ *               reason_ja:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Stage updated
+ */
+router.put(
+  '/:id/workflow-stage',
+  authenticate,
+  authorizeLevel(LEVELS.SUPERVISOR),
+  [
+    param('id').isUUID(),
+    body('stage').notEmpty().withMessage('Stage is required'),
+    body('reason').optional().trim(),
+    body('reason_ja').optional().trim()
+  ],
+  validate,
+  ideaSupportController.updateWorkflowStage
+);
+
+/**
+ * @swagger
+ * /api/ideas/{id}/workflow:
+ *   get:
+ *     summary: Get idea with full workflow info
+ *     description: Lấy ý tưởng với đầy đủ thông tin workflow / ワークフロー情報付きでアイデアを取得
+ *     tags: [Ideas - White Box]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Idea with workflow info
+ */
+router.get(
+  '/:id/workflow',
+  authenticate,
+  param('id').isUUID(),
+  validate,
+  ideaSupportController.getIdeaWorkflow
 );
 
 module.exports = router;

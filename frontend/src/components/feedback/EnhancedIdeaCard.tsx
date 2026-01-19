@@ -2,6 +2,13 @@
  * EnhancedIdeaCard.tsx
  * Card hiển thị ý tưởng/góp ý với giao diện đẹp hơn
  * Enhanced idea/feedback card with better UI
+ * 
+ * Features:
+ * - Hiển thị trạng thái với màu sắc rõ ràng
+ * - Badge độ khó (A/B/C/D)
+ * - Số lượt ủng hộ và nhắc nhở
+ * - Preview nội dung
+ * - Indicator cho tin nhắn/phản hồi
  */
 import React from "react";
 import {
@@ -15,12 +22,18 @@ import {
   Paperclip,
   Eye,
   EyeOff,
+  ThumbsUp,
+  Bell,
+  Play,
+  Pause,
+  Globe,
+  AlertCircle,
 } from "lucide-react";
 import { PublicIdea, SensitiveMessage } from "./types";
 import { DifficultyBadge } from "./DifficultySelector";
 import { useTranslation } from "../../contexts/LanguageContext";
 
-// Status configuration
+// Status configuration - Extended with all workflow statuses
 const statusConfig: Record<
   string,
   { color: string; bgColor: string; borderColor: string; icon: React.ReactNode; label: string; labelJa: string }
@@ -38,8 +51,8 @@ const statusConfig: Record<
     bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
     borderColor: "border-yellow-300 dark:border-yellow-700",
     icon: <Clock size={14} />,
-    label: "Chờ xử lý",
-    labelJa: "保留中",
+    label: "Chờ tiếp nhận",
+    labelJa: "受付待ち",
   },
   under_review: {
     color: "text-blue-700 dark:text-blue-300",
@@ -57,6 +70,14 @@ const statusConfig: Record<
     label: "Đã phê duyệt",
     labelJa: "承認済み",
   },
+  in_progress: {
+    color: "text-orange-700 dark:text-orange-300",
+    bgColor: "bg-orange-50 dark:bg-orange-900/20",
+    borderColor: "border-orange-300 dark:border-orange-700",
+    icon: <Play size={14} />,
+    label: "Đang triển khai",
+    labelJa: "実装中",
+  },
   rejected: {
     color: "text-red-700 dark:text-red-300",
     bgColor: "bg-red-50 dark:bg-red-900/20",
@@ -65,10 +86,18 @@ const statusConfig: Record<
     label: "Đã từ chối",
     labelJa: "却下",
   },
+  on_hold: {
+    color: "text-gray-700 dark:text-gray-300",
+    bgColor: "bg-gray-100 dark:bg-gray-800",
+    borderColor: "border-gray-300 dark:border-gray-600",
+    icon: <Pause size={14} />,
+    label: "Tạm hoãn",
+    labelJa: "保留中",
+  },
   forwarded: {
-    color: "text-red-700 dark:text-red-300",
-    bgColor: "bg-red-50 dark:bg-red-900/20",
-    borderColor: "border-red-300 dark:border-red-700",
+    color: "text-purple-700 dark:text-purple-300",
+    bgColor: "bg-purple-50 dark:bg-purple-900/20",
+    borderColor: "border-purple-300 dark:border-purple-700",
     icon: <ArrowUpRight size={14} />,
     label: "Đã chuyển tiếp",
     labelJa: "転送済み",
@@ -81,18 +110,34 @@ const statusConfig: Record<
     label: "Phòng ban đã phản hồi",
     labelJa: "部署回答済み",
   },
+  coordinator_reviewing: {
+    color: "text-cyan-700 dark:text-cyan-300",
+    bgColor: "bg-cyan-50 dark:bg-cyan-900/20",
+    borderColor: "border-cyan-300 dark:border-cyan-700",
+    icon: <Eye size={14} />,
+    label: "Coordinator duyệt",
+    labelJa: "コーディネーター確認",
+  },
+  need_revision: {
+    color: "text-orange-700 dark:text-orange-300",
+    bgColor: "bg-orange-50 dark:bg-orange-900/20",
+    borderColor: "border-orange-300 dark:border-orange-700",
+    icon: <AlertCircle size={14} />,
+    label: "Cần bổ sung",
+    labelJa: "修正必要",
+  },
   published: {
-    color: "text-red-700 dark:text-red-300",
-    bgColor: "bg-red-50 dark:bg-red-900/20",
-    borderColor: "border-red-300 dark:border-red-700",
-    icon: <CheckCircle2 size={14} />,
+    color: "text-green-700 dark:text-green-300",
+    bgColor: "bg-green-50 dark:bg-green-900/20",
+    borderColor: "border-green-300 dark:border-green-700",
+    icon: <Globe size={14} />,
     label: "Đã công khai",
     labelJa: "公開済み",
   },
   implemented: {
-    color: "text-teal-700 dark:text-teal-300",
-    bgColor: "bg-teal-50 dark:bg-teal-900/20",
-    borderColor: "border-teal-300 dark:border-teal-700",
+    color: "text-red-700 dark:text-red-300",
+    bgColor: "bg-red-50 dark:bg-red-900/20",
+    borderColor: "border-red-300 dark:border-red-700",
     icon: <CheckCircle2 size={14} />,
     label: "Đã triển khai",
     labelJa: "実施済み",
@@ -105,6 +150,8 @@ interface EnhancedIdeaCardProps {
   onClick?: () => void;
   boxType?: "white" | "pink";
   showPreview?: boolean;
+  supportCount?: number; // Number of supports
+  remindCount?: number; // Number of reminders
 }
 
 export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
@@ -113,6 +160,8 @@ export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
   onClick,
   boxType = "white",
   showPreview = true,
+  supportCount = 0,
+  remindCount = 0,
 }) => {
   const { language } = useTranslation();
 
@@ -126,9 +175,13 @@ export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
   const senderName = "senderName" in idea ? idea.senderName : undefined;
   const hasImage = "imageUrl" in idea && idea.imageUrl;
   const chatCount = "chat" in idea ? idea.chat?.length || 0 : "replies" in idea ? idea.replies?.length || 0 : 0;
+  const hasAttachments = "attachments" in idea && idea.attachments && idea.attachments.length > 0;
 
   const config = statusConfig[status] || statusConfig.new;
   const primaryColor = "red"; // Always use red for DENSO brand
+  
+  // Check if idea is in a "waiting" state (not yet resolved)
+  const isWaiting = ['pending', 'under_review', 'forwarded', 'on_hold'].includes(status);
 
   return (
     <div
@@ -205,6 +258,34 @@ export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
           </p>
         )}
 
+        {/* Support & Remind counts for White Box */}
+        {boxType === "white" && (supportCount > 0 || remindCount > 0) && (
+          <div className="flex items-center gap-3 mb-3">
+            {supportCount > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                <ThumbsUp size={12} />
+                {supportCount} {language === "ja" ? "支持" : "ủng hộ"}
+              </span>
+            )}
+            {remindCount > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                <Bell size={12} />
+                {remindCount} {language === "ja" ? "リマインド" : "nhắc nhở"}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Waiting indicator - Show when idea is pending action */}
+        {boxType === "white" && isWaiting && (
+          <div className="mb-3 px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
+              <Clock size={12} className="animate-pulse" />
+              {language === "ja" ? "処理待ち中..." : "Đang chờ xử lý..."}
+            </p>
+          </div>
+        )}
+
         {/* Footer with meta info */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-neutral-700">
           <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
@@ -217,7 +298,7 @@ export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
             )}
 
             {/* Attachment indicator */}
-            {hasImage && (
+            {(hasImage || hasAttachments) && (
               <span className="flex items-center gap-1">
                 <Paperclip size={12} />
                 {language === "ja" ? "添付" : "Đính kèm"}

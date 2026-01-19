@@ -135,17 +135,61 @@ async def find_similar_incidents(
     return router.find_similar_incidents(description, limit=limit)
 
 
-@app.get("/similar-ideas", tags=["Search"])
-async def find_similar_ideas(
-    query: str = Query(..., min_length=3, description="Noi dung tim kiem"),
-    limit: int = Query(5, ge=1, le=20)
-):
-    """Tim cac ideas tuong tu bang vector search - Enhanced version"""
+class CheckDuplicateRequest(BaseModel):
+    """Request body cho check-duplicate endpoint - White Box"""
+    title: str = Field(..., min_length=3, description="Tieu de y tuong/y kien")
+    description: str = Field(..., min_length=10, description="Mo ta chi tiet")
+    whitebox_subtype: str = Field("idea", description="Loai: 'idea' hoac 'opinion'")
+    ideabox_type: str = Field("white", description="Loai hom: 'white' hoac 'pink'")
+
+
+class CheckDuplicateResponse(BaseModel):
+    """Response cho check-duplicate endpoint"""
+    is_duplicate: bool
+    can_submit: bool
+    needs_confirmation: bool
+    similarity_threshold: float
+    max_similarity: float
+    message: str
+    message_ja: str
+    similar_ideas: List[Dict[str, Any]]
+    workflow_history: List[Dict[str, Any]] = []
+
+
+@app.post("/check-duplicate", response_model=CheckDuplicateResponse, tags=["White Box"])
+async def check_duplicate_idea(request: CheckDuplicateRequest):
+    """
+    Kiem tra trung lap truoc khi gui y tuong/y kien.
+    
+    Logic:
+    - Y tuong (idea): similarity <= 60% moi duoc gui
+    - Y kien (opinion): similarity <= 90% moi duoc gui
+    - Tren nguong: Canh bao trung lap, yeu cau xac nhan
+    """
     try:
-        # Generate embedding for query
-        query_embedding = embedding_service.encode(query)
+        # Get similarity thresholds from settings
+        with db.cursor() as cur:
+            cur.execute("""
+                SELECT key, value FROM system_settings 
+                WHERE key IN ('whitebox_idea_similarity_threshold', 'whitebox_opinion_similarity_threshold', 'allow_duplicate_with_confirmation')
+            """)
+            settings = {row['key']: row['value'] for row in cur.fetchall()}
         
-        # Search in ideas table with pgvector - with more fields
+        # Default thresholds
+        idea_threshold = float(settings.get('whitebox_idea_similarity_threshold', '0.60'))
+        opinion_threshold = float(settings.get('whitebox_opinion_similarity_threshold', '0.90'))
+        allow_confirmation = settings.get('allow_duplicate_with_confirmation', 'true').lower() == 'true'
+        
+        # Determine threshold based on subtype
+        threshold = idea_threshold if request.whitebox_subtype == 'idea' else opinion_threshold
+        
+        # Combine title and description for search
+        search_text = f"{request.title} {request.description}"
+        
+        # Generate embedding
+        query_embedding = embedding_service.encode(search_text)
+        
+        # Search for similar ideas with full history
         with db.cursor() as cur:
             cur.execute("""
                 SELECT 
@@ -156,34 +200,221 @@ async def find_similar_ideas(
                     i.category,
                     i.difficulty,
                     i.ideabox_type,
+                    i.whitebox_subtype,
+                    i.workflow_stage,
+                    i.support_count,
+                    i.remind_count,
                     i.created_at,
                     i.updated_at,
+                    i.reviewed_at,
+                    i.implemented_at,
                     u.full_name as submitter_name,
                     d.name as department_name,
-                    ie.embedding <=> %s::vector as distance,
+                    1 - (i.embedding <=> %s::vector) as similarity,
+                    (SELECT COUNT(*) FROM idea_supports WHERE idea_id = i.id) as total_supports,
+                    (SELECT json_agg(json_build_object(
+                        'response', ir.response,
+                        'created_at', ir.created_at,
+                        'responder_name', ru.full_name
+                    ) ORDER BY ir.created_at DESC)
+                    FROM idea_responses ir
+                    LEFT JOIN users ru ON ir.user_id = ru.id
+                    WHERE ir.idea_id = i.id
+                    LIMIT 5) as responses,
+                    (SELECT json_agg(json_build_object(
+                        'action', ih.action,
+                        'created_at', ih.created_at,
+                        'details', ih.details,
+                        'performed_by_name', hu.full_name
+                    ) ORDER BY ih.created_at DESC)
+                    FROM idea_history ih
+                    LEFT JOIN users hu ON ih.performed_by = hu.id
+                    WHERE ih.idea_id = i.id
+                    LIMIT 10) as history
+                FROM ideas i
+                LEFT JOIN users u ON i.submitter_id = u.id
+                LEFT JOIN departments d ON i.department_id = d.id
+                WHERE i.embedding IS NOT NULL
+                  AND i.ideabox_type = %s
+                ORDER BY i.embedding <=> %s::vector
+                LIMIT 10
+            """, (query_embedding.tolist(), request.ideabox_type, query_embedding.tolist()))
+            
+            results = cur.fetchall()
+        
+        similar_ideas = []
+        max_similarity = 0.0
+        
+        for row in results:
+            similarity = float(row['similarity']) if row['similarity'] else 0
+            if similarity > 0.1:  # Min threshold
+                max_similarity = max(max_similarity, similarity)
+                
+                # Determine relevance level
+                relevance_level = "critical" if similarity > 0.9 else "high" if similarity > 0.7 else "medium" if similarity > 0.5 else "low"
+                
+                idea_data = {
+                    "id": str(row['id']),
+                    "title": row['title'],
+                    "content": row['content'][:300] if row['content'] else None,
+                    "status": row['status'],
+                    "category": row['category'],
+                    "difficulty": row['difficulty'],
+                    "ideabox_type": row['ideabox_type'],
+                    "whitebox_subtype": row['whitebox_subtype'],
+                    "workflow_stage": row['workflow_stage'],
+                    "similarity": round(similarity, 4),
+                    "similarity_percent": round(similarity * 100),
+                    "relevance_level": relevance_level,
+                    "submitter_name": row['submitter_name'] if not row['ideabox_type'] == 'pink' else 'Ẩn danh',
+                    "department_name": row['department_name'],
+                    "support_count": row['support_count'] or 0,
+                    "remind_count": row['remind_count'] or 0,
+                    "total_supports": row['total_supports'] or 0,
+                    "created_at": row['created_at'].isoformat() if row['created_at'] else None,
+                    "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None,
+                    "reviewed_at": row['reviewed_at'].isoformat() if row['reviewed_at'] else None,
+                    "implemented_at": row['implemented_at'].isoformat() if row['implemented_at'] else None,
+                    "has_resolution": row['status'] in ['implemented', 'approved'],
+                    "responses": row['responses'] or [],
+                    "history": row['history'] or []
+                }
+                similar_ideas.append(idea_data)
+        
+        # Determine if duplicate
+        is_duplicate = max_similarity > threshold
+        can_submit = not is_duplicate
+        needs_confirmation = is_duplicate and allow_confirmation
+        
+        # Generate messages
+        if not is_duplicate:
+            message = "Không phát hiện trùng lặp. Bạn có thể gửi ý tưởng."
+            message_ja = "重複は検出されませんでした。アイデアを送信できます。"
+        elif needs_confirmation:
+            if request.whitebox_subtype == 'idea':
+                message = f"Phát hiện ý tưởng tương tự ({round(max_similarity * 100)}% > {round(threshold * 100)}%). Vui lòng xem xét và xác nhận nếu vẫn muốn gửi."
+                message_ja = f"類似のアイデアが検出されました（{round(max_similarity * 100)}% > {round(threshold * 100)}%）。送信を続ける場合は確認してください。"
+            else:
+                message = f"Phát hiện ý kiến tương tự ({round(max_similarity * 100)}% > {round(threshold * 100)}%). Vui lòng xem xét trước khi gửi."
+                message_ja = f"類似の意見が検出されました（{round(max_similarity * 100)}% > {round(threshold * 100)}%）。送信前に確認してください。"
+        else:
+            message = f"Ý tưởng/ý kiến này đã tồn tại ({round(max_similarity * 100)}%). Không thể gửi."
+            message_ja = f"このアイデア/意見は既に存在します（{round(max_similarity * 100)}%）。送信できません。"
+        
+        return CheckDuplicateResponse(
+            is_duplicate=is_duplicate,
+            can_submit=can_submit or needs_confirmation,
+            needs_confirmation=needs_confirmation,
+            similarity_threshold=threshold,
+            max_similarity=max_similarity,
+            message=message,
+            message_ja=message_ja,
+            similar_ideas=similar_ideas[:5],  # Top 5 similar
+            workflow_history=similar_ideas[0]['history'] if similar_ideas else []
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] Check duplicate failed: {e}")
+        # Return safe default on error
+        return CheckDuplicateResponse(
+            is_duplicate=False,
+            can_submit=True,
+            needs_confirmation=False,
+            similarity_threshold=0.6,
+            max_similarity=0.0,
+            message="Không thể kiểm tra trùng lặp. Bạn có thể tiếp tục gửi.",
+            message_ja="重複チェックができませんでした。送信を続けることができます。",
+            similar_ideas=[],
+            workflow_history=[]
+        )
+
+
+@app.get("/similar-ideas", tags=["Search"])
+async def find_similar_ideas(
+    query: str = Query(..., min_length=3, description="Noi dung tim kiem"),
+    limit: int = Query(5, ge=1, le=20),
+    ideabox_type: str = Query("white", description="Loai hom: 'white' hoac 'pink'"),
+    whitebox_subtype: str = Query(None, description="Loai: 'idea' hoac 'opinion'")
+):
+    """
+    Tim cac ideas tuong tu bang vector search - Enhanced version.
+    Tra ve thong tin chi tiet bao gom lich su workflow va responses.
+    """
+    try:
+        # Generate embedding for query
+        query_embedding = embedding_service.encode(query)
+        
+        # Build filter conditions
+        filter_conditions = ["i.embedding IS NOT NULL"]
+        params = [query_embedding.tolist(), query_embedding.tolist()]
+        
+        if ideabox_type:
+            filter_conditions.append("i.ideabox_type = %s")
+            params.append(ideabox_type)
+        
+        if whitebox_subtype:
+            filter_conditions.append("i.whitebox_subtype = %s")
+            params.append(whitebox_subtype)
+        
+        params.append(limit)
+        
+        # Search in ideas table with pgvector - with more fields and history
+        with db.cursor() as cur:
+            cur.execute(f"""
+                SELECT 
+                    i.id,
+                    i.title,
+                    i.description as content,
+                    i.status,
+                    i.category,
+                    i.difficulty,
+                    i.ideabox_type,
+                    i.whitebox_subtype,
+                    i.workflow_stage,
+                    i.support_count,
+                    i.remind_count,
+                    i.handler_level,
+                    i.created_at,
+                    i.updated_at,
+                    i.reviewed_at,
+                    i.implemented_at,
+                    u.full_name as submitter_name,
+                    d.name as department_name,
+                    1 - (i.embedding <=> %s::vector) as similarity,
                     (SELECT COUNT(*) FROM ideas i2 
                      WHERE i2.status = 'implemented' 
                      AND i2.category = i.category) as implemented_count,
                     (SELECT response FROM idea_responses 
                      WHERE idea_id = i.id 
-                     ORDER BY created_at DESC LIMIT 1) as last_response
+                     ORDER BY created_at DESC LIMIT 1) as last_response,
+                    (SELECT json_agg(json_build_object(
+                        'action', ih.action,
+                        'created_at', ih.created_at,
+                        'details', ih.details
+                    ) ORDER BY ih.created_at DESC)
+                    FROM idea_history ih
+                    WHERE ih.idea_id = i.id
+                    LIMIT 5) as recent_history,
+                    ws.stage_name,
+                    ws.stage_name_ja,
+                    ws.color as stage_color
                 FROM ideas i
-                INNER JOIN idea_embeddings ie ON i.id = ie.idea_id
                 LEFT JOIN users u ON i.submitter_id = u.id
                 LEFT JOIN departments d ON i.department_id = d.id
-                WHERE ie.embedding IS NOT NULL
-                ORDER BY ie.embedding <=> %s::vector
+                LEFT JOIN idea_workflow_stages ws ON i.workflow_stage = ws.stage_code
+                WHERE {' AND '.join(filter_conditions)}
+                ORDER BY i.embedding <=> %s::vector
                 LIMIT %s
-            """, (query_embedding.tolist(), query_embedding.tolist(), limit))
+            """, tuple(params))
             
             results = cur.fetchall()
         
         ideas = []
         for row in results:
-            similarity = 1 - row['distance']  # Convert distance to similarity
+            similarity = float(row['similarity']) if row['similarity'] else 0
             if similarity > Config.MIN_SIMILARITY:
-                # Determine relevance level
-                relevance_level = "high" if similarity > 0.8 else "medium" if similarity > 0.6 else "low"
+                # Determine relevance level based on thresholds
+                relevance_level = "critical" if similarity > 0.9 else "high" if similarity > 0.7 else "medium" if similarity > 0.5 else "low"
                 
                 ideas.append({
                     "id": str(row['id']),
@@ -193,16 +424,27 @@ async def find_similar_ideas(
                     "category": row['category'],
                     "difficulty": row['difficulty'],
                     "ideabox_type": row['ideabox_type'],
+                    "whitebox_subtype": row['whitebox_subtype'],
+                    "workflow_stage": row['workflow_stage'],
+                    "stage_name": row['stage_name'],
+                    "stage_name_ja": row['stage_name_ja'],
+                    "stage_color": row['stage_color'],
+                    "handler_level": row['handler_level'],
                     "similarity": round(similarity, 4),
                     "relevance_level": relevance_level,
                     "relevance_percent": f"{round(similarity * 100)}%",
-                    "submitter_name": row['submitter_name'],
+                    "submitter_name": row['submitter_name'] if row['ideabox_type'] != 'pink' else 'Ẩn danh',
                     "department_name": row['department_name'],
+                    "support_count": row['support_count'] or 0,
+                    "remind_count": row['remind_count'] or 0,
                     "created_at": row['created_at'].isoformat() if row['created_at'] else None,
                     "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None,
+                    "reviewed_at": row['reviewed_at'].isoformat() if row['reviewed_at'] else None,
+                    "implemented_at": row['implemented_at'].isoformat() if row['implemented_at'] else None,
                     "implemented_in_category": row['implemented_count'] or 0,
                     "last_response": row['last_response'][:100] if row['last_response'] else None,
-                    "has_resolution": row['last_response'] is not None
+                    "has_resolution": row['status'] in ['implemented', 'approved'] or row['last_response'] is not None,
+                    "recent_history": row['recent_history'] or []
                 })
         
         return {
@@ -210,25 +452,35 @@ async def find_similar_ideas(
             "query": query,
             "count": len(ideas),
             "ideas": ideas,
-            "search_type": "vector"
+            "search_type": "vector",
+            "filters": {
+                "ideabox_type": ideabox_type,
+                "whitebox_subtype": whitebox_subtype
+            }
         }
     except Exception as e:
+        print(f"[ERROR] Vector search failed: {e}")
         # Fallback to text search if vector search fails
         try:
             with db.cursor() as cur:
                 cur.execute("""
                     SELECT 
                         i.id, i.title, i.description as content, i.status, 
-                        i.category, i.difficulty, i.ideabox_type, i.created_at,
+                        i.category, i.difficulty, i.ideabox_type, i.whitebox_subtype,
+                        i.workflow_stage, i.support_count, i.remind_count,
+                        i.created_at, i.reviewed_at, i.implemented_at,
                         u.full_name as submitter_name,
-                        d.name as department_name
+                        d.name as department_name,
+                        ws.stage_name, ws.stage_name_ja, ws.color as stage_color
                     FROM ideas i
                     LEFT JOIN users u ON i.submitter_id = u.id
                     LEFT JOIN departments d ON i.department_id = d.id
-                    WHERE i.title ILIKE %s OR i.description ILIKE %s
+                    LEFT JOIN idea_workflow_stages ws ON i.workflow_stage = ws.stage_code
+                    WHERE (i.title ILIKE %s OR i.description ILIKE %s)
+                      AND i.ideabox_type = %s
                     ORDER BY i.created_at DESC
                     LIMIT %s
-                """, (f'%{query}%', f'%{query}%', limit))
+                """, (f'%{query}%', f'%{query}%', ideabox_type, limit))
                 results = cur.fetchall()
             
             ideas = [{
@@ -239,13 +491,22 @@ async def find_similar_ideas(
                 "category": row['category'],
                 "difficulty": row['difficulty'],
                 "ideabox_type": row['ideabox_type'],
+                "whitebox_subtype": row['whitebox_subtype'],
+                "workflow_stage": row['workflow_stage'],
+                "stage_name": row['stage_name'],
+                "stage_name_ja": row['stage_name_ja'],
+                "stage_color": row['stage_color'],
                 "similarity": 0.5,
                 "relevance_level": "medium",
                 "relevance_percent": "50%",
-                "submitter_name": row['submitter_name'],
+                "submitter_name": row['submitter_name'] if row['ideabox_type'] != 'pink' else 'Ẩn danh',
                 "department_name": row['department_name'],
+                "support_count": row['support_count'] or 0,
+                "remind_count": row['remind_count'] or 0,
                 "created_at": row['created_at'].isoformat() if row['created_at'] else None,
-                "has_resolution": False
+                "reviewed_at": row['reviewed_at'].isoformat() if row['reviewed_at'] else None,
+                "implemented_at": row['implemented_at'].isoformat() if row['implemented_at'] else None,
+                "has_resolution": row['status'] in ['implemented', 'approved']
             } for row in results]
             
             return {

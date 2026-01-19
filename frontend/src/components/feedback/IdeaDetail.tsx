@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { PublicIdea, DifficultyLevel } from "./types";
 import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
-import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2 } from "lucide-react";
+import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2, ThumbsUp, Bell } from "lucide-react";
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from "../form/input/TextArea";
 import { DifficultyBadge, DifficultySelector } from "./DifficultySelector";
@@ -30,6 +30,10 @@ interface IdeaDetailProps {
   showForwardButton?: boolean;
   departments?: Department[];
   onRefresh?: () => void;
+  supportCount?: number;
+  remindCount?: number;
+  onSupport?: () => void;
+  onRemind?: () => void;
 }
 
 export const IdeaDetail: React.FC<IdeaDetailProps> = ({
@@ -39,8 +43,12 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
   showForwardButton = true,
   departments = [],
   onRefresh,
+  supportCount = 0,
+  remindCount = 0,
+  onSupport,
+  onRemind,
 }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [solutionInput, setSolutionInput] = useState("");
   const [difficulty, setDifficulty] = useState<DifficultyLevel | undefined>(idea.difficulty);
@@ -247,7 +255,67 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
             compact={false}
             difficulty={difficulty}
             requireDifficultyForApproval={true}
+            supportCount={supportCount}
+            remindCount={remindCount}
+            onSupport={onSupport}
+            onRemind={onRemind}
           />
+
+          {/* Support & Remind Summary Card - For non-resolved ideas */}
+          {!['implemented', 'rejected'].includes(idea.status) && (supportCount > 0 || remindCount > 0) && (
+            <div className="bg-gradient-to-r from-green-50 to-orange-50 dark:from-green-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  {supportCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-full">
+                        <ThumbsUp size={18} className="text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-green-700 dark:text-green-400">{supportCount}</p>
+                        <p className="text-xs text-green-600 dark:text-green-500">
+                          {language === 'ja' ? '人が支持' : 'người ủng hộ'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {remindCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-full">
+                        <Bell size={18} className="text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-orange-700 dark:text-orange-400">{remindCount}</p>
+                        <p className="text-xs text-orange-600 dark:text-orange-500">
+                          {language === 'ja' ? '件のリマインダー' : 'lần nhắc nhở'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {onSupport && (
+                    <button
+                      onClick={onSupport}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <ThumbsUp size={16} />
+                      {language === 'ja' ? '支持する' : 'Ủng hộ'}
+                    </button>
+                  )}
+                  {onRemind && (
+                    <button
+                      onClick={onRemind}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      <Bell size={16} />
+                      {language === 'ja' ? 'リマインド' : 'Nhắc nhở'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Nội dung chính */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
