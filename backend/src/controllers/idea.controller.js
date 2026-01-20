@@ -2524,4 +2524,63 @@ module.exports = {
   getIdeaMeeting,
   // Status Labels
   getStatusLabels,
+  // Feature: Like Idea
+  toggleLike,
 };
+
+/**
+ * Toggle Like on an idea
+ * POST /api/ideas/:id/like
+ */
+const toggleLike = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id; // From auth middleware
+
+  // Check if idea exists
+  const ideaCheck = await db.query('SELECT id FROM ideas WHERE id = $1', [id]);
+  if (ideaCheck.rows.length === 0) {
+    throw new AppError('Idea not found', 404);
+  }
+
+  // Check if already liked
+  const likeCheck = await db.query(
+    'SELECT * FROM idea_likes WHERE idea_id = $1 AND user_id = $2',
+    [id, userId]
+  );
+
+  let isLiked = false;
+
+  if (likeCheck.rows.length > 0) {
+    // Already liked -> UNLIKE (Delete)
+    await db.query(
+      'DELETE FROM idea_likes WHERE idea_id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    isLiked = false;
+  } else {
+    // Not liked -> LIKE (Insert)
+    await db.query(
+      'INSERT INTO idea_likes (idea_id, user_id) VALUES ($1, $2)',
+      [id, userId]
+    );
+    isLiked = true;
+  }
+
+  // Get updated count
+  // We can rely on the trigger to update the count in 'ideas' table
+  // But for immediate response, we can just query the count or select from ideas table
+  const countResult = await db.query(
+    'SELECT like_count FROM ideas WHERE id = $1',
+    [id]
+  );
+
+  const likeCount = countResult.rows[0].like_count;
+
+  res.json({
+    success: true,
+    data: {
+      is_liked: isLiked,
+      like_count: likeCount
+    }
+  });
+});

@@ -634,6 +634,19 @@ router.put(
   ideaController.updateDifficultyLevel
 );
 
+/**
+ * @route   POST /api/ideas/:id/like
+ * @desc    Toggle like status for idea
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/:id/like',
+  authenticate,
+  [param('id').isUUID().withMessage('Invalid idea ID')],
+  validate,
+  ideaController.toggleLike
+);
+
 // =====================================================
 // PINK BOX WORKFLOW ROUTES (Hòm Hồng / ピンクボックス)
 // =====================================================

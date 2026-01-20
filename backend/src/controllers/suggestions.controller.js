@@ -85,17 +85,17 @@ async function searchIdeasPostgres(query, userId, limit = 5) {
         i.created_at,
         i.whitebox_subtype,
         i.ideabox_type,
+        i.like_count,
         d.name as department_name,
         d.code as department_code,
         u.full_name as submitter_name,
         h.full_name as handler_name,
         COALESCE(i.implementation_notes, i.review_notes, i.published_response) as last_response,
         EXISTS (
-          SELECT 1 FROM idea_supports 
+          SELECT 1 FROM idea_likes 
           WHERE idea_id = i.id 
           AND user_id = $4
-          AND support_type = 'support'
-        ) as is_supported,
+        ) as is_liked,
         ts_rank(
           setweight(to_tsvector('simple', COALESCE(i.title, '')), 'A') ||
           setweight(to_tsvector('simple', COALESCE(i.description, '')), 'B'),
@@ -114,33 +114,7 @@ async function searchIdeasPostgres(query, userId, limit = 5) {
       LIMIT $3
     `, [query, `%${query}%`, limit, userId]);
 
-    // Tính số lượng ý kiến tương tự cho mỗi kết quả (để hiển thị xN ủng hộ)
-    const ideasWithSupport = await Promise.all(result.rows.map(async (idea) => {
-      try {
-        // Đếm số ý kiến có nội dung tương tự
-        const countResult = await db.query(`
-          SELECT COUNT(*) as similar_count
-          FROM ideas 
-          WHERE id != $1
-            AND (
-              title ILIKE $2
-              OR description ILIKE $2
-              OR similarity(COALESCE(title, ''), COALESCE($3, '')) > 0.3
-              OR similarity(COALESCE(description, ''), COALESCE($4, '')) > 0.3
-            )
-        `, [idea.id, `%${query}%`, idea.title || '', idea.description || '']);
-
-        return {
-          ...idea,
-          support_count: 1 + parseInt(countResult.rows[0]?.similar_count || 0)
-        };
-      } catch (e) {
-        // Nếu không có extension pg_trgm, trả về count mặc định
-        return { ...idea, support_count: 1 };
-      }
-    }));
-
-    return ideasWithSupport;
+    return result.rows;
   } catch (error) {
     console.error('[Suggestions] Postgres ideas search error:', error.message);
     return [];
