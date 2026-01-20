@@ -13,24 +13,59 @@ Bước 4: Kết thúc luồng (End Flow)
 Worker quyết định KHÔNG nhấn nút gửi.
 Worker thoát màn hình.
 Giá trị: Tiết kiệm thời gian nhập liệu cho Worker và thời gian rà soát cho Quản lý.
-2. Luồng 2: Gửi mới & Quy trình xử lý (New Issue Submission & Handling)
-Mục tiêu: Ghi nhận vấn đề về cơ sở vật chất (ánh sáng) ảnh hưởng đến sản xuất/an toàn, đảm bảo được phê duyệt và xử lý dứt điểm.
-Bước 1: Nhập liệu & Kiểm tra (Input & Check)
-Worker nhập nội dung: "Đèn tại khu vực kiểm hàng dây chuyền 2 bị yếu/nhấp nháy, gây mỏi mắt và khó soi lỗi."
-Hệ thống quét lịch sử và trả về kết quả rỗng (Chưa có ai báo cáo vấn đề này tại vị trí này gần đây).
-Bước 2: Gửi yêu cầu (Submission)
-Worker nhấn nút "Gửi ý kiến".
-Hệ thống tạo một Ticket mới với trạng thái: Chờ phê duyệt (Pending Approval).
-Bước 3: Quản lý tiếp nhận (Manager Review)
-Quản lý (Leader sản xuất/Xưởng trưởng) nhận thông báo trên hệ thống.
-Quản lý xác thực nhanh: Đi qua khu vực dây chuyền 2 để kiểm tra độ sáng thực tế.
-Bước 4: Phê duyệt & Đưa ra hướng xử lý (Approve & Direct)
-Sau khi xác nhận đúng là đèn tối, Quản lý nhấn "Phê duyệt" (Approve).
-Quản lý nhập hướng xử lý vào hệ thống:
-Hướng xử lý: "Thay bóng đèn LED mới công suất cao hơn."
-Gán cho (Assign to): Bộ phận Cơ điện/Bảo trì (Maintenance).
-Deadline: "Trước ca làm việc ngày mai."
-Bước 5: Cập nhật trạng thái (System Update)
-Ticket chuyển sang trạng thái: Đang xử lý (In Progress).
-Worker nhận được thông báo phản hồi: "Yêu cầu đã được duyệt. Bộ phận Bảo trì sẽ thay bóng đèn trước ca làm việc ngày mai."
 
+
+2.CHI TIẾT LUỒNG 2: GỬI MỚI & XỬ LÝ (QUY TRÌNH 6 BƯỚC)
+Bước 1: Khởi tạo (Worker)
+Hành động: Worker nhập nội dung "Đèn khu vực kiểm hàng bị tối", hệ thống kiểm tra không trùng lặp -> Worker ấn nút [Gửi].
+
+Trạng thái hệ thống: Chờ tiếp nhận (Waiting for Reception).
+
+Ý nghĩa: Ý kiến đã vào hệ thống, nhưng chưa có ai đụng vào.
+
+Bước 2: Sàng lọc (Admin/Tiếp nhận viên)
+Hành động: Bộ phận tiếp nhận (hoặc thư ký sản xuất) thấy thông báo, ấn nút [Tiếp nhận].
+
+Trạng thái hệ thống: Đang xem xét (Under Review).
+
+Ý nghĩa: Xác nhận đã có người đọc, đang đi kiểm tra thực tế hoặc chờ sếp quyết định.
+
+Bước 3: Phê duyệt & Đánh giá mức độ (Quản lý)
+Hành động: Quản lý xem xét xong, quyết định làm.
+
+Ấn nút [Phê duyệt].
+
+Chọn Độ khó (Difficulty Level): Ví dụ chọn mức Trung bình (do cần thay chóa đèn, không chỉ thay bóng).
+
+Trạng thái hệ thống: Đã phê duyệt (Approved).
+
+Ý nghĩa: Giải pháp đã được thông qua, đang nằm trong hàng đợi (Queue) chờ thợ bảo trì rảnh tay để làm.
+
+Bước 4: Bắt đầu thực thi (Bộ phận thực hiện/Kỹ thuật)
+Hành động: Khi thợ bảo trì mang đồ nghề đến hiện trường:
+
+Viết Ghi chú (Note): "Đã chuẩn bị bóng LED 50W, bắt đầu ngắt điện để thay".
+
+Ấn nút [Bắt đầu triển khai].
+
+Trạng thái hệ thống: Đang triển khai (In Progress).
+
+Ý nghĩa: Đồng hồ tính giờ bắt đầu chạy (để đo thời gian sửa chữa thực tế). Worker nhìn vào app sẽ biết là thợ đang làm rồi.
+
+Bước 5: Kết thúc kỹ thuật (Bộ phận thực hiện)
+Hành động: Sau khi thay đèn xong và bật thử sáng tốt -> Ấn nút [Hoàn thành].
+
+Trạng thái hệ thống: Hoàn thành (Completed).
+
+Ý nghĩa: Về mặt kỹ thuật, công việc đã xong.
+
+Bước 6: Đánh giá & Đóng (Worker)
+Hành động: Worker nhận thông báo "Đèn đã thay xong", kiểm tra thấy sáng tốt.
+
+Chọn Mức độ hài lòng: 5 sao.
+
+(Tùy chọn) Ghi comment: "Cảm ơn, đèn rất sáng".
+
+Ấn [Gửi đánh giá].
+
+Trạng thái hệ thống: Đã đóng (Closed/Rated).
