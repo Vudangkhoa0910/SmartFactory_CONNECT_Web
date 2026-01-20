@@ -2555,51 +2555,7 @@ const getDepartmentInbox = asyncHandler(async (req, res) => {
   });
 });
 
-// Export all functions at the end
-module.exports = {
-  createIdea,
-  getIdeas,
-  getIdeaById,
-  assignIdea,
-  addResponse,
-  reviewIdea,
-  implementIdea,
-  getIdeaStats,
-  // New APIs
-  escalateIdea,
-  getKaizenBank,
-  searchKaizenBank,
-  getIdeaDifficulty,
-  getIdeasKanban,
-  getIdeaResponses,
-  getIdeaHistory,
-  // SRS Escalation & Rating APIs
-  escalateToNextLevel,
-  submitRating,
-  getRating,
-  getRatingStats,
-  updateDifficultyLevel,
-  // My ideas APIs (for App Mobile)
-  getMyIdeas,
-  getIdeasToReview,
-  getIdeasByDepartment,
-  // Pink Box Workflow APIs
-  forwardToDepartment,
-  departmentRespond,
-  requestRevision,
-  publishResponse,
-  getPublishedIdeas,
-  getDepartmentInbox,
-  // Meeting Scheduling APIs
-  scheduleMeeting,
-  getIdeaMeeting,
-  // Status Labels
-  getStatusLabels,
-  // Feature: Like Idea
-  toggleLike,
-  // Feature: Satisfaction Rating
-  submitRating,
-};
+// NOTE: module.exports moved to end of file after all function definitions
 
 /**
  * Toggle Like on an idea
@@ -2657,3 +2613,47 @@ const toggleLike = asyncHandler(async (req, res) => {
     }
   });
 });
+
+// Export all functions at the end
+module.exports = {
+  createIdea,
+  getIdeas,
+  getIdeaById,
+  assignIdea,
+  addResponse,
+  reviewIdea,
+  implementIdea,
+  getIdeaStats,
+  // New APIs
+  escalateIdea,
+  getKaizenBank,
+  searchKaizenBank,
+  getIdeaDifficulty,
+  getIdeasKanban,
+  getIdeaResponses,
+  getIdeaHistory,
+  // SRS Escalation & Rating APIs
+  escalateToNextLevel,
+  submitRating,
+  getRating,
+  getRatingStats,
+  updateDifficultyLevel,
+  // My ideas APIs (for App Mobile)
+  getMyIdeas,
+  getIdeasToReview,
+  getIdeasByDepartment,
+  // Pink Box Workflow APIs
+  forwardToDepartment,
+  departmentRespond,
+  requestRevision,
+  publishResponse,
+  getPublishedIdeas,
+  getDepartmentInbox,
+  // Meeting Scheduling APIs
+  scheduleMeeting,
+  getIdeaMeeting,
+  // Status Labels
+  getStatusLabels,
+  // Feature: Like Idea
+  toggleLike,
+};
