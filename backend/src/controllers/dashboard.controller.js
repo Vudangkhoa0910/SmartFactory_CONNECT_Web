@@ -21,7 +21,7 @@ const getOverview = asyncHandler(async (req, res) => {
       (SELECT COUNT(*) FROM news WHERE status = 'published' AND publish_at <= NOW()) as active_news,
       (SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = false) as unread_notifications
   `;
-  
+
   const counts = await db.query(countsQuery, [userId]);
 
   // Get recent incidents
@@ -39,7 +39,7 @@ const getOverview = asyncHandler(async (req, res) => {
     ORDER BY i.created_at DESC
     LIMIT 5
   `;
-  
+
   const recentIncidents = await db.query(recentIncidentsQuery);
 
   // Get recent news
@@ -55,7 +55,7 @@ const getOverview = asyncHandler(async (req, res) => {
     ORDER BY n.publish_at DESC
     LIMIT 5
   `;
-  
+
   const recentNews = await db.query(recentNewsQuery);
 
   // Get my tasks (incidents assigned to me)
@@ -64,7 +64,7 @@ const getOverview = asyncHandler(async (req, res) => {
     FROM incidents
     WHERE assigned_to = $1 AND status IN ('assigned', 'in_progress')
   `;
-  
+
   const myTasks = await db.query(myTasksQuery, [userId]);
 
   res.json({
@@ -84,12 +84,12 @@ const getOverview = asyncHandler(async (req, res) => {
  */
 const getIncidentStats = asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
-  
+
   // Date range filter
   let dateFilter = '';
   const params = [];
   let paramIndex = 1;
-  
+
   if (start_date && end_date) {
     dateFilter = `WHERE created_at BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
     params.push(start_date, end_date);
@@ -107,7 +107,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     GROUP BY incident_type
     ORDER BY count DESC
   `;
-  
+
   const byType = await db.query(byTypeQuery, params);
 
   // 2. Top 10 Locations/Machines with Most Incidents (Bar Chart)
@@ -121,7 +121,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ORDER BY count DESC
     LIMIT 10
   `;
-  
+
   const topLocations = await db.query(topLocationsQuery, params);
 
   // 3. Average Response Time (Time to assign)
@@ -136,7 +136,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ${dateFilter}
     WHERE status != 'pending'
   `;
-  
+
   const avgResponse = await db.query(avgResponseQuery, params);
 
   // 4. Average Resolution Time (Time to resolve)
@@ -147,7 +147,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     ${dateFilter}
     WHERE resolved_at IS NOT NULL
   `;
-  
+
   const avgResolution = await db.query(avgResolutionQuery, params);
 
   // 5. KPI by Department (Growth Chart)
@@ -170,7 +170,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     HAVING COUNT(i.id) > 0
     ORDER BY resolution_rate DESC
   `;
-  
+
   const departmentKPI = await db.query(departmentKPIQuery, params);
 
   // 6. Incidents by Priority
@@ -189,7 +189,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
         WHEN 'low' THEN 4
       END
   `;
-  
+
   const byPriority = await db.query(byPriorityQuery, params);
 
   // 7. Incidents by Status
@@ -202,7 +202,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     GROUP BY status
     ORDER BY count DESC
   `;
-  
+
   const byStatus = await db.query(byStatusQuery, params);
 
   // 8. Daily Trend (Last 30 days)
@@ -215,7 +215,7 @@ const getIncidentStats = asyncHandler(async (req, res) => {
     GROUP BY DATE(created_at)
     ORDER BY date DESC
   `;
-  
+
   const dailyTrend = await db.query(dailyTrendQuery);
 
   res.json({
@@ -239,10 +239,10 @@ const getIncidentStats = asyncHandler(async (req, res) => {
  */
 const getIdeaStats = asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
-  
+
   let dateFilter = '';
   const params = [];
-  
+
   if (start_date && end_date) {
     dateFilter = `WHERE created_at BETWEEN $1 AND $2`;
     params.push(start_date, end_date);
@@ -262,7 +262,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ${dateFilter}
     GROUP BY result
   `;
-  
+
   const acceptanceRate = await db.query(acceptanceRateQuery, params);
 
   // 2. By Category (Pie Chart with Tags)
@@ -276,7 +276,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     GROUP BY category
     ORDER BY count DESC
   `;
-  
+
   const byCategory = await db.query(byCategoryQuery, params);
 
   // 3. User Satisfaction Rating (Pie Chart)
@@ -314,7 +314,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
         ELSE 4
       END
   `;
-  
+
   const satisfaction = await db.query(satisfactionQuery, params);
 
   // 4. Average Processing Time
@@ -325,7 +325,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ${dateFilter}
     WHERE reviewed_at IS NOT NULL
   `;
-  
+
   const avgProcessing = await db.query(avgProcessingQuery, params);
 
   // 5. Difficulty Level Distribution
@@ -361,7 +361,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
         ELSE 4
       END
   `;
-  
+
   const difficulty = await db.query(difficultyQuery, params);
 
   // 6. By IdeaBox Type
@@ -373,7 +373,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ${dateFilter}
     GROUP BY ideabox_type
   `;
-  
+
   const byType = await db.query(byTypeQuery, params);
 
   // 7. Top Contributors (White Box only)
@@ -391,7 +391,7 @@ const getIdeaStats = asyncHandler(async (req, res) => {
     ORDER BY idea_count DESC
     LIMIT 10
   `;
-  
+
   const topContributors = await db.query(topContributorsQuery, params);
 
   res.json({
@@ -446,13 +446,15 @@ const getSummary = asyncHandler(async (req, res) => {
       (SELECT COUNT(*) FROM incidents WHERE status IN ('resolved', 'closed')) as resolved_incidents,
       (SELECT COUNT(*) FROM ideas) as total_ideas,
       (SELECT COUNT(*) FROM ideas WHERE status IN ('pending', 'under_review')) as pending_ideas,
+      (SELECT COUNT(*) FROM ideas WHERE status IN ('pending', 'under_review') AND ideabox_type = 'white') as pending_white_ideas,
+      (SELECT COUNT(*) FROM ideas WHERE status IN ('pending', 'under_review') AND ideabox_type = 'pink') as pending_pink_ideas,
       (SELECT COUNT(*) FROM ideas WHERE status = 'implemented') as implemented_ideas,
       (SELECT COUNT(*) FROM users WHERE is_active = true) as active_users,
       (SELECT COUNT(*) FROM departments WHERE is_active = true) as departments_count
   `;
-  
+
   const result = await db.query(query);
-  
+
   res.json({
     success: true,
     data: result.rows[0]
@@ -465,15 +467,15 @@ const getSummary = asyncHandler(async (req, res) => {
  */
 const getIncidentTrend = asyncHandler(async (req, res) => {
   const { period = 'year' } = req.query;
-  
+
   let months = 12;
   if (period === 'half') months = 6;
   if (period === 'month') months = 1;
-  
+
   // Generate month labels
   const categories = [];
   const now = new Date();
-  
+
   for (let i = months - 1; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     if (period === 'month') {
@@ -486,7 +488,7 @@ const getIncidentTrend = asyncHandler(async (req, res) => {
       categories.push(`T${date.getMonth() + 1}`);
     }
   }
-  
+
   // Get monthly data
   const query = `
     WITH months AS (
@@ -515,12 +517,12 @@ const getIncidentTrend = asyncHandler(async (req, res) => {
     ) resolved ON m.month = resolved.month
     ORDER BY m.month
   `;
-  
+
   const result = await db.query(query);
-  
+
   const reported = result.rows.map(r => parseInt(r.reported) || 0);
   const resolved = result.rows.map(r => parseInt(r.resolved) || 0);
-  
+
   res.json({
     success: true,
     data: {
@@ -551,15 +553,15 @@ const getProcessingTime = asyncHandler(async (req, res) => {
         WHEN 'low' THEN 4 
       END
   `;
-  
+
   const result = await db.query(query);
-  
+
   // Map to expected format with defaults
   const priorityMap = { critical: 0, high: 0, medium: 0, low: 0 };
   result.rows.forEach(row => {
     priorityMap[row.priority] = parseFloat(row.avg_hours) || 0;
   });
-  
+
   res.json({
     success: true,
     data: {
@@ -575,7 +577,7 @@ const getProcessingTime = asyncHandler(async (req, res) => {
  */
 const getDepartmentKPI = asyncHandler(async (req, res) => {
   const { months = 6 } = req.query;
-  
+
   const query = `
     WITH months AS (
       SELECT generate_series(
@@ -605,16 +607,16 @@ const getDepartmentKPI = asyncHandler(async (req, res) => {
     ) resolved ON m.month = resolved.month
     ORDER BY m.month
   `;
-  
+
   const result = await db.query(query);
-  
+
   const categories = result.rows.map(r => {
     const [year, month] = r.month.split('-');
     return `Tháng ${parseInt(month)}`;
   });
-  
+
   const kpiPercentages = result.rows.map(r => parseFloat(r.kpi_percentage) || 0);
-  
+
   res.json({
     success: true,
     data: {
@@ -630,7 +632,7 @@ const getDepartmentKPI = asyncHandler(async (req, res) => {
  */
 const getTopMachines = asyncHandler(async (req, res) => {
   const { limit = 10 } = req.query;
-  
+
   const query = `
     SELECT 
       machine_code,
@@ -644,9 +646,9 @@ const getTopMachines = asyncHandler(async (req, res) => {
     ORDER BY error_count DESC
     LIMIT $1
   `;
-  
+
   const result = await db.query(query, [parseInt(limit)]);
-  
+
   res.json({
     success: true,
     data: result.rows
@@ -665,14 +667,14 @@ const getPriorityDistribution = asyncHandler(async (req, res) => {
     FROM incidents
     GROUP BY priority
   `;
-  
+
   const result = await db.query(query);
-  
+
   const distribution = { critical: 0, high: 0, medium: 0, low: 0 };
   result.rows.forEach(row => {
     distribution[row.priority] = parseInt(row.count) || 0;
   });
-  
+
   res.json({
     success: true,
     data: distribution
@@ -717,9 +719,9 @@ const getDepartmentStats = asyncHandler(async (req, res) => {
     WHERE d.is_active = true
     ORDER BY total_incidents DESC
   `;
-  
+
   const result = await db.query(query);
-  
+
   res.json({
     success: true,
     data: result.rows
@@ -738,9 +740,9 @@ const getRealTimeStats = asyncHandler(async (req, res) => {
       (SELECT COUNT(*) FROM incidents WHERE DATE(resolved_at) = CURRENT_DATE) as resolved_today,
       (SELECT COUNT(*) FROM ideas WHERE DATE(created_at) = CURRENT_DATE) as new_ideas_today
   `;
-  
+
   const result = await db.query(query);
-  
+
   res.json({
     success: true,
     data: result.rows[0]
@@ -766,16 +768,16 @@ const getIdeaDifficulty = asyncHandler(async (req, res) => {
         WHEN 'D' THEN 4 
       END
   `;
-  
+
   const result = await db.query(query);
-  
+
   const difficultyMap = { A: 0, B: 0, C: 0, D: 0 };
   result.rows.forEach(row => {
     if (row.difficulty_level) {
       difficultyMap[row.difficulty_level] = parseInt(row.count) || 0;
     }
   });
-  
+
   res.json({
     success: true,
     data: {
@@ -795,20 +797,20 @@ const getIdeaStatus = asyncHandler(async (req, res) => {
     FROM ideas
     GROUP BY status
   `;
-  
+
   const result = await db.query(query);
-  
+
   // Note: idea_status enum values: pending, under_review, approved, rejected, implemented, on_hold
-  const statusMap = { 
-    pending: 0, under_review: 0, approved: 0, 
-    rejected: 0, implemented: 0, on_hold: 0 
+  const statusMap = {
+    pending: 0, under_review: 0, approved: 0,
+    rejected: 0, implemented: 0, on_hold: 0
   };
   result.rows.forEach(row => {
     if (statusMap.hasOwnProperty(row.status)) {
       statusMap[row.status] = parseInt(row.count) || 0;
     }
   });
-  
+
   res.json({
     success: true,
     data: statusMap
@@ -825,7 +827,7 @@ async function getOverviewData(userId) {
       (SELECT COUNT(*) FROM news WHERE status = 'published') as active_news,
       (SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = false) as unread_notifications
   `;
-  
+
   const result = await db.query(countsQuery, [userId]);
   return result.rows[0];
 }

@@ -37,6 +37,8 @@ export interface DashboardSummary {
   resolved_incidents: number;
   total_ideas: number;
   pending_ideas: number;
+  pending_white_ideas: number;
+  pending_pink_ideas: number;
   implemented_ideas: number;
   active_users: number;
   departments_count: number;
@@ -178,7 +180,7 @@ export const getRecentActivities = async (limit: number = 10): Promise<RecentAct
     try {
       const incidentsRes = await api.get('/incidents?limit=5&sort=-created_at');
       const incidents = incidentsRes.data.data || [];
-      
+
       const activities: RecentActivity[] = incidents.map((incident: any) => ({
         id: `incident-${incident.id}`,
         type: incident.status === 'resolved' ? 'incident_resolved' : 'incident_created' as const,

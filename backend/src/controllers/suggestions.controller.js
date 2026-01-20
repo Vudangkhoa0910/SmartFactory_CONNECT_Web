@@ -71,7 +71,7 @@ async function searchIncidentsPostgres(query, limit = 5) {
 /**
  * Fallback: Search ideas using PostgreSQL full-text search  
  */
-async function searchIdeasPostgres(query, limit = 5) {
+async function searchIdeasPostgres(query, userId, limit = 5) {
   try {
     // Đầu tiên tìm các ý tưởng tương tự
     const result = await db.query(`
@@ -82,8 +82,20 @@ async function searchIdeasPostgres(query, limit = 5) {
         i.status,
         i.category,
         i.difficulty,
+        i.created_at,
+        i.whitebox_subtype,
+        i.ideabox_type,
         d.name as department_name,
         d.code as department_code,
+        u.full_name as submitter_name,
+        h.full_name as handler_name,
+        COALESCE(i.implementation_notes, i.review_notes, i.published_response) as last_response,
+        EXISTS (
+          SELECT 1 FROM idea_supports 
+          WHERE idea_id = i.id 
+          AND user_id = $4
+          AND support_type = 'support'
+        ) as is_supported,
         ts_rank(
           setweight(to_tsvector('simple', COALESCE(i.title, '')), 'A') ||
           setweight(to_tsvector('simple', COALESCE(i.description, '')), 'B'),
@@ -91,6 +103,8 @@ async function searchIdeasPostgres(query, limit = 5) {
         ) as relevance
       FROM ideas i
       LEFT JOIN departments d ON i.department_id = d.id
+      LEFT JOIN users u ON i.submitter_id = u.id
+      LEFT JOIN users h ON i.assigned_to = h.id
       WHERE 
         i.title ILIKE $2
         OR i.description ILIKE $2
@@ -98,7 +112,7 @@ async function searchIdeasPostgres(query, limit = 5) {
            @@ plainto_tsquery('simple', $1)
       ORDER BY relevance DESC, i.created_at DESC
       LIMIT $3
-    `, [query, `%${query}%`, limit]);
+    `, [query, `%${query}%`, limit, userId]);
 
     // Tính số lượng ý kiến tương tự cho mỗi kết quả (để hiển thị xN ủng hộ)
     const ideasWithSupport = await Promise.all(result.rows.map(async (idea) => {
@@ -115,7 +129,7 @@ async function searchIdeasPostgres(query, limit = 5) {
               OR similarity(COALESCE(description, ''), COALESCE($4, '')) > 0.3
             )
         `, [idea.id, `%${query}%`, idea.title || '', idea.description || '']);
-        
+
         return {
           ...idea,
           support_count: 1 + parseInt(countResult.rows[0]?.similar_count || 0)
@@ -158,7 +172,7 @@ exports.getSimilarIncidents = async (req, res) => {
           params: { description: query.trim(), limit: parseInt(limit) },
           timeout: 5000
         });
-        
+
         if (response.data?.incidents) {
           results = response.data.incidents.map(inc => ({
             id: inc.id,
@@ -207,6 +221,7 @@ exports.getSimilarIncidents = async (req, res) => {
 exports.getSimilarIdeas = async (req, res) => {
   try {
     const { query, limit = 5 } = req.query;
+    const userId = req.user.id;
 
     if (!query || query.trim().length < 3) {
       return res.json({
@@ -226,7 +241,7 @@ exports.getSimilarIdeas = async (req, res) => {
           params: { query: query.trim(), limit: parseInt(limit) },
           timeout: 5000
         });
-        
+
         if (response.data?.ideas) {
           results = response.data.ideas;
           source = 'rag';
@@ -239,7 +254,7 @@ exports.getSimilarIdeas = async (req, res) => {
 
     // Fallback to Postgres
     if (results.length === 0) {
-      results = await searchIdeasPostgres(query.trim(), parseInt(limit));
+      results = await searchIdeasPostgres(query.trim(), userId, parseInt(limit));
     }
 
     return res.json({
@@ -379,13 +394,13 @@ exports.autoFillForm = async (req, res) => {
 exports.getStatus = async (req, res) => {
   try {
     const ragAvailable = await isRagAvailable();
-    
+
     let ragInfo = null;
     if (ragAvailable) {
       try {
         const response = await axios.get(`${RAG_SERVICE_URL}/health`, { timeout: 2000 });
         ragInfo = response.data;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return res.json({

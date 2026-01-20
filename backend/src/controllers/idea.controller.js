@@ -747,8 +747,9 @@ const addResponse = asyncHandler(async (req, res) => {
     throw new AppError('Idea not found', 404);
   }
 
-  // Check permission: assigned user, department manager, or supervisor+
+  // Check permission: submitter, assigned user, department manager, or supervisor+
   const canRespond =
+    idea.rows[0].submitter_id === userId ||
     idea.rows[0].assigned_to === userId ||
     req.user.level <= 4;
 
