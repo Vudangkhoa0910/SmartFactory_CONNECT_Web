@@ -104,13 +104,13 @@ export default function WhiteBoxLanding() {
   }, []);
 
   const mapToBackendStatus = (s: string) =>
-    ({
-      new: "pending",
-      under_review: "under_review",
-      approved: "approved",
-      rejected: "rejected",
-      implemented: "implemented",
-    }[s] || "under_review");
+  ({
+    new: "pending",
+    under_review: "under_review",
+    approved: "approved",
+    rejected: "rejected",
+    implemented: "implemented",
+  }[s] || "under_review");
 
   // Map item
   const mapItem = useCallback(
@@ -142,8 +142,8 @@ export default function WhiteBoxLanding() {
       const parseAttachments = () => {
         if (!item.attachments) return undefined;
         try {
-          const att = typeof item.attachments === 'string' 
-            ? JSON.parse(item.attachments) 
+          const att = typeof item.attachments === 'string'
+            ? JSON.parse(item.attachments)
             : item.attachments;
           if (Array.isArray(att) && att.length > 0) {
             const baseUrl = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
@@ -175,8 +175,8 @@ export default function WhiteBoxLanding() {
         content: item.description || "",
         difficulty: item.difficulty as "A" | "B" | "C" | "D" | undefined,
         attachments: attachments,
-        imageUrl: attachments && attachments.length > 0 
-          ? attachments.find((a: any) => a.mime_type?.startsWith('image/'))?.url 
+        imageUrl: attachments && attachments.length > 0
+          ? attachments.find((a: any) => a.mime_type?.startsWith('image/'))?.url
           : undefined,
         timestamp: new Date(item.created_at),
         status: mapStatus(item.status),
@@ -188,8 +188,8 @@ export default function WhiteBoxLanding() {
             typeof h.details === "string"
               ? h.details
               : h.details
-              ? JSON.stringify(h.details)
-              : "",
+                ? JSON.stringify(h.details)
+                : "",
         })),
         chat: responsesArr.map((r: any) => ({
           id: r.id,
@@ -209,7 +209,7 @@ export default function WhiteBoxLanding() {
       try {
         if (showLoading) setLoading(true);
         setRefreshing(true);
-        const res = await api.get("/ideas?ideabox_type=white");
+        const res = await api.get("/ideas?ideabox_type=white&limit=1000");
         const all = (res.data.data || []).map(mapItem);
         setIdeas(all.filter((i: PublicIdea) => ideaCategories.includes(i.line)));
         setOpinions(all.filter((i: PublicIdea) => !ideaCategories.includes(i.line)));
@@ -226,7 +226,7 @@ export default function WhiteBoxLanding() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  
+
   useSocketRefresh(["idea_created", "idea_updated"], () => fetchData(false), [
     "ideas",
   ]);
@@ -241,6 +241,7 @@ export default function WhiteBoxLanding() {
       completed: allItems.filter(
         (i) => i.status === "approved" || i.status === "implemented"
       ).length,
+      rejected: allItems.filter((i) => i.status === "rejected").length,
     };
   }, [ideas, opinions]);
 
@@ -256,8 +257,21 @@ export default function WhiteBoxLanding() {
           item.senderName.toLowerCase().includes(searchTerm.toLowerCase());
 
         // Status filter
-        const matchStatus =
-          statusFilter === "all" || item.status === statusFilter;
+        // Status filter
+        let matchStatus = false;
+        if (statusFilter === "all") {
+          matchStatus = true;
+        } else if (statusFilter === "pending") {
+          matchStatus = item.status === "new";
+        } else if (statusFilter === "in_progress") {
+          matchStatus = item.status === "under_review";
+        } else if (statusFilter === "completed") {
+          matchStatus = item.status === "approved" || item.status === "implemented";
+        } else if (statusFilter === "rejected") {
+          matchStatus = item.status === "rejected";
+        } else {
+          matchStatus = item.status === statusFilter;
+        }
 
         // Category filter (for ideas)
         const matchCategory =
@@ -406,18 +420,16 @@ export default function WhiteBoxLanding() {
               >
                 <RefreshCw
                   size={18}
-                  className={`text-gray-600 dark:text-gray-400 ${
-                    refreshing ? "animate-spin" : ""
-                  }`}
+                  className={`text-gray-600 dark:text-gray-400 ${refreshing ? "animate-spin" : ""
+                    }`}
                 />
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 rounded-lg border transition-colors ${
-                  showFilters
-                    ? "bg-red-50 border-red-300 dark:bg-red-900/20 dark:border-red-700"
-                    : "border-gray-300 dark:border-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-700"
-                }`}
+                className={`p-2 rounded-lg border transition-colors ${showFilters
+                  ? "bg-red-50 border-red-300 dark:bg-red-900/20 dark:border-red-700"
+                  : "border-gray-300 dark:border-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-700"
+                  }`}
               >
                 <SlidersHorizontal
                   size={18}
@@ -462,9 +474,8 @@ export default function WhiteBoxLanding() {
                     {isSupported && (
                       <button
                         onClick={startListening}
-                        className={`p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 ${
-                          isListening ? "text-red-500 animate-pulse" : "text-gray-400"
-                        }`}
+                        className={`p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 ${isListening ? "text-red-500 animate-pulse" : "text-gray-400"
+                          }`}
                       >
                         <Mic size={16} />
                       </button>
@@ -555,7 +566,7 @@ export default function WhiteBoxLanding() {
               {/* Results count */}
               {hasActiveFilters && (
                 <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                  {language === "ja" 
+                  {language === "ja"
                     ? `${filteredIdeas.length + filteredOpinions.length} 件の結果`
                     : `Tìm thấy ${filteredIdeas.length + filteredOpinions.length} kết quả`}
                 </div>
@@ -571,11 +582,10 @@ export default function WhiteBoxLanding() {
               setActiveTab("idea");
               if (viewMode === "split") setViewMode("idea");
             }}
-            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 font-medium transition-colors ${
-              activeTab === "idea"
-                ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/10"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-neutral-700"
-            }`}
+            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 font-medium transition-colors ${activeTab === "idea"
+              ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/10"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-neutral-700"
+              }`}
           >
             <Lightbulb size={18} />
             {language === "ja" ? "アイデア" : "Ý tưởng"}
@@ -588,11 +598,10 @@ export default function WhiteBoxLanding() {
               setActiveTab("opinion");
               if (viewMode === "split") setViewMode("opinion");
             }}
-            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 font-medium transition-colors ${
-              activeTab === "opinion"
-                ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/10"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-neutral-700"
-            }`}
+            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 font-medium transition-colors ${activeTab === "opinion"
+              ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/10"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-neutral-700"
+              }`}
           >
             <MessageSquareText size={18} />
             {language === "ja" ? "意見" : "Ý kiến"}
