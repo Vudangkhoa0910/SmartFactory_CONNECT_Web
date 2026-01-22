@@ -62,6 +62,21 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
     setDifficulty(message?.difficulty);
   }, [message?.id]);
 
+  // Auto-save difficulty when changed
+  useEffect(() => {
+    // Don't save if same as original or not set
+    if (difficulty === message?.difficulty || !difficulty) {
+      return;
+    }
+
+    // Debounce to avoid too many API calls
+    const timer = setTimeout(() => {
+      handleSaveDifficulty();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [difficulty]);
+
   // Check if there's a new department response that hasn't been reviewed
   const hasNewDepartmentResponse = message?.departmentResponse?.department_response &&
     !message?.publishedInfo?.is_published;
@@ -346,22 +361,24 @@ export const MessageDetailView: React.FC<MessageDetailViewProps> = ({
           <div className="bg-white dark:bg-neutral-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-700">
             <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-white">{t('feedback.reply_title')}</h4>
 
-            {/* Đánh giá độ khó */}
+            {/* Đánh giá độ khó - Auto-save */}
             <div className="mb-4 pb-4 border-b border-gray-200 dark:border-neutral-700">
               <DifficultySelector
                 value={difficulty}
                 onChange={setDifficulty}
                 label="Đánh giá độ khó xử lý"
               />
-              {difficulty !== message?.difficulty && (
-                <button
-                  onClick={handleSaveDifficulty}
-                  disabled={savingDifficulty}
-                  className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 flex items-center gap-2 transition-colors text-sm"
-                >
-                  <Save size={16} />
-                  {savingDifficulty ? t('difficulty.saving') : t('difficulty.save_button')}
-                </button>
+              {savingDifficulty && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                  <span>{t('difficulty.saving') || 'Đang lưu...'}</span>
+                </div>
+              )}
+              {!savingDifficulty && difficulty !== message?.difficulty && (
+                <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <Save size={14} />
+                  Đã lưu tự động
+                </p>
               )}
             </div>
 

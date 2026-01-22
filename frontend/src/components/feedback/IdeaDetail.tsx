@@ -67,6 +67,21 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     status: string;
   } | null>(null);
 
+  // Auto-save difficulty when changed
+  useEffect(() => {
+    // Don't save if same as original or if can't modify
+    if (!canModifyDifficulty || difficulty === idea.difficulty || !difficulty) {
+      return;
+    }
+
+    // Debounce to avoid too many API calls
+    const timer = setTimeout(() => {
+      handleSaveDifficulty();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [difficulty]);
+
   // ===== STATUS-BASED ACTION CONTROL =====
   // Determine which actions are allowed based on current status
   // Status workflow: new/pending → under_review → approved/rejected → implemented
@@ -186,20 +201,18 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
     const note = solution?.note || solutionInput || t('status.approved');
     const updatedSolution = { note, status: t('status.approved') };
     setSolution(updatedSolution);
-    // Chỉ gửi difficulty nếu nó khác với giá trị ban đầu
-    const changedDifficulty = difficulty !== idea.difficulty ? difficulty : undefined;
+    // Luôn gửi difficulty hiện tại (đã auto-save rồi)
     // Send status code 'approved', not translated text
-    onUpdateStatus('approved', note, t('status.approved'), changedDifficulty);
+    onUpdateStatus('approved', note, t('status.approved'), difficulty);
   };
 
   const handleReject = () => {
     const note = solution?.note || solutionInput || t('status.rejected');
     setSolution(null);
     setSolutionInput("");
-    // Chỉ gửi difficulty nếu nó khác với giá trị ban đầu
-    const changedDifficulty = difficulty !== idea.difficulty ? difficulty : undefined;
+    // Gửi difficulty hiện tại nếu có (đã auto-save rồi)
     // Send status code 'rejected', not translated text
-    onUpdateStatus('rejected', note, t('button.reject'), changedDifficulty);
+    onUpdateStatus('rejected', note, t('button.reject'), difficulty);
   };
 
   return (
@@ -526,7 +539,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
             </div>
           )}
 
-          {/* ĐÁNH GIÁ ĐỘ KHÓ - Độc lập - Only editable when not finalized */}
+          {/* ĐÁNH GIÁ ĐỘ KHÓ - Auto-save khi chọn */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
             <DifficultySelector
               value={difficulty}
@@ -534,15 +547,17 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
               label={t('difficulty.label')}
               disabled={!canModifyDifficulty}
             />
-            {canModifyDifficulty && difficulty !== idea.difficulty && (
-              <button
-                onClick={handleSaveDifficulty}
-                disabled={savingDifficulty}
-                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 flex items-center gap-2 transition-colors text-sm"
-              >
-                <Save size={16} />
-                {savingDifficulty ? t('difficulty.saving') : t('difficulty.save_button')}
-              </button>
+            {canModifyDifficulty && savingDifficulty && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                <span>{t('difficulty.saving') || 'Đang lưu...'}</span>
+              </div>
+            )}
+            {canModifyDifficulty && !savingDifficulty && difficulty !== idea.difficulty && (
+              <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                <Save size={14} />
+                Đã lưu tự động
+              </p>
             )}
             {!canModifyDifficulty && (
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
