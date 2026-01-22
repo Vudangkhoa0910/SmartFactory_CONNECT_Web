@@ -138,6 +138,17 @@ export interface ActionHistory {
   action: string; // Ví dụ: "Đã duyệt", "Đã từ chối"
   note?: string; // Phương hướng giải quyết hoặc ghi chú
 }
+/** Final Resolution Detail - Chi tiết người chốt giải pháp */
+export interface FinalResolutionDetail {
+  response_id: string;
+  responder_id: string;
+  responder_name: string;
+  content: string;
+  content_ja?: string;
+  created_at: string;
+  is_final_resolution: boolean;
+}
+
 /** Ý tưởng / góp ý */
 export interface PublicIdea {
   id: string;
@@ -161,4 +172,9 @@ export interface PublicIdea {
   assignedToName?: string;
   satisfactionRating?: number;
   satisfactionComment?: string;
+  // Final Resolution fields - Giải pháp đã triển khai
+  finalResolution?: string;
+  finalResolutionJa?: string;
+  finalResolutionDetail?: FinalResolutionDetail;
+  implementedAt?: Date;
 }

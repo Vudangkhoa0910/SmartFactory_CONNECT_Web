@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { PublicIdea, DifficultyLevel } from "./types";
 import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
-import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2, ThumbsUp, Bell, Star, MessageSquare, Trash2 } from "lucide-react";
+import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2, ThumbsUp, Bell, Star, MessageSquare, Trash2, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from "../form/input/TextArea";
 import { DifficultyBadge, DifficultySelector } from "./DifficultySelector";
@@ -307,6 +307,63 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
             onSupport={onSupport}
             onRemind={onRemind}
           />
+
+          {/* FINAL RESOLUTION CARD - Giải pháp đã triển khai */}
+          {idea.status === 'implemented' && idea.finalResolution && (
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border-2 border-green-200 dark:border-green-700 shadow-lg">
+              {/* Decorative check pattern */}
+              <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8">
+                <div className="w-full h-full bg-green-200/30 dark:bg-green-700/20 rounded-full blur-2xl" />
+              </div>
+              
+              <div className="relative p-6">
+                {/* Header */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="flex-shrink-0 p-3 bg-green-500 rounded-full shadow-lg shadow-green-200 dark:shadow-green-900/50">
+                    <CheckCircle2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
+                      ✅ {language === 'ja' ? '実施済みソリューション' : 'GIẢI PHÁP ĐÃ TRIỂN KHAI'}
+                    </h3>
+                    {idea.implementedAt && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-0.5">
+                        {language === 'ja' ? '実施日' : 'Triển khai'}: {new Date(idea.implementedAt).toLocaleDateString('vi-VN')}
+                      </p>
+                    )}
+                  </div>
+                  <span className="px-3 py-1.5 bg-green-600 text-white text-sm font-bold rounded-full shadow">
+                    {t('status.implemented')}
+                  </span>
+                </div>
+
+                {/* Resolution Content */}
+                <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 border-l-4 border-green-500 shadow-sm">
+                  <p className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                    {language === 'ja' && idea.finalResolutionJa ? idea.finalResolutionJa : idea.finalResolution}
+                  </p>
+                </div>
+
+                {/* Resolution Detail - Who approved */}
+                {idea.finalResolutionDetail && (
+                  <div className="mt-4 flex items-center gap-3 text-sm text-green-700 dark:text-green-400">
+                    <User size={14} />
+                    <span className="font-medium">
+                      {language === 'ja' ? '承認者' : 'Chốt bởi'}: {idea.finalResolutionDetail.responder_name || 'Quản lý'}
+                    </span>
+                    {idea.finalResolutionDetail.created_at && (
+                      <>
+                        <span className="text-green-400 dark:text-green-600">•</span>
+                        <span className="text-green-600 dark:text-green-500">
+                          {new Date(idea.finalResolutionDetail.created_at).toLocaleDateString('vi-VN')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Support & Remind Summary Card - For non-resolved ideas */}
           {!['implemented', 'rejected'].includes(idea.status) && (supportCount > 0 || remindCount > 0) && (

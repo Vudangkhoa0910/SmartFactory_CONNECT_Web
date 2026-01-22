@@ -251,6 +251,24 @@ function initializeSocket(server) {
       });
     });
 
+    // Handle subscribe to specific idea room (for real-time responses)
+    socket.on('subscribe_idea', (data) => {
+      const { idea_id } = data;
+      if (idea_id) {
+        socket.join(`idea_${idea_id}`);
+        console.log(`[Socket] User ${socket.user.full_name} subscribed to idea_${idea_id}`);
+      }
+    });
+
+    // Handle unsubscribe from specific idea room
+    socket.on('unsubscribe_idea', (data) => {
+      const { idea_id } = data;
+      if (idea_id) {
+        socket.leave(`idea_${idea_id}`);
+        console.log(`[Socket] User ${socket.user.full_name} unsubscribed from idea_${idea_id}`);
+      }
+    });
+
     // Disconnect handler
     socket.on('disconnect', (reason) => {
       connectionStats.currentConnections--;
@@ -296,6 +314,12 @@ function initializeSocket(server) {
   io.notifyDepartment = (departmentId, event, data) => {
     connectionStats.messagesSent++;
     io.to(`dept_${departmentId}`).emit(event, data);
+  };
+
+  // Notify users subscribed to a specific idea (for real-time chat)
+  io.notifyIdeaSubscribers = (ideaId, event, data) => {
+    connectionStats.messagesSent++;
+    io.to(`idea_${ideaId}`).emit(event, data);
   };
 
   io.notifyLevel = (level, event, data) => {

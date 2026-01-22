@@ -3,6 +3,7 @@ const { AppError, asyncHandler } = require('../middlewares/error.middleware');
 const escalationService = require('../services/escalation.service');
 const ratingService = require('../services/rating.service');
 const translationService = require('../services/translation.service');
+const ragService = require('../services/rag.service');
 const { getLanguageFromRequest } = require('../utils/i18n.helper');
 const { uploadFilesToGridFS, updateFilesRelatedId } = require('../utils/media-upload.helper');
 
@@ -915,12 +916,21 @@ r.*,
 
   // BROADCAST idea_response for real-time updates
   const io = req.app.get('io');
-  if (io && io.broadcastIdea) {
-    io.broadcastIdea('idea_response', {
+  if (io) {
+    const responseData = {
       idea_id: id,
       response_id: result.rows[0].id,
+      response: responseWithUser.rows[0],
       updated_at: result.rows[0].created_at
-    });
+    };
+    
+    // Broadcast to global ideas room
+    if (io.broadcastIdea) {
+      io.broadcastIdea('idea_response', responseData);
+    }
+    
+    // Also emit to specific idea room for real-time chat
+    io.to(`idea_${id}`).emit('idea_response', responseData);
   }
 });
 
@@ -1006,6 +1016,18 @@ VALUES($1, 'reviewed', $2, $3)`,
     });
   }
 
+  // INDEX TO RAG when approved or implemented (for duplicate detection)
+  if (['approved', 'implemented', 'in_progress'].includes(status)) {
+    setImmediate(async () => {
+      try {
+        const ragResult = await ragService.indexIdea(id);
+        console.log(`[Idea] RAG indexed idea ${id}:`, ragResult.message);
+      } catch (err) {
+        console.error('[Idea] Error indexing idea to RAG:', err.message);
+      }
+    });
+  }
+
   res.json({
     success: true,
     message: 'Idea reviewed successfully',
@@ -1075,6 +1097,16 @@ VALUES($1, 'implemented', $2, $3)`,
       }
     });
   }
+
+  // INDEX TO RAG when implemented (for duplicate detection & knowledge base)
+  setImmediate(async () => {
+    try {
+      const ragResult = await ragService.indexIdea(id);
+      console.log(`[Idea] RAG indexed implemented idea ${id}:`, ragResult.message);
+    } catch (err) {
+      console.error('[Idea] Error indexing implemented idea to RAG:', err.message);
+    }
+  });
 
   res.json({
     success: true,

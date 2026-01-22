@@ -195,7 +195,7 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
         # Generate embedding
         query_embedding = embedding_service.encode(search_text)
         
-        # Search for similar ideas with full history
+        # Search for similar ideas with full history and final_resolution
         with db.cursor() as cur:
             cur.execute("""
                 SELECT 
@@ -214,19 +214,25 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                     i.updated_at,
                     i.reviewed_at,
                     i.implemented_at,
+                    i.final_resolution,
+                    i.final_resolution_ja,
                     u.full_name as submitter_name,
                     d.name as department_name,
+                    d.code as department_code,
                     1 - (i.embedding <=> %s::vector) as similarity,
                     (SELECT COUNT(*) FROM idea_supports WHERE idea_id = i.id) as total_supports,
                     (SELECT json_agg(json_build_object(
                         'response', ir.response,
                         'created_at', ir.created_at,
-                        'responder_name', ru.full_name
+                        'responder_name', ru.full_name,
+                        'responder_role', ru.role,
+                        'is_final_resolution', COALESCE(ir.is_final_resolution, false),
+                        'response_type', COALESCE(ir.response_type, 'comment')
                     ) ORDER BY ir.created_at DESC)
                     FROM idea_responses ir
                     LEFT JOIN users ru ON ir.user_id = ru.id
                     WHERE ir.idea_id = i.id
-                    LIMIT 5) as responses,
+                    LIMIT 10) as responses,
                     (SELECT json_agg(json_build_object(
                         'from_status', ist.from_status,
                         'to_status', ist.to_status,
@@ -234,12 +240,16 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                         'to_stage', ist.to_stage,
                         'reason', ist.reason,
                         'created_at', ist.created_at,
-                        'transitioned_by_name', tu.full_name
+                        'transitioned_by_name', tu.full_name,
+                        'transitioned_by_role', tu.role
                     ) ORDER BY ist.created_at DESC)
                     FROM idea_status_transitions ist
                     LEFT JOIN users tu ON ist.transitioned_by = tu.id
                     WHERE ist.idea_id = i.id
-                    LIMIT 10) as workflow_history
+                    LIMIT 15) as workflow_history,
+                    (SELECT ir.response FROM idea_responses ir
+                     WHERE ir.idea_id = i.id AND ir.is_final_resolution = true
+                     ORDER BY ir.created_at DESC LIMIT 1) as final_resolution_response
                 FROM ideas i
                 LEFT JOIN users u ON i.submitter_id = u.id
                 LEFT JOIN departments d ON i.department_id = d.id
@@ -262,10 +272,28 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                 # Determine relevance level
                 relevance_level = "critical" if similarity > 0.9 else "high" if similarity > 0.7 else "medium" if similarity > 0.5 else "low"
                 
+                # Get final resolution - either from column or from response marked as final
+                final_resolution = row.get('final_resolution') or row.get('final_resolution_response')
+                final_resolution_ja = row.get('final_resolution_ja')
+                
+                # Find the final resolution response from responses array
+                final_resolution_detail = None
+                responses = row['responses'] or []
+                for resp in responses:
+                    if resp and resp.get('is_final_resolution'):
+                        final_resolution_detail = {
+                            'response': resp.get('response'),
+                            'responder_name': resp.get('responder_name'),
+                            'responder_role': resp.get('responder_role'),
+                            'created_at': resp.get('created_at')
+                        }
+                        break
+                
                 idea_data = {
                     "id": str(row['id']),
                     "title": row['title'],
-                    "content": row['content'][:300] if row['content'] else None,
+                    "content": row['content'][:500] if row['content'] else None,
+                    "description": row['content'],  # Full description
                     "status": row['status'],
                     "category": row['category'],
                     "difficulty": row['difficulty'],
@@ -277,6 +305,7 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                     "relevance_level": relevance_level,
                     "submitter_name": row['submitter_name'] if not row['ideabox_type'] == 'pink' else 'Ẩn danh',
                     "department_name": row['department_name'],
+                    "department_code": row.get('department_code'),
                     "support_count": row['support_count'] or 0,
                     "remind_count": row['remind_count'] or 0,
                     "total_supports": row['total_supports'] or 0,
@@ -284,8 +313,13 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                     "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None,
                     "reviewed_at": row['reviewed_at'].isoformat() if row['reviewed_at'] else None,
                     "implemented_at": row['implemented_at'].isoformat() if row['implemented_at'] else None,
-                    "has_resolution": row['status'] in ['implemented', 'approved'],
-                    "responses": row['responses'] or [],
+                    "has_resolution": row['status'] in ['implemented', 'approved'] or final_resolution is not None,
+                    # NEW: Final resolution fields
+                    "final_resolution": final_resolution,
+                    "final_resolution_ja": final_resolution_ja,
+                    "final_resolution_detail": final_resolution_detail,
+                    "last_response": responses[0].get('response') if responses else None,
+                    "responses": responses,
                     "workflow_history": row['workflow_history'] or []
                 }
                 similar_ideas.append(idea_data)
@@ -806,6 +840,151 @@ async def get_ideas_embedding_stats():
     except Exception as e:
         print(f"[ERROR] Get ideas embedding stats failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# === Index Single Idea (for real-time updates) ===
+class IndexIdeaRequest(BaseModel):
+    """Request body for indexing a single idea"""
+    idea_id: str = Field(..., description="ID của ý tưởng cần index")
+
+
+class IndexIdeaResponse(BaseModel):
+    """Response for single idea indexing"""
+    success: bool
+    idea_id: str
+    message: str
+    embedding_created: bool
+
+
+@app.post("/ideas/index", response_model=IndexIdeaResponse, tags=["Ideas"])
+async def index_single_idea(request: IndexIdeaRequest):
+    """
+    Index/Re-index một idea cụ thể vào RAG database.
+    Gọi endpoint này khi idea được duyệt hoặc triển khai để RAG có thể tìm kiếm được ngay.
+    """
+    try:
+        idea_id = request.idea_id
+        
+        # Get idea from database
+        with db.cursor() as cur:
+            cur.execute("""
+                SELECT id, title, description, expected_benefit, status, ideabox_type, whitebox_subtype
+                FROM ideas 
+                WHERE id = %s
+            """, (idea_id,))
+            idea = cur.fetchone()
+        
+        if not idea:
+            raise HTTPException(status_code=404, detail=f"Idea {idea_id} not found")
+        
+        # Combine text fields for embedding
+        text_parts = []
+        if idea['title']:
+            text_parts.append(idea['title'])
+        if idea['description']:
+            text_parts.append(idea['description'])
+        if idea['expected_benefit']:
+            text_parts.append(idea['expected_benefit'])
+        
+        combined_text = ' '.join(text_parts)
+        
+        if len(combined_text) < 10:
+            return IndexIdeaResponse(
+                success=False,
+                idea_id=idea_id,
+                message="Nội dung idea quá ngắn để tạo embedding",
+                embedding_created=False
+            )
+        
+        # Generate embedding
+        embedding = embedding_service.encode(combined_text)
+        
+        # Save to database
+        with db.cursor() as cur:
+            cur.execute("""
+                UPDATE ideas 
+                SET embedding = %s::vector
+                WHERE id = %s
+            """, (embedding.tolist(), idea_id))
+        
+        print(f"[RAG] Indexed idea {idea_id} ({idea['title'][:50]}...) - status: {idea['status']}")
+        
+        return IndexIdeaResponse(
+            success=True,
+            idea_id=idea_id,
+            message=f"Đã index idea '{idea['title'][:50]}' thành công",
+            embedding_created=True
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Index single idea failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ideas/index-batch", tags=["Ideas"])
+async def index_ideas_batch(idea_ids: List[str]):
+    """
+    Index nhiều ideas cùng lúc.
+    """
+    results = {
+        "success": True,
+        "total": len(idea_ids),
+        "processed": 0,
+        "failed": 0,
+        "details": []
+    }
+    
+    for idea_id in idea_ids:
+        try:
+            # Get idea from database
+            with db.cursor() as cur:
+                cur.execute("""
+                    SELECT id, title, description, expected_benefit
+                    FROM ideas 
+                    WHERE id = %s
+                """, (idea_id,))
+                idea = cur.fetchone()
+            
+            if not idea:
+                results["failed"] += 1
+                results["details"].append({"id": idea_id, "status": "not_found"})
+                continue
+            
+            # Combine text fields
+            text_parts = []
+            if idea['title']:
+                text_parts.append(idea['title'])
+            if idea['description']:
+                text_parts.append(idea['description'])
+            if idea['expected_benefit']:
+                text_parts.append(idea['expected_benefit'])
+            
+            combined_text = ' '.join(text_parts)
+            
+            if len(combined_text) < 10:
+                results["failed"] += 1
+                results["details"].append({"id": idea_id, "status": "too_short"})
+                continue
+            
+            # Generate and save embedding
+            embedding = embedding_service.encode(combined_text)
+            with db.cursor() as cur:
+                cur.execute("""
+                    UPDATE ideas 
+                    SET embedding = %s::vector
+                    WHERE id = %s
+                """, (embedding.tolist(), idea_id))
+            
+            results["processed"] += 1
+            results["details"].append({"id": idea_id, "status": "indexed"})
+            
+        except Exception as e:
+            results["failed"] += 1
+            results["details"].append({"id": idea_id, "status": "error", "error": str(e)})
+    
+    return results
 
 
 # === Startup/Shutdown ===
