@@ -9,14 +9,15 @@ export type { Language };
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language, saveToServer?: boolean) => void;
-  
+
   // Static translation (UI labels, buttons, menus - instant)
-  t: (key: string, fallback?: string) => string;
-  
+  // Updated to support variable interpolation
+  t: (key: string, variables?: Record<string, string | number>, fallback?: string) => string;
+
   // Legacy support
   translations: Record<string, string>;
   loading: boolean;
-  
+
   // Initialize from user preference
   initFromUser: (preferredLanguage?: string) => void;
 }
@@ -49,7 +50,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     localStorage.setItem('language', lang);
     document.documentElement.lang = lang;
     console.log(`[i18n] Language switched to ${lang}`);
-    
+
     // Save to server if user is logged in
     if (saveToServer) {
       try {
@@ -77,14 +78,13 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   }, [language]);
 
   // Static translation function (instant, from local JSON)
-  const t = useCallback((key: string, fallback?: string): string => {
-    const translation = flatTranslations[language][key];
-    if (translation) return translation;
-    
-    // Try nested lookup
-    const nestedResult = staticT(key, language);
-    if (nestedResult !== key) return nestedResult;
-    
+  // Optimized and now supports variable interpolation
+  const t = useCallback((key: string, variables?: Record<string, string | number>, fallback?: string): string => {
+    // Re-use the t function from i18n/index.ts which now supports variables
+    const result = staticT(key, variables, language);
+
+    if (result !== key) return result;
+
     // Return fallback or key
     return fallback || key;
   }, [language]);

@@ -2,7 +2,7 @@
   "app": {
     "name": "SmartFactory CONNECT",
     "tagline": "Hệ thống quản lý nhà máy thông minh",
-    "platform": "SmartFactory CONNECT Web Platform"
+    "platform": "Nền tảng vận hành SmartFactory CONNECT Web"
   },
   "card": {
     "t1": "so với tuần trước"
@@ -14,27 +14,27 @@
     "incident_queue": "Hàng đợi sự cố",
     "all_incidents": "Tất cả sự cố",
     "incident_list": "Danh sách sự cố",
-    "ideas": "Ý kiến đóng góp",
+    "ideas": "Ý kiến",
     "public_ideas": "Hòm trắng",
     "admin_inbox": "Hòm hồng",
-    "kaizen_bank": "Ngân hàng cải tiến",
+    "kaizen_bank": "Kaizen Bank",
     "news": "Tin tức",
     "calendar": "Lịch",
-    "create_booking": "Tạo đặt phòng",
+    "create_booking": "Đặt phòng",
     "booking": "Đặt phòng họp",
-    "my_bookings": "Đặt phòng của tôi",
-    "admin_approval": "Phê duyệt đặt phòng",
-    "users": "Quản lý người dùng",
+    "my_bookings": "Lịch của tôi",
+    "admin_approval": "Duyệt đặt phòng",
+    "users": "Người dùng",
     "user_list": "Danh sách người dùng",
-    "departments": "Quản lý phòng ban",
+    "departments": "Phòng ban",
     "email_management": "Quản lý Email",
-    "management": "Quản lý",
-    "profile": "Hồ sơ",
+    "management": "Quản trị",
+    "profile": "Cá nhân",
     "settings": "Cài đặt",
     "support": "Hỗ trợ",
     "logout": "Đăng xuất",
     "queue": "Hàng đợi",
-    "chat_assistant": "Trợ lý AI"
+    "chat_assistant": "Trợ lý ảo"
   },
   "calendarf": {
     "today": "Hôm nay",
@@ -81,20 +81,18 @@
     "select_all": "Chọn tất cả",
     "deselect_all": "Bỏ chọn tất cả",
     "activate": "Kích hoạt",
-    "deactivate": "Vô hiệu hóa",
-    "saving": "Đang lưu...",
-    "deleting": "Đang xóa..."
+    "deactivate": "Vô hiệu hóa"
   },
   "status": {
     "confirmed": "Đã duyệt",
-    "pending": "Đang chờ",
-    "assigned": "Đã phân công",
+    "pending": "Chờ duyệt",
+    "assigned": "Đã tiếp nhận",
     "in_progress": "Đang xử lý",
     "on_hold": "Tạm dừng",
-    "resolved": "Đã giải quyết",
+    "resolved": "Đã xử lý",
     "closed": "Đã đóng",
     "cancelled": "Đã hủy",
-    "approved": "Đã phê duyệt",
+    "approved": "Đã duyệt",
     "rejected": "Đã từ chối",
     "draft": "Bản nháp",
     "published": "Đã công bố",
@@ -202,7 +200,34 @@
     "category_production_update": "Cập nhật sản xuất",
     "category_maintenance": "Bảo trì",
     "published_history": "Lịch sử tin tức đã đăng",
-    "description": "Quản lý tin tức công ty"
+    "description": "Quản lý tin tức công ty",
+    "today": "Tin hôm nay",
+    "create_subtitle": "Chia sẻ thông tin mới tới nhà máy",
+    "classification_priority": "Phân loại & Ưu tiên",
+    "target_audience": "Đối tượng nhận tin",
+    "target_all": "Tất cả mọi người",
+    "target_departments": "Theo phòng ban",
+    "target_users": "Chọn người dùng",
+    "search_users_label": "Tìm kiếm và chọn người dùng:",
+    "user_search_placeholder": "Tìm theo tên, email hoặc mã nhân viên...",
+    "selected_users_count": "Đã chọn: {{count}} người dùng",
+    "upload_attachments": "Tải lên tệp đính kèm",
+    "upload_hint": "Kéo thả tệp hoặc click để chọn (PDF, Word, Image)",
+    "close_form": "Đóng Form",
+    "delete_confirm_title": "Xác nhận xóa tin",
+    "delete_confirm_message": "Bạn có chắc chắn muốn xoá tin tức này không? Thao tác này sẽ xoá vĩnh viễn dữ liệu và không thể hoàn tác.",
+    "delete_success": "Đã xoá tin tức thành công",
+    "delete_failed": "Xoá tin tức thất bại",
+    "search_no_results": "Chúng tôi không tìm thấy kết quả nào cho \"{{term}}\"",
+    "clear_search": "Xoá tìm kiếm",
+    "news_updates": "Tin tức & Cập nhật",
+    "no_recent_updates": "Hiện tại chưa có tin tức nào mới được cập nhật.",
+    "target_departments_required": "Vui lòng chọn ít nhất một phòng ban",
+    "target_users_required": "Vui lòng chọn ít nhất một người dùng",
+    "update_success": "Cập nhật tin tức thành công!",
+    "edit_title": "Sửa tin tức",
+    "edit_subtitle": "Cập nhật thông tin bản tin đã đăng",
+    "update_button": "Cập nhật tin tức"
   },
   "user": {
     "title": "Quản lý người dùng",
@@ -386,7 +411,8 @@
     "total": "Tổng",
     "action": "Thao tác",
     "no_activities": "Không có hoạt động",
-    "no_department_data": "Không có dữ liệu phòng ban"
+    "no_department_data": "Không có dữ liệu phòng ban",
+    "close": "Đóng"
   },
   "sidebar": {
     "error_report": "Báo cáo lỗi",
@@ -494,7 +520,6 @@
   "booking": {
     "attendees_unit": "người",
     "title": "Đặt phòng họp",
-    "create_new": "Đặt Phòng Họp",
     "my_bookings": "Đặt phòng của tôi",
     "approval": "Phê duyệt đặt phòng",
     "approver": "Người phê duyệt",
@@ -513,10 +538,10 @@
     "description": "Đặt phòng họp với khung giờ linh hoạt",
     "my_bookings_desc": "Xem và quản lý đặt phòng của bạn",
     "load_error": "Không thể tải danh sách đặt phòng",
-    "no_bookings": "Không có đặt phòng",
+    "no_bookings": "Chưa có lịch đặt phòng nào",
     "no_calendar_bookings": "Không có lịch đặt phòng ",
-    "no_bookings_message": "Chưa có lịch đặt phòng nào. Hãy đặt phòng ngay!",
-    "reason": "Lý do",
+    "no_bookings_message": "Bạn chưa đặt phòng họp nào. Hãy đặt phòng ngay!",
+    "reason": "Lý do:",
     "create_new": "Tạo đặt phòng mới",
     "create_subtitle": "Xem chi tiết đặt phòng hoặc chỉnh sửa",
     "created_at": "Ngày đặt phòng",
@@ -553,7 +578,6 @@
     },
     "detail_title": "Chi Tiết Đặt Phòng",
     "detail_subtitle": "Xem thông tin chi tiết hoặc chỉnh sửa đặt phòng",
-    "create_subtitle": "Điền thông tin để đặt phòng họp mới",
     "validation": {
       "title_required": "Vui lòng nhập tiêu đề cuộc họp",
       "capacity_exceeded": "Số người tham dự vượt quá sức chứa phòng",
@@ -617,11 +641,7 @@
       "other": "Khác",
       "training": "Đào tạo",
       "project_meeting": "Họp dự án"
-    },
-    "no_bookings": "Chưa có lịch đặt phòng nào",
-    "no_bookings_message": "Bạn chưa đặt phòng họp nào. Hãy đặt phòng ngay!",
-    "reason": "Lý do:",
-    "created_at": "Đặt lúc:"
+    }
   },
   "incident_report": {
     "title": "Thống kê Sự cố | SmartFactory CONNECT",
