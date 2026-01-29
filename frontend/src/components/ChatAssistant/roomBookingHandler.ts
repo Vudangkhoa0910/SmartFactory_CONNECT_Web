@@ -110,7 +110,7 @@ export async function handleRoomBooking(
 
     // Show available rooms and conflicts
     let responseText = `THÔNG TIN ĐẶT PHÒNG\n\n`;
-    responseText += `Ngày:*${formatDate(request.date!)}\n`;
+    responseText += `Ngày: ${formatDateDisplay(request.date!)}\n`;
     responseText += `Thời gian: ${request.startTime} - ${request.endTime}\n`;
     responseText += `Số người: ${request.attendees || 'Chưa xác định'}\n`;
     responseText += `Tiêu đề: ${request.title}\n`;
@@ -130,8 +130,9 @@ export async function handleRoomBooking(
           );
 
           const hasConflict = roomBookings.some(b => {
-            const bookingStart = b.start_time.substring(0, 5);
-            const bookingEnd = b.end_time.substring(0, 5);
+            // start_time is usually ISO string or HH:mm from backend
+            const bookingStart = (b.start_time as string).includes('T') ? b.start_time.split('T')[1].substring(0, 5) : b.start_time.substring(0, 5);
+            const bookingEnd = (b.end_time as string).includes('T') ? b.end_time.split('T')[1].substring(0, 5) : b.end_time.substring(0, 5);
             return !(request.endTime! <= bookingStart || request.startTime! >= bookingEnd);
           });
 
@@ -155,11 +156,13 @@ export async function handleRoomBooking(
       const suitableCapacity = !request.attendees || room.capacity >= request.attendees;
       const capacityNote = suitableCapacity ? '' : ` (Không đủ chỗ)`;
 
-      responseText += `${status} - ${room.room_name} (${room.capacity} người)${capacityNote}\n`;
+      responseText += `${status} - ${room.name} (${room.capacity} người)${capacityNote}\n`;
 
       if (hasConflict && bookings.length > 0) {
         bookings.forEach(b => {
-          responseText += `  └─ ${b.start_time.substring(0, 5)}-${b.end_time.substring(0, 5)}: ${b.title}\n`;
+          const s = (b.start_time as string).includes('T') ? b.start_time.split('T')[1].substring(0, 5) : b.start_time.substring(0, 5);
+          const e = (b.end_time as string).includes('T') ? b.end_time.split('T')[1].substring(0, 5) : b.end_time.substring(0, 5);
+          responseText += `  └─ ${s}-${e}: ${b.title}\n`;
         });
       }
       responseText += `\n`;
@@ -172,32 +175,36 @@ export async function handleRoomBooking(
     );
 
     if (availableRoom) {
-      responseText += `\nGỢI Ý: Phòng ${availableRoom.room.room_name} phù hợp nhất!\n\n`;
-      responseText += `Bạn có muốn đặt phòng ${availableRoom.room.room_name} không?`;
+      responseText += `\nGỢI Ý: Phòng ${availableRoom.room.name} phù hợp nhất!\n\n`;
+      responseText += `Bạn có muốn đặt phòng ${availableRoom.room.name} không?`;
 
       setMessages(prev => [...prev, {
         role: 'model',
         text: responseText,
         actions: [
           {
-            label: `Đặt phòng ${availableRoom.room.room_name}`,
+            label: `Đặt phòng ${availableRoom.room.name}`,
             onClick: async () => {
               try {
+                // Create full ISO timestamps for backend
+                // assuming date is YYYY-MM-DD
+                const startISO = `${request.date}T${request.startTime}:00Z`;
+                const endISO = `${request.date}T${request.endTime}:00Z`;
+
                 await roomBookingService.createBooking({
                   room_id: availableRoom.room.id,
                   title: request.title!,
                   description: `Đặt qua chat - ${request.attendees || 0} người`,
-                  meeting_type: request.meetingType || 'other',
-                  attendees_count: request.attendees || 1,
-                  booking_date: request.date!,
-                  start_time: request.startTime!,
-                  end_time: request.endTime!,
+                  booking_purpose: request.meetingType || 'other',
+                  expected_attendees: request.attendees || 1,
+                  start_time: startISO,
+                  end_time: endISO,
                   notes: 'Đặt phòng qua chatbot'
-                });
+                } as any);
 
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: `Đặt phòng thành công!\n\nPhòng ${availableRoom.room.room_name} đã được đặt vào ${formatDate(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
+                  text: `Đặt phòng thành công!\n\nPhòng ${availableRoom.room.name} đã được đặt vào ${formatDateDisplay(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
                   actions: [
                     {
                       label: 'Xem lịch đặt phòng',
@@ -208,11 +215,10 @@ export async function handleRoomBooking(
                 }]);
 
                 toast.success('Đặt phòng thành công!');
-              } catch (error: unknown) {
+              } catch (error: any) {
                 let errorMsg = 'Có lỗi xảy ra';
-                if (error && typeof error === 'object' && 'response' in error) {
-                  const axiosError = error as { response?: { data?: { message?: string } } };
-                  errorMsg = axiosError.response?.data?.message || errorMsg;
+                if (error?.response?.data?.message) {
+                  errorMsg = error.response.data.message;
                 }
                 setMessages(prev => [...prev, {
                   role: 'model',
@@ -266,8 +272,7 @@ export async function handleRoomBooking(
 function parseBookingRequest(input: string, lowerInput: string): BookingRequest {
   const request: BookingRequest = {};
 
-  // Parse attendees count - hỗ trợ nhiều cách viết và typos
-  // nguwoif, nguoi, người, ngưởi, etc.
+  // Parse attendees count
   const attendeesMatch = input.match(/(\d+)\s*(người|nguoi|nguời|ngưởi|nguwoif|ngưoi|nguơi|person|people)/i);
   if (attendeesMatch) {
     request.attendees = parseInt(attendeesMatch[1]);
@@ -281,24 +286,24 @@ function parseBookingRequest(input: string, lowerInput: string): BookingRequest 
     }
   }
 
-  // Parse title - extract main subject
+  // Parse title - extract main subject by removing keywords and all date/time formats
   const title = input
     .replace(/đặt phòng|book|đặt lịch/gi, '')
     .replace(/(\d+)\s*(người|nguoi|nguời|ngưởi|nguwoif|ngưoi|nguơi|person|people)/gi, '')
-    .replace(/từ\s+\d{1,2}\s*(giờ|giừo|gio|h)/gi, '')
-    .replace(/đến\s+\d{1,2}\s*(giờ|giừo|gio|h)/gi, '')
+    .replace(/từ\s+\d{1,2}\s*(giờ|giừo|gio|h)(?::\d{2})?/gi, '')
+    .replace(/đến\s+\d{1,2}\s*(giờ|giừo|gio|h)(?::\d{2})?/gi, '')
     .replace(/ngày\s+\d{1,2}/gi, '')
     .replace(/tháng\s+\d{1,2}/gi, '')
     .replace(/năm\s+\d{4}/gi, '')
-    .replace(/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/gi, '') // Remove DD/MM/YYYY format
+    .replace(/\d{1,2}\s*[/-]\s*\d{1,2}\s*[/-]\s*\d{2,4}/g, '') // Xóa format DD/MM/YYYY hoặc DD-MM-YYYY
+    .replace(/\d{1,2}\s*[/-]\s*\d{1,2}/g, '') // Xóa format DD/MM
     .trim();
 
   if (title.length > 3) {
     request.title = title.substring(0, 100);
   }
 
-  // Parse time - hỗ trợ nhiều cách viết giờ và typos
-  // "từ 10 giờ đến 12 giờ", "từ 10 giừo đến 12 giờ", "từ 10h đến 12h"
+  // Parse time
   const timeMatch = input.match(/từ\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?\s*đến\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?/i);
   if (timeMatch) {
     const startHour = parseInt(timeMatch[1]);
@@ -310,43 +315,36 @@ function parseBookingRequest(input: string, lowerInput: string): BookingRequest 
     request.endTime = `${endHour.toString().padStart(2, '0')}:${endMin}`;
   }
 
-  // Parse date - hỗ trợ nhiều format
+  // Parse date
   const currentYear = new Date().getFullYear();
 
-  // Format 1: "ngày X tháng Y năm Z" hoặc "ngày X tháng Y"
+  // Format 1: "ngày X tháng Y năm Z"
   const dateMatch1 = input.match(/ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?/i);
   if (dateMatch1) {
     const day = parseInt(dateMatch1[1]);
     const month = parseInt(dateMatch1[2]);
     const year = dateMatch1[3] ? parseInt(dateMatch1[3]) : currentYear;
-
     request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
   }
 
-  // Format 2: DD/MM/YYYY hoặc DD-MM-YYYY hoặc DD/MM/YY (hỗ trợ khoảng trắng)
+  // Format 2: DD/MM/YYYY
   if (!request.date) {
-    // Regex cho phép khoảng trắng tùy chọn trước/sau dấu / hoặc -
     const dateMatch2 = input.match(/(?:ngày\s+)?(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{2,4})/i);
     if (dateMatch2) {
       const day = parseInt(dateMatch2[1]);
       const month = parseInt(dateMatch2[2]);
       let year = parseInt(dateMatch2[3]);
-      // Handle 2-digit year
-      if (year < 100) {
-        year = year + 2000;
-      }
-
+      if (year < 100) year += 2000;
       request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     }
   }
 
-  // Format 3: "ngày DD/MM" (không có năm, hỗ trợ khoảng trắng)
+  // Format 3: ngày DD/MM
   if (!request.date) {
     const dateMatch3 = input.match(/ngày\s+(\d{1,2})\s*[/-]\s*(\d{1,2})(?!\s*[/-]?\s*\d)/i);
     if (dateMatch3) {
       const day = parseInt(dateMatch3[1]);
       const month = parseInt(dateMatch3[2]);
-
       request.date = `${currentYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     }
   }
@@ -354,7 +352,9 @@ function parseBookingRequest(input: string, lowerInput: string): BookingRequest 
   return request;
 }
 
-function formatDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-');
-  return `${day}/${month}/${year}`;
+function formatDateDisplay(dateStr: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
