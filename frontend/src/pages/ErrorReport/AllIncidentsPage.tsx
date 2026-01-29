@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "react-toastify";
-import { Filter, ChevronDown, X, Search, ArrowUpDown, AlertTriangle, AlertCircle, Activity, CheckCircle2 } from "lucide-react";
+import { Filter, ChevronDown, X, Search, ArrowUpDown, AlertTriangle, AlertCircle, Activity, CheckCircle2, Calendar } from "lucide-react";
 
 import { Incident, Status, Priority } from "../../components/types/index";
 import { KANBAN_COLUMNS } from "../../components/ErrorReport/appConstants";
@@ -49,10 +49,17 @@ export default function AllIncidentsPage() {
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<Status[]>([]);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [sortBy, setSortBy] = useState<'time' | 'priority'>('time');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -109,6 +116,12 @@ export default function AllIncidentsPage() {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setShowStatusDropdown(false);
       }
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setShowSortDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -136,6 +149,8 @@ export default function AllIncidentsPage() {
     setSearchTerm("");
     setFilterPriorities([]);
     setFilterStatuses([]);
+    setDateFrom("");
+    setDateTo("");
   };
 
   // Fetch data from API - extracted to useCallback for WebSocket refresh
@@ -187,10 +202,12 @@ export default function AllIncidentsPage() {
     ['incidents']
   );
 
-  // Cải tiến: Lọc dữ liệu dựa trên searchTerm, priority và status
+  // Cải tiến: Lọc dữ liệu dựa trên searchTerm, priority, status và date range
   const filteredIncidents = useMemo(
-    () =>
-      incidents.filter((incident) => {
+    () => {
+      const priorityWeight = { Critical: 4, High: 3, Normal: 2, Low: 1 };
+
+      return incidents.filter((incident) => {
         // Filter by search term
         const matchesSearch = searchTerm === "" ||
           incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -205,14 +222,33 @@ export default function AllIncidentsPage() {
         // Filter by status (multi-select)
         if (filterStatuses.length > 0 && !filterStatuses.includes(incident.status)) return false;
 
+        // Filter by date range
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (incident.createdAt < fromDate) return false;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (incident.createdAt > toDate) return false;
+        }
+
         return true;
       })
         .sort((a, b) => {
-          const aTime = a.createdAt.getTime();
-          const bTime = b.createdAt.getTime();
-          return sortOrder === 'newest' ? bTime - aTime : aTime - bTime;
-        }),
-    [incidents, searchTerm, filterPriorities, filterStatuses, sortOrder]
+          if (sortBy === 'priority') {
+            const aPriority = priorityWeight[a.priority];
+            const bPriority = priorityWeight[b.priority];
+            return sortOrder === 'newest' ? bPriority - aPriority : aPriority - bPriority;
+          } else {
+            const aTime = a.createdAt.getTime();
+            const bTime = b.createdAt.getTime();
+            return sortOrder === 'newest' ? bTime - aTime : aTime - bTime;
+          }
+        });
+    },
+    [incidents, searchTerm, filterPriorities, filterStatuses, dateFrom, dateTo, sortBy, sortOrder]
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -348,9 +384,10 @@ export default function AllIncidentsPage() {
 
           {/* Search and Filter Controls */}
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-700">
-            <div className="flex flex-col md:flex-row gap-3 transition-all duration-300 ease-out">
-              {/* Search Box */}
-              <div className="relative flex-1">
+            {/* Single Row: All Controls */}
+            <div className="flex flex-col lg:flex-row gap-2.5">
+              {/* Search Box - Compact */}
+              <div className="relative lg:flex-1 lg:max-w-xs">
                 <Search
                   size={18}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -360,7 +397,7 @@ export default function AllIncidentsPage() {
                   placeholder={t('error_report.search_placeholder') || 'Tìm kiếm...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  className="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                 />
                 {searchTerm && (
                   <button
@@ -372,19 +409,83 @@ export default function AllIncidentsPage() {
                 )}
               </div>
 
+              {/* Date Range Picker */}
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors w-full lg:w-44"
+                >
+                  <Calendar size={15} className="absolute left-3 text-gray-400" />
+                  <span className="flex-1 text-left text-xs lg:text-sm truncate">
+                    {dateFrom || dateTo
+                      ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '...'} - ${dateTo ? new Date(dateTo).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '...'}`
+                      : 'Ngày'}
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showDatePicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg z-50 p-4 min-w-[320px]">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                          Từ ngày
+                        </label>
+                        <input
+                          type="date"
+                          value={dateFrom}
+                          onChange={(e) => setDateFrom(e.target.value)}
+                          max={dateTo || undefined}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                          Đến ngày
+                        </label>
+                        <input
+                          type="date"
+                          value={dateTo}
+                          onChange={(e) => setDateTo(e.target.value)}
+                          min={dateFrom || undefined}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-neutral-700">
+                        <button
+                          onClick={() => {
+                            setDateFrom("");
+                            setDateTo("");
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600 rounded-md transition-colors"
+                        >
+                          Xóa
+                        </button>
+                        <button
+                          onClick={() => setShowDatePicker(false)}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                        >
+                          Áp dụng
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Priority Filter - Multi Select */}
               <div className="relative" ref={priorityDropdownRef}>
                 <button
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[160px] w-full md:w-auto"
+                  className="flex items-center justify-between gap-1.5 pl-8 pr-2.5 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors w-full lg:w-32"
                 >
-                  <Filter size={16} className="absolute left-3 text-gray-400" />
-                  <span className="flex-1 text-left">
+                  <Filter size={14} className="absolute left-2.5 text-gray-400" />
+                  <span className="flex-1 text-left text-xs lg:text-sm truncate">
                     {filterPriorities.length === 0
                       ? 'Mức độ'
                       : `Mức độ (${filterPriorities.length})`}
                   </span>
-                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${showPriorityDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showPriorityDropdown && (
@@ -418,15 +519,15 @@ export default function AllIncidentsPage() {
               <div className="relative" ref={statusDropdownRef}>
                 <button
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className="flex items-center justify-between gap-2 pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors min-w-[180px] w-full md:w-auto"
+                  className="flex items-center justify-between gap-1.5 pl-8 pr-2.5 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors w-full lg:w-36"
                 >
-                  <Filter size={16} className="absolute left-3 text-gray-400" />
-                  <span className="flex-1 text-left">
+                  <Filter size={14} className="absolute left-2.5 text-gray-400" />
+                  <span className="flex-1 text-left text-xs lg:text-sm truncate">
                     {filterStatuses.length === 0
                       ? 'Trạng thái'
                       : `Trạng thái (${filterStatuses.length})`}
                   </span>
-                  <ChevronDown size={16} className={`text-gray-400 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showStatusDropdown && (
@@ -451,45 +552,101 @@ export default function AllIncidentsPage() {
                 )}
               </div>
 
-              {/* Sort Button */}
-              <button
-                onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors whitespace-nowrap"
-                title={sortOrder === 'newest' ? 'Mới nhất trước' : 'Cũ nhất trước'}
-              >
-                <ArrowUpDown size={16} />
-                {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
-              </button>
+              {/* Sort Dropdown */}
+              <div className="relative" ref={sortDropdownRef}>
+                <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center justify-between gap-1.5 pl-8 pr-2.5 py-2 text-sm border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors w-full lg:w-36"
+                >
+                  <ArrowUpDown size={14} className="absolute left-2.5 text-gray-400" />
+                  <span className="flex-1 text-left text-xs lg:text-sm truncate">
+                    {sortBy === 'time'
+                      ? (sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất')
+                      : (sortOrder === 'newest' ? 'Ưu tiên cao' : 'Ưu tiên thấp')}
+                  </span>
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showSortDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setSortBy('time');
+                        setSortOrder('newest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors ${sortBy === 'time' && sortOrder === 'newest' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      Mới nhất
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('time');
+                        setSortOrder('oldest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors ${sortBy === 'time' && sortOrder === 'oldest' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      Cũ nhất
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-neutral-700"></div>
+                    <button
+                      onClick={() => {
+                        setSortBy('priority');
+                        setSortOrder('newest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors ${sortBy === 'priority' && sortOrder === 'newest' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      Ưu tiên cao → thấp
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortBy('priority');
+                        setSortOrder('oldest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors ${sortBy === 'priority' && sortOrder === 'oldest' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                        }`}
+                    >
+                      Ưu tiên thấp → cao
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Clear Filters Button */}
               <button
                 onClick={clearAllFilters}
-                disabled={!searchTerm && filterPriorities.length === 0 && filterStatuses.length === 0}
-                className={`px-4 py-2.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${searchTerm || filterPriorities.length > 0 || filterStatuses.length > 0
-                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'
-                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100'
+                disabled={!searchTerm && filterPriorities.length === 0 && filterStatuses.length === 0 && !dateFrom && !dateTo}
+                className={`px-3 py-2 text-xs lg:text-sm font-medium rounded-lg whitespace-nowrap transition-all duration-300 ease-out ${searchTerm || filterPriorities.length > 0 || filterStatuses.length > 0 || dateFrom || dateTo
+                  ? 'opacity-100 translate-x-0 pointer-events-auto text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600'
+                  : 'opacity-0 translate-x-4 pointer-events-none bg-gray-100 dark:bg-neutral-700'
                   }`}
               >
-                Xóa bộ lọc
+                Xóa lọc
               </button>
             </div>
 
             {/* Active Filters Display */}
             <div
-              className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${filterPriorities.length > 0 || filterStatuses.length > 0
-                ? 'mt-3 pt-3 border-t border-gray-200 max-h-40 opacity-100'
+              className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out ${filterPriorities.length > 0 || filterStatuses.length > 0 || dateFrom || dateTo
+                ? 'mt-3 pt-3 border-t border-gray-200 dark:border-neutral-700 max-h-40 opacity-100'
                 : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'
                 }`}
             >
               {filterPriorities.map((priority) => (
                 <span
                   key={priority}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full"
                 >
                   {priority}
                   <button
                     onClick={() => togglePriority(priority)}
-                    className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-red-200 dark:hover:bg-red-800/50 rounded-full p-0.5 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -498,17 +655,34 @@ export default function AllIncidentsPage() {
               {filterStatuses.map((status) => (
                 <span
                   key={status}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full"
                 >
                   {t(`error_report.status.${status}`)}
                   <button
                     onClick={() => toggleStatus(status)}
-                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-full p-0.5 transition-colors"
                   >
                     <X size={12} />
                   </button>
                 </span>
               ))}
+              {(dateFrom || dateTo) && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded-full"
+                >
+                  <Calendar size={12} />
+                  {dateFrom ? new Date(dateFrom).toLocaleDateString('vi-VN') : '...'} - {dateTo ? new Date(dateTo).toLocaleDateString('vi-VN') : '...'}
+                  <button
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className="hover:bg-purple-200 dark:hover:bg-purple-800/50 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
             </div>
           </div>
         </div>
