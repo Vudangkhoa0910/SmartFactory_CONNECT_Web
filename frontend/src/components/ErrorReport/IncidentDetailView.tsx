@@ -67,6 +67,12 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
     }
   };
 
+  // Map status for progress bar display
+  const getDisplayStatus = (status: string) => {
+    if (status === 'pending') return 'new';
+    return status;
+  };
+
   return (
     <div
       key={incident.id}
@@ -102,8 +108,12 @@ const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Tiến trình xử lý</h4>
         <div className="flex items-center justify-between">
           {['new', 'assigned', 'in_progress', 'resolved'].map((status, index) => {
-            const isActive = incident.status === status;
-            const isPassed = ['new', 'assigned', 'in_progress', 'resolved'].indexOf(incident.status) > index;
+            // Map 'pending' to 'new' for display
+            const currentStatus = getDisplayStatus(incident.status);
+            const isActive = currentStatus === status;
+            const statusOrder = ['new', 'assigned', 'in_progress', 'resolved'];
+            const currentIndex = statusOrder.indexOf(currentStatus);
+            const isPassed = currentIndex > index;
             const statusLabels: Record<string, string> = {
               new: 'Mới',
               assigned: 'Đã phân',

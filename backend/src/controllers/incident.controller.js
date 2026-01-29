@@ -1089,6 +1089,18 @@ const quickAssignToDepartment = asyncHandler(async (req, res) => {
     [id, userId, JSON.stringify({ department_id, assigned_to, status: 'assigned' })]
   );
 
+  // Broadcast incident update via WebSocket
+  const io = req.app.get('io');
+  if (io) {
+    io.broadcastIncident('incident_updated', {
+      id: incident.id,
+      action: 'quick_assigned',
+      department_id,
+      assigned_to,
+      status: 'assigned'
+    });
+  }
+
   // TODO: Send notification to department/user
 
   res.json({

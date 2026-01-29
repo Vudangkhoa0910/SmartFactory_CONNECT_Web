@@ -35,6 +35,7 @@ interface BackendIncident {
   priority: string;
   status: string;
   assigned_to_name: string;
+  department_name: string;
   location: string;
   created_at: string;
 }
@@ -172,6 +173,7 @@ export default function AllIncidentsPage() {
             priority: mapPriority(item.priority),
             status: mapStatus(item.status),
             assignedTo: item.assigned_to_name || t('error_report.unassigned'),
+            department: item.department_name || t('error_report.na'),
             location: item.location || t('error_report.na'),
             createdAt: new Date(item.created_at)
           });

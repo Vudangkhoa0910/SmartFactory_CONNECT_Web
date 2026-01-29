@@ -20,6 +20,10 @@ export function KanbanCard({ incident }: { incident: Incident }) {
     Low: 'border-l-gray-400',
   };
 
+  // Check if incident is assigned
+  const isAssigned = (incident.department && incident.department !== 'N/A' && incident.department !== 'Chưa có') ||
+    (incident.assignedTo && incident.assignedTo !== 'Chưa phân công' && incident.assignedTo !== 'Unassigned');
+
   return (
     <div
       ref={setNodeRef}
@@ -45,9 +49,14 @@ export function KanbanCard({ incident }: { incident: Incident }) {
         </div>
       )}
 
-      {/* Footer with assignee and time */}
+      {/* Footer with assignee/department and time */}
       <div className="flex items-center justify-between gap-2 flex-wrap mt-3 pt-2 border-t border-gray-100 dark:border-neutral-600">
-        {incident.assignedTo ? (
+        {incident.department && incident.department !== 'N/A' && incident.department !== 'Chưa có' ? (
+          <div className="text-xs text-gray-700 dark:text-gray-200 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-md flex items-center gap-1">
+            <User className="w-3 h-3" />
+            <span className="truncate max-w-[100px]">{incident.department}</span>
+          </div>
+        ) : incident.assignedTo && incident.assignedTo !== 'Chưa phân công' && incident.assignedTo !== 'Unassigned' ? (
           <div className="text-xs text-gray-700 dark:text-gray-200 font-medium bg-gray-100 dark:bg-neutral-600 px-2 py-1 rounded-md flex items-center gap-1">
             <User className="w-3 h-3" />
             <span className="truncate max-w-[100px]">{incident.assignedTo}</span>
