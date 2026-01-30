@@ -17,22 +17,48 @@ import ChatInput from './ChatInput';
 const ChatAssistant: React.FC = () => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<UIMessage[]>([
-    {
-      role: 'model',
-      text: 'Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?',
-      actions: [
-        {
-          label: 'Hướng dẫn sử dụng',
-          onClick: () => {
-            setInput('hướng dẫn');
-            handleSend();
-          },
-          className: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:from-red-100 hover:to-red-200'
-        }
-      ]
+
+  // Load chat history from sessionStorage (persists until browser close/refresh)
+  const getInitialMessages = (): UIMessage[] => {
+    const saved = sessionStorage.getItem('chatHistory');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // If parse fails, return default
+      }
     }
-  ]);
+    return [
+      {
+        role: 'model',
+        text: 'Xin chào! Tôi là trợ lý ảo SmartFactory. Tôi có thể giúp gì cho bạn hôm nay?',
+        actions: [
+          {
+            label: 'Hướng dẫn sử dụng',
+            onClick: async () => {
+              // Add user message
+              setMessages(prev => [...prev, { role: 'user', text: 'hướng dẫn' }]);
+              // Trigger help handler by calling handleCommand directly
+              const { handleCommand } = await import('./commandHandler');
+              await handleCommand({
+                input: 'hướng dẫn',
+                lowerInput: 'hướng dẫn',
+                pendingAction: null,
+                cachedNotifications: [],
+                setMessages,
+                setPendingAction,
+                navigate,
+                t
+              });
+            },
+            className: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:from-red-100 hover:to-red-200 transition-all duration-200'
+          }
+        ]
+      }
+    ];
+  };
+
+  const [messages, setMessages] = useState<UIMessage[]>(getInitialMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -48,6 +74,16 @@ const ChatAssistant: React.FC = () => {
     isOpen,
     setMessages
   );
+
+  // Save chat history to sessionStorage whenever messages change
+  React.useEffect(() => {
+    // Save all messages to persist across navigation
+    try {
+      sessionStorage.setItem('chatHistory', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Failed to save chat history:', error);
+    }
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -85,11 +121,11 @@ const ChatAssistant: React.FC = () => {
   return (
     <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans ${!isOpen ? 'pointer-events-none' : ''}`}>
 
-      {/* --- CỬA SỔ CHAT (Trắng – Đỏ) --- */}
+      {/* --- CỬA SỔ CHAT --- */}
       <div
-        className={`bg-white rounded-2xl shadow-2xl border border-red-300 
-        w-[400px] max-w-[calc(100vw-48px)] overflow-hidden transition-all duration-300 
-        ease-in-out origin-bottom-right 
+        className={`bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-red-200 dark:border-red-800/50 
+        w-[440px] max-w-[calc(100vw-48px)] overflow-hidden transition-all duration-300 
+        ease-in-out origin-bottom-right backdrop-blur-sm
         ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0 pointer-events-none'}`}
       >
         <ChatHeader onClose={() => setIsOpen(false)} />
