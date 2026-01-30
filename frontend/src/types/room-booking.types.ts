@@ -204,36 +204,36 @@ export const MEETING_PURPOSE_COLORS: Record<MeetingPurpose, string> = {
   other: '#6B7280'           // Gray
 };
 
-// Meeting Purpose Labels (Vietnamese)
+// Meeting Purpose Labels (Vietnamese / Japanese)
 export const MEETING_PURPOSE_LABELS: Record<MeetingPurpose, string> = {
-  meeting: 'Họp thường kỳ',
-  training: 'Đào tạo',
-  interview: 'Phỏng vấn',
-  workshop: 'Workshop',
-  presentation: 'Thuyết trình/Báo cáo',
-  brainstorming: 'Brainstorm ý tưởng',
-  other: 'Khác'
+  meeting: 'Họp thường kỳ / 定例会議',
+  training: 'Đào tạo / 研修',
+  interview: 'Phỏng vấn / 面接',
+  workshop: 'Workshop / ワークショップ',
+  presentation: 'Thuyết trình / プレゼンテーション',
+  brainstorming: 'Brainstorm / ブレインストーミング',
+  other: 'Khác / その他'
 };
 
-// Booking Status Labels (Vietnamese)
+// Booking Status Labels (Vietnamese / Japanese)
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
-  pending: 'Chờ duyệt',
-  confirmed: 'Đã xác nhận',
-  in_progress: 'Đang diễn ra',
-  completed: 'Đã hoàn thành',
-  cancelled: 'Đã hủy',
-  rejected: 'Bị từ chối'
+  pending: 'Chờ duyệt / 承認待ち',
+  confirmed: 'Đã xác nhận / 承認済み',
+  in_progress: 'Đang diễn ra / 進行中',
+  completed: 'Đã hoàn thành / 完了',
+  cancelled: 'Đã hủy / キャンセル済み',
+  rejected: 'Bị từ chối / 却下済み'
 };
 
 // Get all meeting purpose options for select/dropdown
 export const MEETING_PURPOSE_OPTIONS: MeetingPurposeInfo[] = [
-  { value: 'meeting', label: 'Họp thường kỳ', color: '#3B82F6', icon: '👥' },
-  { value: 'training', label: 'Đào tạo', color: '#F59E0B', icon: '📚' },
-  { value: 'interview', label: 'Phỏng vấn', color: '#EF4444', icon: '💼' },
-  { value: 'workshop', label: 'Workshop', color: '#06B6D4', icon: '🎓' },
-  { value: 'presentation', label: 'Thuyết trình/Báo cáo', color: '#84CC16', icon: '�' },
-  { value: 'brainstorming', label: 'Brainstorm ý tưởng', color: '#14B8A6', icon: '💡' },
-  { value: 'other', label: 'Khác', color: '#6B7280', icon: '📝' }
+  { value: 'meeting', label: 'Họp thường kỳ / 定例会議', color: '#3B82F6', icon: '👥' },
+  { value: 'training', label: 'Đào tạo / 研修', color: '#F59E0B', icon: '📚' },
+  { value: 'interview', label: 'Phỏng vấn / 面接', color: '#EF4444', icon: '💼' },
+  { value: 'workshop', label: 'Workshop / ワークショップ', color: '#06B6D4', icon: '🎓' },
+  { value: 'presentation', label: 'Thuyết trình / プレゼンテーション', color: '#84CC16', icon: '📊' },
+  { value: 'brainstorming', label: 'Brainstorm / ブレインストーミング', color: '#14B8A6', icon: '💡' },
+  { value: 'other', label: 'Khác / その他', color: '#6B7280', icon: '📝' }
 ];
 
 // Calendar Event (for full calendar library)

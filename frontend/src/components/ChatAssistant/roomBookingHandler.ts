@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import roomBookingService from '../../services/room-booking.service';
 import { UIMessage } from './types';
-import { MeetingType } from '../../types/room-booking.types';
+import { MeetingPurpose } from '../../types/room-booking.types';
 
 interface BookingRequest {
   attendees?: number;
@@ -9,57 +9,41 @@ interface BookingRequest {
   date?: string;
   startTime?: string;
   endTime?: string;
-  meetingType?: MeetingType;
+  meetingPurpose?: MeetingPurpose;
   roomId?: number;
 }
 
-// Map từ khóa tiếng Việt sang meeting type
-const MEETING_TYPE_MAP: Record<string, MeetingType> = {
-  'họp phòng ban': 'department_meeting',
-  'phòng ban': 'department_meeting',
-  'họp team': 'team_standup',
-  'standup': 'team_standup',
-  'review': 'project_review',
-  'đánh giá': 'project_review',
-  'dự án': 'project_review',
-  'đào tạo': 'training_session',
-  'training': 'training_session',
-  'khách hàng': 'client_meeting',
-  'đối tác': 'client_meeting',
-  'client': 'client_meeting',
+// Map từ khóa tiếng Việt sang meeting purpose (khớp với hệ thống)
+const MEETING_PURPOSE_MAP: Record<string, MeetingPurpose> = {
+  'họp': 'meeting',
+  'họp thường kỳ': 'meeting',
+  'meeting': 'meeting',
+  'đào tạo': 'training',
+  'training': 'training',
   'phỏng vấn': 'interview',
   'interview': 'interview',
   'tuyển dụng': 'interview',
   'workshop': 'workshop',
   'hội thảo': 'workshop',
-  'sự kiện': 'company_event',
-  'event': 'company_event',
-  'sinh nhật': 'celebration',
-  'kỷ niệm': 'celebration',
-  'celebration': 'celebration',
-  'thảo luận': 'technical_discussion',
-  'kỹ thuật': 'technical_discussion',
-  'brainstorm': 'brainstorming',
-  'ý tưởng': 'brainstorming',
   'thuyết trình': 'presentation',
   'báo cáo': 'presentation',
   'presentation': 'presentation',
+  'brainstorm': 'brainstorming',
+  'ý tưởng': 'brainstorming',
+  'sinh nhật': 'other',
+  'kỷ niệm': 'other',
+  'celebration': 'other',
 };
 
-const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
-  'department_meeting': 'Họp phòng ban',
-  'team_standup': 'Họp đứng team',
-  'project_review': 'Họp review dự án',
-  'training_session': 'Đào tạo nội bộ',
-  'client_meeting': 'Gặp khách hàng/đối tác',
-  'interview': 'Phỏng vấn tuyển dụng',
-  'workshop': 'Workshop/Hội thảo',
-  'company_event': 'Sự kiện công ty',
-  'celebration': 'Sinh nhật/Kỷ niệm',
-  'technical_discussion': 'Thảo luận kỹ thuật',
-  'brainstorming': 'Brainstorm ý tưởng',
-  'presentation': 'Thuyết trình/Báo cáo',
-  'other': 'Khác'
+// Labels song ngữ Việt-Nhật (khớp với MEETING_PURPOSE_LABELS trong types)
+const MEETING_PURPOSE_LABELS: Record<MeetingPurpose, string> = {
+  'meeting': 'Họp thường kỳ / 定例会議',
+  'training': 'Đào tạo / 研修',
+  'interview': 'Phỏng vấn / 面接',
+  'workshop': 'Workshop / ワークショップ',
+  'presentation': 'Thuyết trình / プレゼンテーション',
+  'brainstorming': 'Brainstorm / ブレインストーミング',
+  'other': 'Khác / その他'
 };
 
 export async function handleRoomBooking(
@@ -114,7 +98,7 @@ export async function handleRoomBooking(
     responseText += `Thời gian: ${request.startTime} - ${request.endTime}\n`;
     responseText += `Số người: ${request.attendees || 'Chưa xác định'}\n`;
     responseText += `Tiêu đề: ${request.title}\n`;
-    responseText += `Loại: ${MEETING_TYPE_LABELS[request.meetingType || 'other']}\n\n`;
+    responseText += `Loại: ${MEETING_PURPOSE_LABELS[request.meetingPurpose || 'other']}\n\n`;
 
     // Check conflicts for each room
     responseText += `DANH SÁCH PHÒNG:\n\n`;
@@ -186,33 +170,46 @@ export async function handleRoomBooking(
             label: `Đặt phòng ${availableRoom.room.name}`,
             onClick: async () => {
               try {
-                // Create full ISO timestamps for backend
-                // assuming date is YYYY-MM-DD
-                const startISO = `${request.date}T${request.startTime}:00Z`;
-                const endISO = `${request.date}T${request.endTime}:00Z`;
+                // Create Date objects in local timezone and convert to ISO
+                const startDateTime = new Date(`${request.date}T${request.startTime}:00`);
+                const endDateTime = new Date(`${request.date}T${request.endTime}:00`);
+                const startISO = startDateTime.toISOString();
+                const endISO = endDateTime.toISOString();
 
                 await roomBookingService.createBooking({
                   room_id: availableRoom.room.id,
                   title: request.title!,
                   description: `Đặt qua chat - ${request.attendees || 0} người`,
-                  booking_purpose: request.meetingType || 'other',
+                  purpose: request.meetingPurpose || 'other',
                   expected_attendees: request.attendees || 1,
                   start_time: startISO,
                   end_time: endISO,
                   notes: 'Đặt phòng qua chatbot'
                 } as any);
 
-                setMessages(prev => [...prev, {
-                  role: 'model',
-                  text: `Đặt phòng thành công!\n\nPhòng ${availableRoom.room.name} đã được đặt vào ${formatDateDisplay(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
-                  actions: [
-                    {
-                      label: 'Xem lịch đặt phòng',
-                      onClick: () => window.location.href = '/room-booking',
-                      className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
+                // Xóa actions của message trước và thêm message thành công
+                setMessages(prev => {
+                  const updated = [...prev];
+                  // Tìm và xóa actions của message có nút đặt phòng
+                  for (let i = updated.length - 1; i >= 0; i--) {
+                    if (updated[i].role === 'model' && updated[i].actions) {
+                      updated[i] = { ...updated[i], actions: undefined };
+                      break;
                     }
-                  ]
-                }]);
+                  }
+                  // Thêm message thành công
+                  return [...updated, {
+                    role: 'model',
+                    text: `Đặt phòng thành công!\n\nPhòng ${availableRoom.room.name} đã được đặt vào ${formatDateDisplay(request.date!)} từ ${request.startTime} đến ${request.endTime}.\n\nVui lòng đợi admin phê duyệt.`,
+                    actions: [
+                      {
+                        label: 'Xem lịch đặt phòng',
+                        onClick: () => window.location.href = '/room-booking',
+                        className: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
+                      }
+                    ]
+                  }];
+                });
 
                 toast.success('Đặt phòng thành công!');
               } catch (error: any) {
@@ -220,10 +217,22 @@ export async function handleRoomBooking(
                 if (error?.response?.data?.message) {
                   errorMsg = error.response.data.message;
                 }
-                setMessages(prev => [...prev, {
-                  role: 'model',
-                  text: `Đặt phòng thất bại\n\n${errorMsg}`
-                }]);
+                // Xóa actions của message trước và thêm message lỗi
+                setMessages(prev => {
+                  const updated = [...prev];
+                  // Tìm và xóa actions của message có nút đặt phòng
+                  for (let i = updated.length - 1; i >= 0; i--) {
+                    if (updated[i].role === 'model' && updated[i].actions) {
+                      updated[i] = { ...updated[i], actions: undefined };
+                      break;
+                    }
+                  }
+                  // Thêm message lỗi
+                  return [...updated, {
+                    role: 'model',
+                    text: `Đặt phòng thất bại\n\n${errorMsg}`
+                  }];
+                });
                 toast.error(errorMsg);
               }
             },
@@ -232,10 +241,22 @@ export async function handleRoomBooking(
           {
             label: 'Hủy',
             onClick: () => {
-              setMessages(prev => [...prev, {
-                role: 'model',
-                text: 'Đã hủy đặt phòng.'
-              }]);
+              // Xóa actions của message hiện tại để không thể bấm lại
+              setMessages(prev => {
+                const updated = [...prev];
+                // Tìm message có actions (message cuối cùng từ model)
+                for (let i = updated.length - 1; i >= 0; i--) {
+                  if (updated[i].role === 'model' && updated[i].actions) {
+                    updated[i] = { ...updated[i], actions: undefined };
+                    break;
+                  }
+                }
+                // Thêm message hủy
+                return [...updated, {
+                  role: 'model',
+                  text: 'Đã hủy đặt phòng.'
+                }];
+              });
             },
             className: 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400'
           }
@@ -278,53 +299,91 @@ function parseBookingRequest(input: string, lowerInput: string): BookingRequest 
     request.attendees = parseInt(attendeesMatch[1]);
   }
 
-  // Parse meeting type
-  for (const [keyword, type] of Object.entries(MEETING_TYPE_MAP)) {
+  // Parse meeting purpose
+  for (const [keyword, purpose] of Object.entries(MEETING_PURPOSE_MAP)) {
     if (lowerInput.includes(keyword)) {
-      request.meetingType = type;
+      request.meetingPurpose = purpose;
       break;
     }
   }
 
   // Parse title - extract main subject by removing keywords and all date/time formats
-  const title = input
+  let title = input
     .replace(/đặt phòng|book|đặt lịch/gi, '')
     .replace(/(\d+)\s*(người|nguoi|nguời|ngưởi|nguwoif|ngưoi|nguơi|person|people)/gi, '')
-    .replace(/từ\s+\d{1,2}\s*(giờ|giừo|gio|h)(?::\d{2})?/gi, '')
-    .replace(/đến\s+\d{1,2}\s*(giờ|giừo|gio|h)(?::\d{2})?/gi, '')
+    // Remove time patterns - improved to handle "X giờ Y", "Xh", "XhY" formats
+    .replace(/từ\s+\d{1,2}(?::\d{2})?\s*(?:giờ|giừo|gio|h)?(?:\s*\d{1,2})?/gi, '')
+    .replace(/đến\s+\d{1,2}(?::\d{2})?\s*(?:giờ|giừo|gio|h)?(?:\s*\d{1,2})?/gi, '')
     .replace(/ngày\s+\d{1,2}/gi, '')
     .replace(/tháng\s+\d{1,2}/gi, '')
     .replace(/năm\s+\d{4}/gi, '')
     .replace(/\d{1,2}\s*[/-]\s*\d{1,2}\s*[/-]\s*\d{2,4}/g, '') // Xóa format DD/MM/YYYY hoặc DD-MM-YYYY
     .replace(/\d{1,2}\s*[/-]\s*\d{1,2}/g, '') // Xóa format DD/MM
+    .replace(/\/\d+/g, '') // Xóa các số có dấu / phía trước như /26
+    .replace(/\bkhoảng\b/gi, '') // Xóa từ "khoảng"
+    .replace(/\bvào\b/gi, '') // Xóa từ "vào"
+    .replace(/\bngày mai\b/gi, '') // Xóa "ngày mai"
+    .replace(/\bhôm nay\b/gi, '') // Xóa "hôm nay"
+    .replace(/\bhôm qua\b/gi, '') // Xóa "hôm qua"
+    .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
 
   if (title.length > 3) {
     request.title = title.substring(0, 100);
   }
 
-  // Parse time
-  const timeMatch = input.match(/từ\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?\s*đến\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?/i);
+  // Parse time - improved to handle multiple formats:
+  // - "từ 14 giờ đến 16 giờ 30" (with space)
+  // - "từ 14h đến 16h30" (no space, with 'h')
+  // - "từ 14:00 đến 16:30" (colon format)
+  const timeMatch = input.match(/từ\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?\s*(\d{1,2})?\s*đến\s+(\d{1,2})(?::(\d{2}))?\s*(?:giờ|giừo|gio|h)?\s*(\d{1,2})?/i);
   if (timeMatch) {
     const startHour = parseInt(timeMatch[1]);
-    const startMin = timeMatch[2] || '00';
-    const endHour = parseInt(timeMatch[3]);
-    const endMin = timeMatch[4] || '00';
+    // startMin: check colon format first (group 2), then space format (group 3)
+    const startMin = timeMatch[2] || timeMatch[3] || '00';
+    const endHour = parseInt(timeMatch[4]);
+    // endMin: check colon format first (group 5), then space format (group 6)
+    const endMin = timeMatch[5] || timeMatch[6] || '00';
 
-    request.startTime = `${startHour.toString().padStart(2, '0')}:${startMin}`;
-    request.endTime = `${endHour.toString().padStart(2, '0')}:${endMin}`;
+    request.startTime = `${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')}`;
+    request.endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
   }
 
   // Parse date
   const currentYear = new Date().getFullYear();
+  const today = new Date();
+
+  // Format 0: Từ khóa thời gian tương đối (hôm nay, ngày mai, hôm qua)
+  if (lowerInput.includes('hôm nay') || lowerInput.includes('hom nay')) {
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+  } else if (lowerInput.includes('ngày mai') || lowerInput.includes('ngay mai')) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const year = tomorrow.getFullYear();
+    const month = tomorrow.getMonth() + 1;
+    const day = tomorrow.getDate();
+    request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+  } else if (lowerInput.includes('hôm qua') || lowerInput.includes('hom qua')) {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = yesterday.getMonth() + 1;
+    const day = yesterday.getDate();
+    request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+  }
 
   // Format 1: "ngày X tháng Y năm Z"
-  const dateMatch1 = input.match(/ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?/i);
-  if (dateMatch1) {
-    const day = parseInt(dateMatch1[1]);
-    const month = parseInt(dateMatch1[2]);
-    const year = dateMatch1[3] ? parseInt(dateMatch1[3]) : currentYear;
-    request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+  if (!request.date) {
+    const dateMatch1 = input.match(/ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{4}))?/i);
+    if (dateMatch1) {
+      const day = parseInt(dateMatch1[1]);
+      const month = parseInt(dateMatch1[2]);
+      const year = dateMatch1[3] ? parseInt(dateMatch1[3]) : currentYear;
+      request.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    }
   }
 
   // Format 2: DD/MM/YYYY

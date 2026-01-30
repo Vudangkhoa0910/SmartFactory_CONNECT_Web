@@ -20,9 +20,9 @@ const AdminApprovalPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<RoomBooking | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]); // Changed from number[] to string[]
   const [confirmBulkApprove, setConfirmBulkApprove] = useState(false);
-  const [confirmApproveId, setConfirmApproveId] = useState<number | null>(null);
+  const [confirmApproveId, setConfirmApproveId] = useState<string | null>(null); // Changed from number to string
   const { t } = useTranslation();
 
   // Search & Voice
@@ -39,10 +39,14 @@ const AdminApprovalPage: React.FC = () => {
   const loadPendingBookings = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading pending bookings...');
       const data = await roomBookingService.getPendingBookings();
-      setPendingBookings(data);
+      console.log('📦 Received pending bookings:', data);
+      console.log('📊 Number of bookings:', data?.length || 0);
+      setPendingBookings(data || []); // Ensure it's always an array
     } catch (error) {
-      console.error('Error loading pending bookings:', error);
+      console.error('❌ Error loading pending bookings:', error);
+      setPendingBookings([]); // Set empty array on error
       toast.error(t('booking.load_error'));
     } finally {
       setLoading(false);
@@ -54,12 +58,12 @@ const AdminApprovalPage: React.FC = () => {
   }, []);
 
   // Filter bookings
-  const filteredBookings = pendingBookings.filter(booking => {
+  const filteredBookings = (pendingBookings || []).filter(booking => {
     const query = searchQuery.toLowerCase();
     return (
-      booking.title.toLowerCase().includes(query) ||
-      booking.room_name.toLowerCase().includes(query) ||
-      booking.user_name.toLowerCase().includes(query)
+      booking.title?.toLowerCase().includes(query) ||
+      booking.room_name?.toLowerCase().includes(query) ||
+      booking.booked_by_name?.toLowerCase().includes(query)
     );
   });
 
@@ -70,7 +74,7 @@ const AdminApprovalPage: React.FC = () => {
   };
 
   // Handle select/deselect
-  const handleSelect = (id: number) => {
+  const handleSelect = (id: string) => {
     setSelectedIds(prev =>
       prev.includes(id)
         ? prev.filter(x => x !== id)
@@ -108,7 +112,7 @@ const AdminApprovalPage: React.FC = () => {
   };
 
   // Handle approve single
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     try {
       await roomBookingService.approveBooking(id);
       toast.success('Đã phê duyệt lịch đặt phòng');
@@ -160,11 +164,10 @@ const AdminApprovalPage: React.FC = () => {
               />
               <button
                 onClick={isListening ? stopListening : startListening}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors ${
-                  isListening 
-                    ? 'text-red-600 bg-red-50 dark:bg-red-900/20' 
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                }`}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors ${isListening
+                  ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
+                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                  }`}
                 title={t('common.voice_search')}
               >
                 {isListening ? <MicOff size={16} /> : <Mic size={16} />}
@@ -289,7 +292,7 @@ const AdminApprovalPage: React.FC = () => {
                           {booking.title}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {booking.attendees_count} {t('booking.attendees_unit')}
+                          {booking.expected_attendees} {t('booking.attendees_unit')}
                         </div>
                       </td>
                       <td className="p-4">
@@ -299,13 +302,13 @@ const AdminApprovalPage: React.FC = () => {
                             style={{ backgroundColor: booking.color }}
                           ></span>
                           <span className="text-sm text-gray-700">
-                            {t(`booking.meeting_type.${booking.meeting_type}`)}
+                            {booking.purpose ? t(`booking.purpose.${booking.purpose}`) : '-'}
                           </span>
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="text-sm text-gray-900">
-                          {formatDate(booking.booking_date)}
+                          {formatDate(booking.start_time)}
                         </div>
                         <div className="text-xs text-gray-500">
                           {formatTime(booking.start_time)} - {formatTime(booking.end_time)}

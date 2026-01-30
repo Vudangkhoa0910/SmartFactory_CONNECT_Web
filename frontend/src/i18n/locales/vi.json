@@ -123,6 +123,10 @@
     "queue_description": "Xử lý các sự cố đang chờ trong hệ thống",
     "select_to_process": "Chọn sự cố để xem chi tiết và xử lý",
     "waiting": "đang chờ xử lý",
+    "critical": "Khẩn cấp / 緊急",
+    "high": "Cao / 高",
+    "medium": "Trung bình / 中",
+    "low": "Thấp / 低",
     "type": {
       "safety": "An toàn",
       "quality": "Chất lượng",
@@ -556,8 +560,10 @@
     "all_processed": "Tất cả lịch đặt phòng đã được xử lý",
     "booker": "Người đặt",
     "info": {
+      "purpose": "Loại cuộc họp",
       "meeting_type": "Loại cuộc họp",
       "attendees_count": "Số người tham dự",
+      "expected_attendees": "Số người dự kiến",
       "attendees_unit": "người",
       "time_label": "Thời gian",
       "description": "Mô tả",

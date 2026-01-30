@@ -128,9 +128,9 @@ export default function EnterpriseDashboard() {
 
             {/* Top 4 Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard title={t('dashboard.pending_incidents')} value={values.pendingIncidents || 8} icon={AlertTriangle} accent onClick={() => navigate('/error-report/all')} isDark={isDark} trend={{ value: 12, down: true }} />
+              <StatCard title={t('dashboard.pending_incidents')} value={values.pendingIncidents || 8} icon={AlertTriangle} accent onClick={() => navigate('/all-incidents-page')} isDark={isDark} trend={{ value: 12, down: true }} />
               <StatCard title={t('dashboard.completion_rate')} value={`${values.resolutionRate || 85}%`} icon={CheckCircle} isDark={isDark} />
-              <StatCard title={t('dashboard.contributions')} value={values.pendingIdeas || 15} icon={Lightbulb} onClick={() => navigate('/feedback/public')} isDark={isDark} />
+              <StatCard title={t('dashboard.contributions')} value={values.pendingIdeas || 15} icon={Lightbulb} onClick={() => navigate('/feedback/ideas')} isDark={isDark} />
               <StatCard title={t('dashboard.online_employees')} value={values.activeUsers || 127} icon={Users} isDark={isDark} />
             </div>
 
@@ -158,8 +158,8 @@ export default function EnterpriseDashboard() {
               <Card isDark={isDark}>
                 <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.quick_actions')}</span>
                 <div className="grid grid-cols-4 gap-2 mt-2">
-                  <ActionBtn icon={AlertTriangle} label="Sự cố" onClick={() => navigate('/error-report/create')} isDark={isDark} />
-                  <ActionBtn icon={Lightbulb} label="Góp ý" onClick={() => navigate('/feedback/submit')} isDark={isDark} />
+                  <ActionBtn icon={AlertTriangle} label="Sự cố" onClick={() => navigate('/incident-report-page')} isDark={isDark} />
+                  <ActionBtn icon={Lightbulb} label="Góp ý" onClick={() => navigate('/public-ideas-page')} isDark={isDark} />
                   <ActionBtn icon={Calendar} label="Phòng" onClick={() => navigate('/room-booking')} isDark={isDark} />
                   <ActionBtn icon={FileText} label="Tin" onClick={() => navigate('/news')} isDark={isDark} />
                 </div>
@@ -313,9 +313,9 @@ export default function EnterpriseDashboard() {
                 <span className="text-white font-semibold text-sm">Admin Panel</span>
               </div>
               <div className="space-y-2">
-                <AdminBtn icon={AlertTriangle} label="Xử lý sự cố" count={values.pendingIncidents || 8} onClick={() => navigate('/error-report/all')} primary />
-                <AdminBtn icon={Lightbulb} label="Duyệt góp ý" count={values.pendingIdeas || 15} onClick={() => navigate('/feedback/public')} />
-                <AdminBtn icon={Users} label="Quản lý nhân viên" onClick={() => navigate('/employees')} />
+                <AdminBtn icon={AlertTriangle} label="Xử lý sự cố" count={values.pendingIncidents || 8} onClick={() => navigate('/all-incidents-page')} primary />
+                <AdminBtn icon={Lightbulb} label="Duyệt góp ý" count={values.pendingIdeas || 15} onClick={() => navigate('/feedback/ideas')} />
+                <AdminBtn icon={Users} label="Quản lý nhân viên" onClick={() => navigate('/users')} />
               </div>
             </div>
 

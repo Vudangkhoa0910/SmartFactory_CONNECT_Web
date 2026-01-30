@@ -55,8 +55,26 @@ const roomBookingService = {
    * Get pending bookings for admin approval
    */
   getPendingBookings: async (): Promise<RoomBooking[]> => {
-    const response = await api.get<GetBookingsResponse>('/room-bookings/pending');
-    return response.data.bookings;
+    console.log('🌐 API Request - getPendingBookings');
+    try {
+      const response = await api.get<GetBookingsResponse>('/room-bookings/pending');
+      console.log('📥 API Response - getPendingBookings:', response);
+      console.log('📦 Response data:', response.data);
+      console.log('📋 Bookings array:', response.data?.bookings);
+
+      // If response is valid, return it
+      if (response.data?.bookings) {
+        return response.data.bookings;
+      }
+
+      // Fallback: use getBookings with status filter
+      console.log('⚠️ No bookings in response, trying fallback with getBookings...');
+      return await roomBookingService.getBookings({ status: 'pending' });
+    } catch (error) {
+      console.error('❌ Error in getPendingBookings, trying fallback:', error);
+      // Fallback: use getBookings with status filter
+      return await roomBookingService.getBookings({ status: 'pending' });
+    }
   },
 
   /**

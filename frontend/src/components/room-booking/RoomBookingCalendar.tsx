@@ -105,9 +105,20 @@ const RoomBookingCalendar: React.FC = () => {
     console.log('📝 Submitting booking with date:', form.eventStartDate, 'time:', form.eventStartTime, '-', form.eventEndTime);
 
     try {
-      // Construct ISO timestamps
-      const startISO = `${form.eventStartDate}T${form.eventStartTime}:00Z`;
-      const endISO = `${form.eventStartDate}T${form.eventEndTime}:00Z`;
+      // Construct local datetime strings and convert to ISO
+      // Create Date objects in local timezone
+      const startDateTime = new Date(`${form.eventStartDate}T${form.eventStartTime}:00`);
+      const endDateTime = new Date(`${form.eventStartDate}T${form.eventEndTime}:00`);
+
+      // Convert to ISO string (this will include timezone offset)
+      const startISO = startDateTime.toISOString();
+      const endISO = endDateTime.toISOString();
+
+      console.log('🕐 Timezone conversion:', {
+        input: { date: form.eventStartDate, start: form.eventStartTime, end: form.eventEndTime },
+        localDateTime: { start: startDateTime.toString(), end: endDateTime.toString() },
+        isoString: { start: startISO, end: endISO }
+      });
 
       const bookingData = {
         room_id: form.selectedRoom,

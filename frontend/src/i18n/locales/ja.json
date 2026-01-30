@@ -122,6 +122,10 @@
     "queue_description": "システム内の待機中インシデントを処理",
     "select_to_process": "詳細を確認して処理するインシデントを選択",
     "waiting": "件が待機中",
+    "critical": "緊急 / Khẩn cấp",
+    "high": "高 / Cao",
+    "medium": "中 / Trung bình",
+    "low": "低 / Thấp",
     "type": {
       "safety": "安全",
       "quality": "品質",
@@ -558,8 +562,10 @@
     "all_processed": "すべての予約が処理されました",
     "booker": "予約者",
     "info": {
+      "purpose": "会議の種類",
       "meeting_type": "会議の種類",
       "attendees_count": "参加人数",
+      "expected_attendees": "予定参加人数",
       "attendees_unit": "人",
       "time_label": "時間",
       "description": "説明",
