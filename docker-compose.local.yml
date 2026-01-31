@@ -1,0 +1,252 @@
+# ============================================
+# SmartFactory CONNECT - Local Network Mode
+# ============================================
+# Sử dụng file này khi triển khai trong mạng LAN
+# Tất cả services bind 0.0.0.0 để accessible từ các thiết bị trong cùng mạng
+#
+# Cách sử dụng:
+#   docker-compose -f docker-compose.local.yml up -d
+#
+# Hoặc set làm default:
+#   export COMPOSE_FILE=docker-compose.local.yml
+#   docker-compose up -d
+# ============================================
+
+services:
+  # ========== POSTGRESQL DATABASE ==========
+  database:
+    image: pgvector/pgvector:pg15
+    container_name: smartfactory_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartfactory_db
+      POSTGRES_USER: smartfactory
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartfactory123}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "0.0.0.0:5432:5432"  # Bind all interfaces for LAN access
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartfactory -d smartfactory_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=6553kB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+
+  # ========== MONGODB (Media Storage) ==========
+  mongodb:
+    image: mongo:7.0
+    container_name: smartfactory_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: smartfactory
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-smartfactory123}
+      MONGO_INITDB_DATABASE: smartfactory_media
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    ports:
+      - "0.0.0.0:27017:27017"  # Bind all interfaces for LAN access
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: >
+      mongod
+      --auth
+      --bind_ip_all
+      --wiredTigerCacheSizeGB 0.5
+
+  # ========== BACKEND ==========
+  backend:
+    build: ./backend
+    container_name: smartfactory_backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0  # Critical for LAN access
+      # PostgreSQL Database
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: smartfactory_db
+      DB_USER: smartfactory
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-smartfactory123}
+      DB_POOL_MAX: 50
+      DB_POOL_MIN: 10
+      DB_STATEMENT_TIMEOUT: 30000
+      # MongoDB
+      MONGODB_URI: mongodb://smartfactory:${MONGO_PASSWORD:-smartfactory123}@mongodb:27017/smartfactory_media?authSource=admin
+      MONGODB_DB_NAME: smartfactory_media
+      # Authentication
+      JWT_SECRET: ${JWT_SECRET:-smartfactory-jwt-secret-local}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Performance
+      ENABLE_RATE_LIMIT: 'false'  # Disable for local dev
+      SLOW_QUERY_THRESHOLD: 1000
+      NODE_OPTIONS: "--max-old-space-size=1024"
+      # AI Services
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-large-latest}
+      RAG_SERVICE_URL: http://rag_service:8001
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+      - ./backend/secure:/app/secure
+    ports:
+      - "0.0.0.0:3000:3000"  # Bind all interfaces for LAN access
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ========== FRONTEND ==========
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # These will be overwritten by .env.local in frontend
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:3000}
+    container_name: smartfactory_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "0.0.0.0:80:80"  # Bind all interfaces for LAN access
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # ========== RAG SERVICE (AI Semantic Search) ==========
+  rag_service:
+    build: ./rag_service
+    container_name: smartfactory_rag
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: smartfactory_db
+      DB_USER: smartfactory
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-smartfactory123}
+      MODEL_NAME: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      USE_HUGGINGFACE: "true"
+      VECTOR_DIM: 384
+      DEFAULT_LIMIT: 10
+      MIN_SIMILARITY: 0.10
+      AUTO_ASSIGN_ENABLED: "true"
+      AUTO_ASSIGN_THRESHOLD: 0.75
+      API_HOST: 0.0.0.0  # Critical for LAN access
+      API_PORT: 8001
+    ports:
+      - "0.0.0.0:8001:8001"  # Bind all interfaces for LAN access
+    networks:
+      - smartfactory_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+# ========== NETWORK ==========
+networks:
+  smartfactory_network:
+    name: smartfactory_network
+    driver: bridge
+
+# ========== VOLUMES ==========
+volumes:
+  postgres_data:
+    name: smartfactory_postgres_data
+  mongodb_data:
+    name: smartfactory_mongodb_data
+  mongodb_config:
+    name: smartfactory_mongodb_config
+  uploads_data:
+    name: smartfactory_uploads
+  logs_data:
+    name: smartfactory_logs
