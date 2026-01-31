@@ -10,9 +10,22 @@ Vietnamese word segmentation với pyvi (optional)
 """
 import os
 import time
+import logging
 import numpy as np
 from typing import List, Union
 from pathlib import Path
+
+# Suppress verbose logging from transformers/sentence-transformers/tqdm
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TQDM_DISABLE"] = "1"  # Tắt tqdm progress bar
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"  # Tắt HuggingFace progress bars
+os.environ["SAFETENSORS_FAST_GPU"] = "1"  # Tắt progress khi load safetensors
+
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("safetensors").setLevel(logging.ERROR)
+logging.getLogger("tqdm").setLevel(logging.ERROR)
 
 from config import Config
 
@@ -32,17 +45,15 @@ HAS_SENTENCE_TRANSFORMERS = False
 try:
     import onnxruntime as ort
     HAS_ONNX = True
-    print(f"[OK] ONNX Runtime: {ort.__version__}")
 except ImportError:
-    print("[INFO] ONNX Runtime not installed")
+    pass
 
 # Try Sentence Transformers
 try:
     from sentence_transformers import SentenceTransformer
     HAS_SENTENCE_TRANSFORMERS = True
-    print("[OK] Sentence Transformers available")
 except ImportError:
-    print("[INFO] Sentence Transformers not installed")
+    pass
 
 # Tokenizer (for ONNX mode)
 try:
@@ -50,16 +61,13 @@ try:
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
-    print("[INFO] Transformers not installed (needed for ONNX mode)")
 
 # Vietnamese word segmentation (optional, for PhoBERT)
 try:
     from pyvi.ViTokenizer import tokenize as vi_tokenize
     HAS_PYVI = True
-    print("[OK] pyvi loaded for Vietnamese word segmentation")
 except ImportError:
     HAS_PYVI = False
-    print("[INFO] pyvi not installed. Vietnamese segmentation disabled.")
 
 
 def tokenize_vietnamese(text: str) -> str:
@@ -118,10 +126,10 @@ class EmbeddingService:
     def _load_huggingface_model(self):
         """Load HuggingFace sentence-transformers model"""
         model_name = os.getenv("MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-        print(f"Loading HuggingFace model: {model_name}...")
         
         start = time.time()
-        self._model = SentenceTransformer(model_name)
+        # show_progress_bar=False tắt log "Loading weights..."
+        self._model = SentenceTransformer(model_name, device="cuda")
         self._model_name = model_name
         self._vector_dim = self._model.get_sentence_embedding_dimension()
         
@@ -238,7 +246,7 @@ class EmbeddingService:
             embeddings = embeddings / np.maximum(norms, 1e-9)
 
         elapsed = time.time() - start
-        print(f"Encoded {len(texts)} text(s) in {elapsed*1000:.1f}ms")
+        # print(f"Encoded {len(texts)} text(s) in {elapsed*1000:.1f}ms")  # Disabled verbose log
         
         return embeddings[0] if is_single else embeddings
 

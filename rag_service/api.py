@@ -234,18 +234,14 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                     WHERE ir.idea_id = i.id
                     LIMIT 10) as responses,
                     (SELECT json_agg(json_build_object(
-                        'from_status', ist.from_status,
-                        'to_status', ist.to_status,
-                        'from_stage', ist.from_stage,
-                        'to_stage', ist.to_stage,
-                        'reason', ist.reason,
-                        'created_at', ist.created_at,
-                        'transitioned_by_name', tu.full_name,
-                        'transitioned_by_role', tu.role
-                    ) ORDER BY ist.created_at DESC)
-                    FROM idea_status_transitions ist
-                    LEFT JOIN users tu ON ist.transitioned_by = tu.id
-                    WHERE ist.idea_id = i.id
+                        'action', ih.action,
+                        'details', ih.details,
+                        'created_at', ih.created_at,
+                        'performed_by_name', tu.full_name
+                    ) ORDER BY ih.created_at DESC)
+                    FROM idea_history ih
+                    LEFT JOIN users tu ON ih.performed_by = tu.id
+                    WHERE ih.idea_id = i.id
                     LIMIT 15) as workflow_history,
                     (SELECT ir.response FROM idea_responses ir
                      WHERE ir.idea_id = i.id AND ir.is_final_resolution = true
@@ -441,17 +437,14 @@ async def find_similar_ideas(
                     WHERE ir.idea_id = i.id
                     LIMIT 10) as responses,
                     (SELECT json_agg(json_build_object(
-                        'from_status', ist.from_status,
-                        'to_status', ist.to_status,
-                        'from_stage', ist.from_stage,
-                        'to_stage', ist.to_stage,
-                        'reason', ist.reason,
-                        'created_at', ist.created_at,
-                        'transitioned_by_name', tu.full_name
-                    ) ORDER BY ist.created_at DESC)
-                    FROM idea_status_transitions ist
-                    LEFT JOIN users tu ON ist.transitioned_by = tu.id
-                    WHERE ist.idea_id = i.id
+                        'action', ih.action,
+                        'details', ih.details,
+                        'created_at', ih.created_at,
+                        'performed_by_name', tu.full_name
+                    ) ORDER BY ih.created_at DESC)
+                    FROM idea_history ih
+                    LEFT JOIN users tu ON ih.performed_by = tu.id
+                    WHERE ih.idea_id = i.id
                     LIMIT 10) as workflow_history,
                     ws.stage_name,
                     ws.stage_name_ja,
@@ -750,10 +743,8 @@ async def generate_ideas_embeddings(limit: int = Query(100, ge=1, le=1000)):
         
         for idea in ideas:
             try:
-                # Combine text fields for embedding
+                # Combine text fields for embedding (bỏ title, chỉ dùng description + expected_benefit)
                 text_parts = []
-                if idea['title']:
-                    text_parts.append(idea['title'])
                 if idea['description']:
                     text_parts.append(idea['description'])
                 if idea['expected_benefit']:
@@ -877,10 +868,8 @@ async def index_single_idea(request: IndexIdeaRequest):
         if not idea:
             raise HTTPException(status_code=404, detail=f"Idea {idea_id} not found")
         
-        # Combine text fields for embedding
+        # Combine text fields for embedding (bỏ title, chỉ dùng description + expected_benefit)
         text_parts = []
-        if idea['title']:
-            text_parts.append(idea['title'])
         if idea['description']:
             text_parts.append(idea['description'])
         if idea['expected_benefit']:

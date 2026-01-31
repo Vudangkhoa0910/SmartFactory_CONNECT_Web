@@ -12,14 +12,12 @@ try:
     HAS_PSYCOPG2 = True
 except ImportError:
     HAS_PSYCOPG2 = False
-    print("[WARN] psycopg2 not installed. Run: pip install psycopg2-binary")
 
 try:
     from pgvector.psycopg2 import register_vector
     HAS_PGVECTOR = True
 except ImportError:
     HAS_PGVECTOR = False
-    print("[WARN] pgvector not installed. Run: pip install pgvector")
 
 from config import Config
 
@@ -40,7 +38,6 @@ class Database:
         if not HAS_PSYCOPG2:
             raise ImportError("psycopg2 not installed")
 
-        print(f"Connecting to PostgreSQL: {Config.DB_HOST}:{Config.DB_PORT}/{Config.DB_NAME}")
         try:
             self._conn = psycopg2.connect(
                 host=Config.DB_HOST,
@@ -53,12 +50,8 @@ class Database:
             if HAS_PGVECTOR:
                 try:
                     register_vector(self._conn)
-                    print("[OK] Connected to PostgreSQL with pgvector support")
-                except psycopg2.ProgrammingError as e:
-                    print(f"[WARN] Connected but vector extension not active: {e}")
-                    # Will be fixed in setup_schema()
-            else:
-                print("[WARN] Connected to PostgreSQL (pgvector python package not installed)")
+                except psycopg2.ProgrammingError:
+                    pass  # Will be fixed in setup_schema()
         except psycopg2.OperationalError as e:
             print(f"[ERROR] Database connection failed: {e}")
             raise
@@ -91,15 +84,20 @@ class Database:
             with self.cursor() as cur:
                 cur.execute("SELECT * FROM pg_extension WHERE extname = 'vector'")
                 result = cur.fetchone()
-                if result:
-                    print(f"[OK] pgvector extension version: {result['extversion']}")
-                    return True
-                else:
-                    print("[ERROR] pgvector extension not installed!")
-                    return False
+                return result is not None
         except Exception as e:
             print(f"[ERROR] Error checking extension: {e}")
             return False
+
+    def get_extension_version(self) -> str:
+        """Lay version cua pgvector extension"""
+        try:
+            with self.cursor() as cur:
+                cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+                result = cur.fetchone()
+                return result['extversion'] if result else "unknown"
+        except Exception:
+            return "unknown"
 
     def setup_schema(self) -> bool:
         """Tao schema cho vector search - tu dong cap nhat dimension neu khac"""
