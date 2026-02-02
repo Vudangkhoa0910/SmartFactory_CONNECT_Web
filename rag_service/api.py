@@ -12,6 +12,7 @@ from incident_router import router
 from database import db
 from embedding_service import embedding_service
 from batch_processor import processor
+from llm_extractor import extract_core_issue
 
 
 # FastAPI App
@@ -104,6 +105,61 @@ async def health_check():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/test-extract", tags=["Test"])
+async def test_llm_extract(text: str = Query(..., description="Text để test extract")):
+    """
+    Test LLM extract - kiểm tra xem LLM có trích xuất đúng vấn đề chính không.
+    """
+    extracted = await extract_core_issue(text)
+    return {
+        "original": text,
+        "extracted": extracted,
+        "removed_chars": len(text) - len(extracted),
+        "reduction_percent": round((1 - len(extracted) / len(text)) * 100, 1) if len(text) > 0 else 0
+    }
+
+
+@app.get("/test-similarity", tags=["Test"])
+async def test_similarity(
+    query: str = Query(..., description="Text để test"),
+):
+    """
+    Debug similarity - test trực tiếp cosine similarity giữa query và các ideas.
+    """
+    import numpy as np
+    
+    # Generate query embedding
+    query_embedding = embedding_service.encode(query, is_query=True)
+    
+    # Get all ideas with embeddings
+    with db.cursor() as cur:
+        cur.execute("""
+            SELECT id, title, description, expected_benefit,
+                   1 - (embedding <=> %s::vector) as similarity
+            FROM ideas
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %s::vector
+            LIMIT 10
+        """, (query_embedding.tolist(), query_embedding.tolist()))
+        results = cur.fetchall()
+    
+    # Format results
+    items = []
+    for row in results:
+        items.append({
+            "id": str(row['id']),
+            "title": row['title'],
+            "description": row['description'][:100] if row['description'] else "",
+            "expected_benefit": row['expected_benefit'][:50] if row['expected_benefit'] else "",
+            "similarity": round(float(row['similarity']) * 100, 2) if row['similarity'] else 0
+        })
+    
+    return {
+        "query": query,
+        "results": items
+    }
+
+
 @app.post("/suggest", response_model=SuggestResponse, tags=["Routing"])
 async def suggest_department(request: SuggestRequest):
     """
@@ -139,6 +195,7 @@ class CheckDuplicateRequest(BaseModel):
     """Request body cho check-duplicate endpoint - White Box"""
     title: str = Field(..., min_length=3, description="Tieu de y tuong/y kien")
     description: str = Field(..., min_length=10, description="Mo ta chi tiet")
+    expected_benefit: Optional[str] = Field(None, description="Loi ich ky vong")
     whitebox_subtype: str = Field("idea", description="Loai: 'idea' hoac 'opinion'")
     ideabox_type: str = Field("white", description="Loai hom: 'white' hoac 'pink'")
 
@@ -189,11 +246,17 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
         # Determine threshold based on subtype
         threshold = idea_threshold if request.whitebox_subtype == 'idea' else opinion_threshold
         
-        # Combine title and description for search
-        search_text = f"{request.title} {request.description}"
+        # Ghép description + expected_benefit để search (nhất quán với cách tạo embedding)
+        search_parts = [request.description]
+        if request.expected_benefit:
+            search_parts.append(request.expected_benefit)
+        search_text = ' '.join(search_parts)
+        
+        # Dùng LLM extract để đồng bộ với cách tạo embedding
+        search_text = await extract_core_issue(search_text)
         
         # Generate embedding
-        query_embedding = embedding_service.encode(search_text)
+        query_embedding = embedding_service.encode(search_text, is_query=True)
         
         # Search for similar ideas with full history and final_resolution
         with db.cursor() as cur:
@@ -201,7 +264,8 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                 SELECT 
                     i.id,
                     i.title,
-                    i.description as content,
+                    i.description,
+                    i.expected_benefit,
                     i.status,
                     i.category,
                     i.difficulty,
@@ -252,10 +316,45 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                 WHERE i.embedding IS NOT NULL
                   AND i.ideabox_type = %s
                 ORDER BY i.embedding <=> %s::vector
-                LIMIT 10
+                LIMIT 30
             """, (query_embedding.tolist(), request.ideabox_type, query_embedding.tolist()))
             
             results = cur.fetchall()
+        
+        # === RERANKING STEP ===
+        # Nếu có Reranker tiếng Việt, dùng để cải thiện ranking
+        if results and hasattr(embedding_service, '_reranker') and embedding_service._reranker:
+            import numpy as np
+            # Ghép description + expected_benefit cho reranking (nhất quán với cách tạo embedding)
+            candidate_texts = [
+                ' '.join(filter(None, [row.get('description', ''), row.get('expected_benefit', '')]))
+                for row in results
+            ]
+            
+            # Rerank với query gốc
+            rerank_scores = embedding_service.rerank(search_text, candidate_texts)
+            
+            # Sigmoid normalize (BGE reranker trả về raw logits)
+            rerank_scores = (1 / (1 + np.exp(-np.array(rerank_scores)))).tolist()
+            
+            # Kết hợp vector score và rerank score: lấy MAX để không giảm score cho exact match
+            results_with_rerank = []
+            for i, row in enumerate(results):
+                row_dict = dict(row)
+                vector_score = float(row['similarity']) if row['similarity'] else 0
+                rerank_score = rerank_scores[i]
+                # Dùng max để tránh giảm score khi text giống nhau
+                row_dict['similarity'] = max(vector_score, rerank_score)
+                row_dict['vector_score'] = vector_score
+                row_dict['rerank_score'] = rerank_score
+                results_with_rerank.append(row_dict)
+            
+            # Sort theo combined score và lấy top 10
+            results = sorted(results_with_rerank, key=lambda x: x['similarity'], reverse=True)[:10]
+            print(f"[RAG] Reranked {len(candidate_texts)} candidates, keeping top 10")
+        else:
+            # Không có reranker, giữ nguyên top 10
+            results = [dict(r) for r in results[:10]]
         
         similar_ideas = []
         max_similarity = 0.0
@@ -287,9 +386,10 @@ async def check_duplicate_idea(request: CheckDuplicateRequest):
                 
                 idea_data = {
                     "id": str(row['id']),
-                    "title": row['title'],
-                    "content": row['content'][:500] if row['content'] else None,
-                    "description": row['content'],  # Full description
+                    # UI mapping: description -> title, expected_benefit -> content
+                    "title": row['description'],
+                    "content": row['expected_benefit'][:500] if row.get('expected_benefit') else None,
+                    "description": row['expected_benefit'],  # Expected benefit as description
                     "status": row['status'],
                     "category": row['category'],
                     "difficulty": row['difficulty'],
@@ -381,7 +481,7 @@ async def find_similar_ideas(
     """
     try:
         # Generate embedding for query
-        query_embedding = embedding_service.encode(query)
+        query_embedding = embedding_service.encode(query, is_query=True)
         embedding_list = query_embedding.tolist()
         
         # Build filter conditions - use positional params carefully
@@ -394,8 +494,9 @@ async def find_similar_ideas(
         if whitebox_subtype:
             filter_conditions.append(f"i.whitebox_subtype = '{whitebox_subtype}'::whitebox_subtype")
         
-        # Final params: embedding1, embedding2, limit
-        params = [embedding_list, embedding_list, limit]
+        # Final params: embedding1, embedding2, limit (nhân 3 để rerank)
+        rerank_limit = limit * 3 if limit else 30
+        params = [embedding_list, embedding_list, rerank_limit]
         
         # Search in ideas table with pgvector - with more fields and history
         with db.cursor() as cur:
@@ -403,7 +504,8 @@ async def find_similar_ideas(
                 SELECT 
                     i.id,
                     i.title,
-                    i.description as content,
+                    i.description,
+                    i.expected_benefit,
                     i.status,
                     i.category,
                     i.difficulty,
@@ -417,12 +519,9 @@ async def find_similar_ideas(
                     i.updated_at,
                     i.reviewed_at,
                     i.implemented_at,
-                    i.published_response,
-                    i.published_response_ja,
-                    i.is_published,
-                    i.published_at,
                     u.full_name as submitter_name,
                     d.name as department_name,
+                    i.like_count,
                     1 - (i.embedding <=> %s::vector) as similarity,
                     (SELECT COUNT(*) FROM ideas i2 
                      WHERE i2.status = 'implemented' 
@@ -460,6 +559,32 @@ async def find_similar_ideas(
             
             results = cur.fetchall()
         
+        # === RERANKING STEP ===
+        if results and hasattr(embedding_service, '_reranker') and embedding_service._reranker:
+            import numpy as np
+            # Ghép description + expected_benefit cho reranking (nhất quán với cách tạo embedding)
+            candidate_texts = [
+                ' '.join(filter(None, [row.get('description', ''), row.get('expected_benefit', '')]))
+                for row in results
+            ]
+            
+            rerank_scores = embedding_service.rerank(query, candidate_texts)
+            rerank_scores = (1 / (1 + np.exp(-np.array(rerank_scores)))).tolist()
+            
+            # Kết hợp vector score và rerank score: lấy MAX để không giảm score cho exact match
+            results_with_rerank = []
+            for i, row in enumerate(results):
+                row_dict = dict(row)
+                vector_score = float(row['similarity']) if row['similarity'] else 0
+                rerank_score = rerank_scores[i]
+                row_dict['similarity'] = max(vector_score, rerank_score)
+                results_with_rerank.append(row_dict)
+            
+            results = sorted(results_with_rerank, key=lambda x: x['similarity'], reverse=True)[:limit]
+            print(f"[RAG] Reranked {len(candidate_texts)} candidates for find_similar_ideas")
+        else:
+            results = [dict(r) for r in results[:limit]]
+        
         ideas = []
         for row in results:
             similarity = float(row['similarity']) if row['similarity'] else 0
@@ -469,8 +594,9 @@ async def find_similar_ideas(
                 
                 ideas.append({
                     "id": str(row['id']),
-                    "title": row['title'],
-                    "content": row['content'][:200] if row['content'] else None,
+                    # UI mapping: description -> title, expected_benefit -> content
+                    "title": row['description'],
+                    "content": row['expected_benefit'][:200] if row.get('expected_benefit') else None,
                     "status": row['status'],
                     "category": row['category'],
                     "difficulty": row['difficulty'],
@@ -484,22 +610,19 @@ async def find_similar_ideas(
                     "similarity": round(similarity, 4),
                     "relevance_level": relevance_level,
                     "relevance_percent": f"{round(similarity * 100)}%",
-                    "submitter_name": row['submitter_name'] if row['ideabox_type'] != 'pink' else 'Ẩn danh',
+                    "submitter_name": row['submitter_name'] if row['ideabox_type'] != 'pink' else 'An danh',
                     "department_name": row['department_name'],
                     "support_count": row['support_count'] or 0,
                     "remind_count": row['remind_count'] or 0,
+                    "like_count": row['like_count'] or 0,
                     "created_at": row['created_at'].isoformat() if row['created_at'] else None,
                     "updated_at": row['updated_at'].isoformat() if row['updated_at'] else None,
                     "reviewed_at": row['reviewed_at'].isoformat() if row['reviewed_at'] else None,
                     "implemented_at": row['implemented_at'].isoformat() if row['implemented_at'] else None,
                     "implemented_in_category": row['implemented_count'] or 0,
-                    "published_response": row['published_response'],
-                    "published_response_ja": row['published_response_ja'],
-                    "is_published": row['is_published'],
-                    "published_at": row['published_at'].isoformat() if row['published_at'] else None,
                     "responses": row['responses'] or [],
                     "workflow_history": row['workflow_history'] or [],
-                    "has_resolution": row['status'] in ['implemented', 'approved', 'published'] or row['published_response'] is not None
+                    "has_resolution": row['status'] in ['implemented', 'approved']
                 })
         
         return {
@@ -756,8 +879,11 @@ async def generate_ideas_embeddings(limit: int = Query(100, ge=1, le=1000)):
                     failed += 1
                     continue
                 
-                # Generate embedding
-                embedding = embedding_service.encode(combined_text)
+                # Dùng LLM để trích xuất vấn đề chính (loại bỏ "mong xem xét"...)
+                extracted_text = await extract_core_issue(combined_text)
+                
+                # Generate embedding từ text đã được làm sạch
+                embedding = embedding_service.encode(extracted_text)
                 
                 # Save to database
                 with db.cursor() as cur:
@@ -885,8 +1011,11 @@ async def index_single_idea(request: IndexIdeaRequest):
                 embedding_created=False
             )
         
-        # Generate embedding
-        embedding = embedding_service.encode(combined_text)
+        # Dùng LLM để trích xuất vấn đề chính (loại bỏ "mong xem xét"...)
+        extracted_text = await extract_core_issue(combined_text)
+        
+        # Generate embedding từ text đã được làm sạch
+        embedding = embedding_service.encode(extracted_text)
         
         # Save to database
         with db.cursor() as cur:

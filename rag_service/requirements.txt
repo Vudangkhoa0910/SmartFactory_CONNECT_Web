@@ -6,8 +6,6 @@ fastapi>=0.109.0
 uvicorn>=0.27.0
 pydantic>=2.5.0
 python-dotenv>=1.0.0
+httpx>=0.25.0
 numpy>=1.24.0
-# ============================================
-# OPTIONAL: ONNX Runtime for local models
-# ============================================
-# onnxruntime>=1.16.0
+pyvi>=0.1.1

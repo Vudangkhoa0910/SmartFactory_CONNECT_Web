@@ -126,15 +126,49 @@ class EmbeddingService:
     def _load_huggingface_model(self):
         """Load HuggingFace sentence-transformers model"""
         model_name = os.getenv("MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-        
+        rerank_model_name = os.getenv("RERANK_MODEL_NAME", "")
+
         start = time.time()
         # show_progress_bar=False tắt log "Loading weights..."
         self._model = SentenceTransformer(model_name, device="cuda")
+        
+        # Load Reranker (nếu có config và đủ VRAM)
+        self._reranker = None
+        
+        if rerank_model_name:
+            try:
+                from sentence_transformers import CrossEncoder
+                print(f"[INFO] Loading Reranker: {rerank_model_name}...")
+                self._reranker = CrossEncoder(rerank_model_name, device="cuda", max_length=512)
+                print(f"[OK] Reranker loaded")
+            except Exception as e:
+                print(f"[WARN] Reranker disabled: {e}")
+
         self._model_name = model_name
         self._vector_dim = self._model.get_sentence_embedding_dimension()
         
         elapsed = time.time() - start
         print(f"[OK] HuggingFace model loaded in {elapsed:.2f}s (dim={self._vector_dim})")
+
+    def rerank(self, query: str, documents: List[str]) -> List[float]:
+        """
+        Rerank documents based on query using CrossEncoder.
+        Returns list of scores.
+        """
+        if not hasattr(self, '_reranker') or not self._reranker:
+            return [0.0] * len(documents)
+        
+        if not documents:
+            return []
+        
+        # Vietnamese word segmentation
+        if HAS_PYVI:
+            query = tokenize_vietnamese(query)
+            documents = [tokenize_vietnamese(doc) for doc in documents]
+        
+        pairs = [[query, doc] for doc in documents]
+        scores = self._reranker.predict(pairs)
+        return scores.tolist()
 
     def _load_onnx_model(self):
         """Load ONNX model and tokenizer"""
@@ -206,6 +240,19 @@ class EmbeddingService:
         texts = [text] if is_single else text
         
         if self._use_huggingface:
+            # Vietnamese word segmentation - CHỈ dùng cho PhoBERT, KHÔNG dùng cho E5, AITeamVN
+            # E5 multilingual model không cần và sẽ bị ảnh hưởng xấu bởi word segmentation
+            is_phobert = "phobert" in self._model_name.lower() and "aiteamvn" not in self._model_name.lower()
+            if HAS_PYVI and is_phobert:
+                texts = [tokenize_vietnamese(t) for t in texts]
+            
+            # E5 models cần prefix "query:" hoặc "passage:" để hoạt động tốt
+            if "e5" in self._model_name.lower():
+                if is_query:
+                    texts = [f"query: {t}" for t in texts]
+                else:
+                    texts = [f"passage: {t}" for t in texts]
+            
             # Use sentence-transformers
             embeddings = self._model.encode(
                 texts,

@@ -82,9 +82,10 @@ class IncidentRouter:
                 'validation_error': reason
             }
 
-        # Stage 1: Retrieve
+        # Stage 1: Retrieve (Broad search)
+        # Tăng limit lên 50 để Reranker có nhiều ứng viên hơn
         embedding = embedding_service.encode(description, is_query=True)
-        candidates = db.find_similar(embedding, limit=20)
+        candidates = db.find_similar(embedding, limit=50)
         candidates = [dict(c) for c in candidates]
         print(f"[{ts}] Stage 1: Retrieved {len(candidates)} candidates")
 
@@ -96,11 +97,29 @@ class IncidentRouter:
                 'message': 'Khong tim thay incident tuong tu.'
             }
 
-        # Stage 2: Use similarity scores (reranker removed)
+        # Stage 2: Rerank (Precision search)
         candidate_texts = [c['description'] for c in candidates]
-        rerank_scores = [c['similarity'] for c in candidates]
-        rerank_threshold = Config.MIN_SIMILARITY
-        print(f"[{ts}] Stage 2: Using raw similarity scores")
+        
+        # Nếu có Reranker thì dùng, không thì fallback về cosine similarity
+        if hasattr(embedding_service, '_reranker') and embedding_service._reranker:
+            print(f"[{ts}] Stage 2: Reranking with {embedding_service._reranker.config.name_or_path}...")
+            rerank_scores = embedding_service.rerank(description, candidate_texts)
+            
+            # Sigmoid normalization for BGE reranker (scores can be negative)
+            import numpy as np
+            rerank_scores = (1 / (1 + np.exp(-np.array(rerank_scores)))).tolist()
+            
+            # Update scores
+            for i, c in enumerate(candidates):
+                c['similarity'] = rerank_scores[i]
+                
+            # Reranker threshold thường thấp hơn cosine similarity
+            rerank_threshold = 0.5 
+        else:
+             # Fallback to cosine similarity
+            rerank_scores = [c['similarity'] for c in candidates]
+            rerank_threshold = Config.MIN_SIMILARITY
+            print(f"[{ts}] Stage 2: Using raw similarity scores (No Reranker)")
 
         # Stage 3: Multi-field scoring - Dynamic weights
         # If no multi-field data provided, use 100% semantic score
