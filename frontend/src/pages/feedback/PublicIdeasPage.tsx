@@ -33,6 +33,7 @@ interface BackendIdea {
   category: string;
   title: string;
   description: string;
+  expected_benefit: string;
   difficulty?: string;
   attachments: string | null;
   created_at: string;
@@ -99,6 +100,7 @@ export default function PublicIdeasPage() {
         line: item.category || 'General',
         title: item.title,
         content: item.description,
+        expectedBenefit: item.expected_benefit,
         difficulty: item.difficulty,
         // Parse attachments with full URL
         attachments: (() => {

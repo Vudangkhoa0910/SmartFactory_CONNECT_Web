@@ -139,6 +139,7 @@
     "create": "提案を作成",
     "list": "提案一覧",
     "details": "提案詳細",
+    "content": "詳細内容",
     "total": "総提案数",
     "white_box": "ホワイトボックス",
     "pink_box": "ピンクボックス",
@@ -297,6 +298,7 @@
     "required_field": "必須項目",
     "invalid_email": "無効なメールアドレス",
     "invalid_phone": "無効な電話番号",
+    "no_description": "詳細な説明がありません",
     "welcome": "ようこそ"
   },
   "auth": {

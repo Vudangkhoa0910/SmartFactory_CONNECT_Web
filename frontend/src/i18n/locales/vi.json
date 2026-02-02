@@ -140,6 +140,7 @@
     "create": "Tạo ý kiến",
     "list": "Danh sách ý kiến",
     "details": "Chi tiết ý kiến",
+    "content": "Nội dung chi tiết",
     "total": "Tổng số ý kiến",
     "white_box": "Hòm trắng",
     "pink_box": "Hòm hồng",
@@ -298,6 +299,7 @@
     "required_field": "Trường bắt buộc",
     "invalid_email": "Email không hợp lệ",
     "invalid_phone": "Số điện thoại không hợp lệ",
+    "no_description": "Không có mô tả chi tiết",
     "welcome": "Chào mừng"
   },
   "auth": {

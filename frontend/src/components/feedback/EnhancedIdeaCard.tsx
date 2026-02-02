@@ -169,8 +169,10 @@ export const EnhancedIdeaCard: React.FC<EnhancedIdeaCardProps> = ({
   const { language } = useTranslation();
 
   // Normalize data from both types
-  const title = idea.title;
-  const content = "content" in idea ? idea.content : idea.fullContent;
+  // FE Fix: Use content/description as the Title (per user request)
+  // And use expectedBenefit as the Body content
+  const title = "content" in idea ? idea.content : idea.fullContent;
+  const content = idea.expectedBenefit || "";
   const status = idea.status;
   const difficulty = idea.difficulty;
   const timestamp = idea.timestamp;

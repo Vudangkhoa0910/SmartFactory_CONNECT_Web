@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { PublicIdea, DifficultyLevel } from "./types";
 import { IdeaHistory } from "./IdeaHistory";
 import { IdeaChat } from "./IdeaChat";
-import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2, ThumbsUp, Bell, Star, MessageSquare, Trash2, CheckCircle2 } from "lucide-react";
+import { Check, X, ArrowUpRight, Send, Save, Paperclip, User, Building2, ThumbsUp, Bell, Star, MessageSquare, Trash2, CheckCircle2, FileText } from "lucide-react";
 import { useTranslation } from "../../contexts/LanguageContext";
 import TextArea from "../form/input/TextArea";
 import { DifficultyBadge, DifficultySelector } from "./DifficultySelector";
@@ -221,7 +221,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
       <div className="p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center flex-shrink-0 bg-white dark:bg-neutral-900">
         <div className="flex items-center gap-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{idea.title}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{idea.content}</h2>
             <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <User size={14} />
@@ -328,7 +328,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
               <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8">
                 <div className="w-full h-full bg-green-200/30 dark:bg-green-700/20 rounded-full blur-2xl" />
               </div>
-              
+
               <div className="relative p-6">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-4">
@@ -435,20 +435,16 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({
           )}
 
           {/* Nội dung chính */}
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-neutral-700">
-            <p className="leading-relaxed text-gray-700 dark:text-gray-300">{idea.content}</p>
-
-            {idea.expectedBenefit && (
-              <div className="mt-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-400 rounded-r-lg">
-                <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 flex items-center gap-2 mb-1">
-                  <ArrowUpRight size={16} />
-                  {t('kaizen.expected_benefit')}
-                </h4>
-                <p className="text-sm text-blue-800 dark:text-blue-400 italic">
-                  {idea.expectedBenefit}
-                </p>
-              </div>
-            )}
+          <div className="bg-white dark:bg-neutral-800 rounded-xl p-5 shadow-sm border-2 border-red-400 dark:border-red-500">
+            <h3 className="flex items-center gap-2 font-bold text-red-600 dark:text-red-400 mb-3 text-lg border-b border-red-200 dark:border-red-800 pb-2">
+              <FileText size={20} className="text-red-600 dark:text-red-400" />
+              {t('idea.content') || 'Nội dung chi tiết'}
+            </h3>
+            <p className="leading-relaxed text-gray-700 dark:text-gray-300">
+              {idea.expectedBenefit || (
+                <span className="italic text-gray-400">{t('message.no_description') || "Không có mô tả chi tiết"}</span>
+              )}
+            </p>
 
             {idea.actualBenefit && (
               <div className="mt-4 p-4 bg-green-50/50 dark:bg-green-900/10 border-l-4 border-green-400 rounded-r-lg">

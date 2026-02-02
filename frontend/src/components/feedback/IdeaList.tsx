@@ -38,7 +38,7 @@ export const IdeaList: React.FC<IdeaListProps> = ({
             {t('feedback.white_box_title')}
           </h2>
         </div>
-        
+
         {/* Search Bar */}
         {onSearchChange && (
           <div className="relative w-full">
@@ -57,9 +57,8 @@ export const IdeaList: React.FC<IdeaListProps> = ({
               {isVoiceSupported && onVoiceClick && (
                 <button
                   onClick={onVoiceClick}
-                  className={`p-1 rounded-full hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors ${
-                    isListening ? "text-red-500 animate-pulse" : "text-gray-400"
-                  }`}
+                  className={`p-1 rounded-full hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors ${isListening ? "text-red-500 animate-pulse" : "text-gray-400"
+                    }`}
                   title="Voice Search"
                 >
                   <Mic size={14} />
@@ -95,22 +94,20 @@ export const IdeaList: React.FC<IdeaListProps> = ({
               onClick={() => onSelect(idea.id)}
               className={`
                 px-4 py-3 border-b border-gray-100 dark:border-neutral-800 cursor-pointer transition-colors
-                ${
-                  selectedId === idea.id
-                    ? "bg-red-50 dark:bg-red-900/20 border-l-4 border-l-red-600 dark:border-l-red-500"
-                    : "border-l-4 border-l-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
+                ${selectedId === idea.id
+                  ? "bg-red-50 dark:bg-red-900/20 border-l-4 border-l-red-600 dark:border-l-red-500"
+                  : "border-l-4 border-l-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
                 }
               `}
             >
               <div className="flex justify-between items-start">
                 <p
-                  className={`text-sm pr-2 truncate ${
-                    !idea.isRead
+                  className={`text-sm pr-2 truncate ${!idea.isRead
                       ? "font-bold text-gray-900 dark:text-white"
                       : "font-semibold text-gray-700 dark:text-gray-300"
-                  }`}
+                    }`}
                 >
-                  {idea.title}
+                  {idea.content}
                 </p>
                 {!idea.isRead && (
                   <div className="w-2 h-2 bg-red-600 rounded-full shrink-0 mt-1.5"></div>
