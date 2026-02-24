@@ -121,7 +121,7 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
       HOST: 0.0.0.0
-      FRONTEND_URL: ${FRONTEND_URL:-https://xiao.software}
+      FRONTEND_URL: ${FRONTEND_URL:-https://xiaojunhd.me}
       # PostgreSQL Database configuration
       DB_HOST: database
       DB_PORT: 5432
@@ -185,7 +185,7 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: ${VITE_API_URL}
-        VITE_WS_URL: ${VITE_WS_URL:-https://api.xiao.software}
+        VITE_WS_URL: ${VITE_WS_URL:-https://api.xiaojunhd.me}
     container_name: smartfactory_frontend
     restart: unless-stopped
     depends_on:

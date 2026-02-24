@@ -34,9 +34,9 @@ function initializeSocket(server) {
       origin: (origin, callback) => {
         const allowedOrigins = [
           process.env.FRONTEND_URL || 'http://localhost:5173',
-          'https://xiao.software',
-          'https://www.xiao.software',
-          'https://api.xiao.software',
+          'https://xiaojunhd.me',
+          'https://www.xiaojunhd.me',
+          'https://api.xiaojunhd.me',
           'http://localhost',
           'http://localhost:80',
         ];

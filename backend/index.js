@@ -64,7 +64,7 @@ const corsOptions = {
       'https://smartfactoryconnect.netlify.app',
       'https://smartfactory-connect.netlify.app',
       // Custom domain (if configured)
-      'https://app.xiao.software',
+      'https://xiaojunhd.me',
       // Local development
       process.env.FRONTEND_URL || 'http://localhost:5173',
       'http://localhost',
